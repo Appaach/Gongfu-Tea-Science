@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="teaBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#92400e" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="steamGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background with subtle rounded squircle -->
+  <rect width="512" height="512" rx="115" fill="url(#teaBg)" />
+
+  <!-- Outer subtle circular orbit (representing molecular diffusion) -->
+  <circle cx="256" cy="270" r="170" fill="none" stroke="#d97706" stroke-width="3" stroke-dasharray="12 12" opacity="0.35" />
+  <circle cx="256" cy="270" r="145" fill="none" stroke="#fef3c7" stroke-width="2" opacity="0.2" />
+
+  <!-- Gongfu Teacup / Gaiwan bowl base -->
+  <path d="M140 260 C140 360, 372 360, 372 260 L360 250 L152 250 Z" fill="#fef3c7" />
+  <ellipse cx="256" cy="250" rx="108" ry="24" fill="#fef3c7" />
+  <!-- Tea liquor surface inside cup -->
+  <ellipse cx="256" cy="253" rx="98" ry="18" fill="#b45309" />
+  <ellipse cx="256" cy="253" rx="84" ry="14" fill="#d97706" />
+
+  <!-- Gaiwan Saucer / Base -->
+  <path d="M165 352 Q256 372 347 352 Q256 385 165 352 Z" fill="#fef3c7" opacity="0.9" />
+
+  <!-- Stylized Tea Leaf ascending from infusion -->
+  <path d="M256 120 C295 165, 310 215, 275 245 C240 270, 205 240, 218 190 C226 155, 245 130, 256 120 Z" fill="url(#leafGrad)" />
+  <path d="M256 125 Q262 175 254 235" stroke="#78350f" stroke-width="3" fill="none" stroke-linecap="round" />
+  <path d="M256 160 Q275 168 285 178" stroke="#78350f" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8" />
+  <path d="M255 185 Q235 192 225 205" stroke="#78350f" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8" />
+
+  <!-- Subtle kinetic steam / extraction waves -->
+  <path d="M200 195 C190 170, 205 150, 195 130" stroke="url(#steamGrad)" stroke-width="5" fill="none" stroke-linecap="round" />
+  <path d="M312 195 C322 170, 307 150, 317 130" stroke="url(#steamGrad)" stroke-width="5" fill="none" stroke-linecap="round" />
+</svg>

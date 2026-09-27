@@ -26,12 +26,18 @@ import { EXTRA_TEAS_PART17 } from './extraTeasPart17';
 import { EXTRA_TEAS_PART18 } from './extraTeasPart18';
 import { EXTRA_TEAS_PART19 } from './extraTeasPart19';
 import { EXTRA_TEAS_PART20 } from './extraTeasPart20';
+import { EXTRA_TEAS_PART21 } from './extraTeasPart21';
+import { EXTRA_TEAS_PART22 } from './extraTeasPart22';
+import { EXTRA_TEAS_PART23 } from './extraTeasPart23';
 
 export const TEA_VARIETIES: TeaVariety[] = [
   ...EXTRA_TEAS_PART17,
   ...EXTRA_TEAS_PART18,
   ...EXTRA_TEAS_PART19,
   ...EXTRA_TEAS_PART20,
+  ...EXTRA_TEAS_PART21,
+  ...EXTRA_TEAS_PART22,
+  ...EXTRA_TEAS_PART23,
   // --- 1. ЗЕЛЁНЫЙ ЧАЙ (Green Tea) ---
   {
     id: 'longjing',

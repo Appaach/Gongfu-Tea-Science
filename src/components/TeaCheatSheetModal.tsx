@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TeaVariety } from '../types';
 import { 
   X, 
@@ -39,6 +39,17 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
   const ratio = Math.round((waterVolume / Math.max(0.1, teaMass)) * 10) / 10;
   const effect = getTeaEffect(tea);
 
+  // Keyboard Escape listener to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   // Generate steep seconds curve if not fully passed
   const steepSchedule = providedSchedule && providedSchedule.length >= steepsCount
     ? providedSchedule.slice(0, steepsCount)
@@ -67,7 +78,7 @@ ${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} сек`).joi
 
 ✨ Вкусовой профиль: ${(tea.keySensoryNotes || []).join(', ')}
 🌿 Эффект: ${effect.nameRu} (${effect.badgeRu})
-Рассчитано в AI Studio: Кинетика экстракции чая`;
+Рассчитано по биохимической модели экстракции чая`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -75,8 +86,14 @@ ${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} сек`).joi
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-2xl w-full my-auto shadow-2xl border border-stone-300 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto cursor-pointer"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl max-w-2xl w-full my-auto shadow-2xl border border-stone-300 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150 cursor-default"
+      >
         {/* Modal Header & Actions (Hidden on Print) */}
         <div className="p-4 border-b border-stone-200 bg-stone-50 flex items-center justify-between gap-3 print:hidden">
           <div className="flex items-center space-x-2">
@@ -110,18 +127,19 @@ ${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} сек`).joi
               type="button"
               onClick={handlePrint}
               className="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
-              title="Распечатать памятку"
+              title="Сохранить в PDF или распечатать памятку"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Печать / PDF</span>
+              <span>PDF</span>
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors cursor-pointer ml-1"
+              className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-200/80 transition-colors cursor-pointer ml-1"
+              title="Закрыть памятку"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>

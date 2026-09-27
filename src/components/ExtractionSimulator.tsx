@@ -276,6 +276,7 @@ import {
   Lightbulb,
   CheckCircle,
   ArrowRight,
+  ArrowDown,
   Star,
   FlaskConical,
   Printer,
@@ -364,7 +365,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   }, [selectedTeaId, customBlendTea]);
 
   // Fast rendering limits for 500+ tea varieties database (prevents frame drops and ensures 60 FPS)
-  const [popularDisplayLimit, setPopularDisplayLimit] = useState<number>(40);
+  const [popularDisplayLimit, setPopularDisplayLimit] = useState<number>(10);
 
   // Key Environmental Parameters (Water Hardness & Vessel Material)
   const [waterHardness, setWaterHardness] = useState<WaterHardnessLevel>('optimal');
@@ -468,7 +469,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
     if (activeCategoryTab === 'specific') {
       const idx = filteredPopularTeas.findIndex(({ tea }) => tea.id === selectedTeaId);
       if (idx >= popularDisplayLimit) {
-        setPopularDisplayLimit(Math.ceil((idx + 1) / 40) * 40);
+        setPopularDisplayLimit(Math.ceil((idx + 1) / 10) * 10);
       }
     }
   }, [selectedTeaId, activeCategoryTab, filteredPopularTeas, popularDisplayLimit]);
@@ -1057,17 +1058,17 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
     <div className="space-y-6">
       {/* Top Utility Bar: Base Selector (Generic, Popular Teas, Favorites, Blending Studio) */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-3 sm:px-4 rounded-xl border border-stone-200 shadow-xs">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="text-xs font-bold text-stone-800">База сортов:</span>
-          <div className="flex flex-wrap rounded-lg bg-stone-100 p-0.5 border border-stone-200 gap-0.5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <span className="text-xs font-bold text-stone-800 shrink-0">База сортов:</span>
+          <div className="grid grid-cols-2 gap-0.5 rounded-lg bg-stone-100 p-1 border border-stone-200">
             {/* 1. Общие архетипы */}
             <button
               id="category-tab-generic"
               onClick={() => handleCategoryTabChange('generic')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer text-center ${
                 activeCategoryTab === 'generic'
                   ? 'bg-amber-800 text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
               }`}
             >
               Общие архетипы ({GENERIC_TEA_ARCHETYPES.length})
@@ -1077,10 +1078,10 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
             <button
               id="category-tab-specific"
               onClick={() => handleCategoryTabChange('specific')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer text-center ${
                 activeCategoryTab === 'specific'
                   ? 'bg-amber-800 text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
               }`}
             >
               Популярные чаи ({TEA_VARIETIES.length})
@@ -1090,13 +1091,12 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
             <button
               id="category-tab-blend"
               onClick={() => handleCategoryTabChange('blend')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer text-center ${
                 activeCategoryTab === 'blend'
                   ? 'bg-amber-800 text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
               }`}
             >
-              <FlaskConical className="w-3.5 h-3.5 text-amber-500" />
               <span>Смешивание чаёв (Купажи)</span>
             </button>
 
@@ -1104,13 +1104,12 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
             <button
               id="category-tab-favorites"
               onClick={() => handleCategoryTabChange('favorites')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer text-center ${
                 activeCategoryTab === 'favorites'
                   ? 'bg-amber-800 text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
               }`}
             >
-              <Star className={`w-3.5 h-3.5 ${favoriteIds.length > 0 ? 'text-amber-400 fill-amber-400' : ''}`} />
               <span>Избранное ({favoriteIds.length})</span>
             </button>
           </div>
@@ -1578,11 +1577,26 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                         isSelected ? 'border-amber-700/50 text-amber-200' : 'border-stone-100 text-stone-500'
                       }`}>
                         <span className="truncate">{tea.origin.split(',')[0]}</span>
-                        <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded font-medium ${
-                          isSelected ? 'bg-amber-900/60 text-amber-100' : 'bg-stone-100 text-stone-600'
-                        }`}>
-                          {teaEff.nameRu}
-                        </span>
+                        <div className="flex items-center space-x-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTeaChange(tea);
+                              const el = document.getElementById('brewing-parameters-section');
+                              if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                              isSelected
+                                ? 'bg-amber-100 text-amber-950 hover:bg-white border border-amber-300'
+                                : 'bg-amber-800 text-white hover:bg-amber-900'
+                            }`}
+                            title="Перейти к настройке параметров заваривания"
+                          >
+                            <span>Вниз</span>
+                            <ArrowDown className="w-3.5 h-3.5 shrink-0" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1595,17 +1609,14 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                     <span className="font-medium text-stone-700">
                       Показано {visiblePopularTeas.length} из {filteredPopularTeas.length} сортов
                     </span>
-                    <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-mono font-medium border border-emerald-200">
-                      60 FPS Fast Render
-                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setPopularDisplayLimit((prev) => prev + 40)}
+                      onClick={() => setPopularDisplayLimit((prev) => prev + 10)}
                       className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 font-medium transition-colors cursor-pointer text-xs"
                     >
-                      Показать ещё (+40)
+                      Показать ещё (+10)
                     </button>
                     <button
                       type="button"
@@ -1755,7 +1766,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
       {activeCategoryTab !== 'blend' && (activeCategoryTab !== 'favorites' || favoriteIds.length > 0) && (
         <>
           {/* Selected Tea Info Card with Plain-Language Leaf Morphology */}
-          <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row gap-6 items-start min-w-0 max-w-full overflow-hidden">
+          <div id="brewing-parameters-section" className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row gap-6 items-start min-w-0 max-w-full overflow-hidden">
         <div className="flex-1 space-y-3 min-w-0 max-w-full">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <h3 className="text-lg sm:text-xl font-bold text-stone-900 font-serif break-words">

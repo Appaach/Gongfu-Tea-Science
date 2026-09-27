@@ -23,7 +23,8 @@ import {
   Printer,
   FileText,
   Check,
-  Tag
+  Tag,
+  Upload
 } from 'lucide-react';
 import { matchTeaSearch } from '../utils/teaSearch';
 
@@ -299,6 +300,64 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
     downloadAnchor.remove();
   };
 
+  const handleExportCsv = () => {
+    if (entries.length === 0) return;
+    const headers = ["Дата", "Сорт", "Иероглифы", "Оценка", "Температура", "Масса_г", "Объем_мл", "Посуда", "Проливов", "Заметки"];
+    const rows = entries.map(e => [
+      `"${new Date(e.dateIso).toLocaleDateString('ru-RU')}"`,
+      `"${(e.teaNameRu || '').replace(/"/g, '""')}"`,
+      `"${(e.teaNameZh || '').replace(/"/g, '""')}"`,
+      e.rating,
+      e.waterTempC,
+      e.teaMassG,
+      e.waterVolumeMl,
+      `"${(e.vesselUsed || '').replace(/"/g, '""')}"`,
+      e.steepsCount,
+      `"${(e.userNotes || '').replace(/"/g, '""')}"`
+    ]);
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tea_journal_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setEntries((prev) => {
+            const map = new Map(prev.map(item => [item.id, item]));
+            parsed.forEach(item => {
+              if (item && item.id) map.set(item.id, item);
+            });
+            const merged = Array.from(map.values());
+            try {
+              localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(merged));
+            } catch {
+              // ignore
+            }
+            return merged;
+          });
+          alert(`Успешно импортировано ${parsed.length} записей!`);
+        } else {
+          alert('Файл JSON пуст или имеет некорректный формат.');
+        }
+      } catch (err) {
+        alert('Ошибка при чтении файла JSON.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -343,6 +402,21 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Import JSON button */}
+          <label
+            className="px-3 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Импортировать дневник из файла JSON"
+          >
+            <Upload className="w-3.5 h-3.5 text-stone-600" />
+            <span>Импорт</span>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportJson}
+              className="hidden"
+            />
+          </label>
+
           {entries.length > 0 && (
             <>
               <button
@@ -352,17 +426,27 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
                 title="Экспортировать дневник в файл JSON"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Экспорт JSON</span>
+                <span>JSON</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="px-3 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Экспортировать дневник в таблицу CSV (Excel)"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-700" />
+                <span>CSV (Excel)</span>
               </button>
 
               <button
                 type="button"
                 onClick={handlePrint}
                 className="px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-950 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Распечатать дневник или сохранить в PDF"
+                title="Сохранить дневник в PDF файл или отправить на печать"
               >
-                <Printer className="w-3.5 h-3.5 text-amber-800" />
-                <span>Печать / PDF</span>
+                <Download className="w-3.5 h-3.5 text-amber-800" />
+                <span>PDF</span>
               </button>
             </>
           )}

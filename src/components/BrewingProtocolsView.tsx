@@ -44,7 +44,7 @@ export const BrewingProtocolsView: React.FC = () => {
         <div className="flex flex-wrap gap-2 min-w-0">
           {[
             { id: 'all', label: 'Все разделы' },
-            { id: 'comparison', label: 'Сравнение 4 методов (Гунфу, Лю Гэнь, Чашка, Запад)' },
+            { id: 'comparison', label: 'Сравнение методов' },
             { id: 'universal', label: 'Универсальный алгоритм' },
             { id: 'archetypes', label: `${GENERIC_TEA_ARCHETYPES.length} категорий (архетипов)` },
             { id: 'blending', label: 'Купажирование и синергия сортов' },
@@ -69,7 +69,7 @@ export const BrewingProtocolsView: React.FC = () => {
         <div className="space-y-4 min-w-0 max-w-full">
           <div className="flex items-center space-x-2 border-l-4 border-amber-700 pl-3 min-w-0">
             <h3 className="text-lg font-bold text-stone-900 font-serif break-words">
-              1. Сравнительный анализ: Гунфу Ча vs Оставление корня vs Заваривание в чашке vs Запад
+              1. Сравнительный анализ методов
             </h3>
           </div>
 

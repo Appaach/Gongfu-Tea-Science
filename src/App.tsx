@@ -83,7 +83,6 @@ export default function App() {
             />
           )}
           {activeTab === 'research' && <ResearchArticlesView />}
-          {activeTab === 'protocols' && <BrewingProtocolsView />}
         </Suspense>
       </main>
 

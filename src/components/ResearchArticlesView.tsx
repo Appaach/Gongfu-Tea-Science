@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RESEARCH_PAPERS } from '../data/researchPapers';
 import { CHEMICAL_COMPOUNDS } from '../data/teaData';
 import { PEER_REVIEWED_FORMULAS } from '../utils/extractionKinetics';
+import { BrewingProtocolsView } from './BrewingProtocolsView';
 import { 
   BookOpen, 
   FlaskConical, 
@@ -18,7 +19,8 @@ import {
   HeartHandshake,
   Droplet,
   Coffee,
-  ShieldAlert
+  ShieldAlert,
+  Layers
 } from 'lucide-react';
 
 export interface ChemicalKineticProperty {
@@ -103,7 +105,7 @@ const CHEMICAL_PROPERTIES: ChemicalKineticProperty[] = [
 ];
 
 export const ResearchArticlesView: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<'all' | 'atlas' | 'water_vessel' | 'formulas' | 'constants' | 'papers'>('all');
+  const [activeSection, setActiveSection] = useState<'all' | 'protocols' | 'atlas' | 'water_vessel' | 'formulas' | 'constants' | 'papers'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const categories = [
@@ -126,10 +128,10 @@ export const ResearchArticlesView: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-stone-100 pb-4 min-w-0">
           <div className="space-y-1 min-w-0">
             <h2 className="text-xl sm:text-2xl font-bold font-serif tracking-tight text-stone-900 break-words">
-              Биохимия и научная база
+              Научная база и методы
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-3xl break-words">
-              Молекулярная природа вкуса, гидрохимия воды, термодинамика посуды и лабораторные исследования CAAS, JAFC и Food Chemistry.
+              Молекулярная природа вкуса, протоколы заваривания (Гунфу Ча, Лю Гэнь, в чашке), гидрохимия воды и лабораторные исследования CAAS, JAFC и Food Chemistry.
             </p>
           </div>
 
@@ -152,6 +154,17 @@ export const ResearchArticlesView: React.FC = () => {
             }`}
           >
             Все разделы
+          </button>
+          <button
+            onClick={() => setActiveSection('protocols')}
+            className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+              activeSection === 'protocols'
+                ? 'bg-amber-800 text-white shadow-xs'
+                : 'bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900'
+            }`}
+          >
+            <Coffee className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <span>Методы заваривания</span>
           </button>
           <button
             onClick={() => setActiveSection('atlas')}
@@ -210,6 +223,13 @@ export const ResearchArticlesView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* SECTION 0: BREWING PROTOCOLS AND METHODS */}
+      {(activeSection === 'all' || activeSection === 'protocols') && (
+        <section className="space-y-4 min-w-0 max-w-full">
+          <BrewingProtocolsView />
+        </section>
+      )}
 
       {/* SECTION 1: CHEMICAL COMPOUNDS ATLAS */}
       {(activeSection === 'all' || activeSection === 'atlas') && (

@@ -452,7 +452,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
                           <span className="w-5 h-5 rounded-full bg-stone-200 text-stone-600 text-[11px] font-mono flex items-center justify-center font-bold">
                             #{idx + 1}
                           </span>
-                          <span>Выберите сорт чая</span>
+                          <span>Выберите чай</span>
                         </span>
                         {components.length > 2 && (
                           <button
@@ -472,7 +472,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
                         className="w-full py-2.5 px-3 rounded-lg bg-white border border-stone-300 hover:border-amber-700 text-stone-700 hover:text-amber-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer"
                       >
                         <Plus className="w-4 h-4 text-amber-700" />
-                        <span>Выбрать сорт из 501 чая...</span>
+                        <span>Выбрать чай...</span>
                       </button>
                     </div>
                   );
@@ -522,7 +522,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
                         onClick={() => handleOpenPicker(idx)}
                         className="text-[11px] font-semibold text-amber-800 hover:text-amber-950 underline underline-offset-2 cursor-pointer"
                       >
-                        Заменить сорт...
+                        Заменить чай...
                       </button>
 
                       <div className="flex items-center space-x-2">
@@ -558,7 +558,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
                 className="w-full py-2.5 rounded-xl border-2 border-dashed border-stone-300 hover:border-amber-600 hover:bg-amber-50/50 text-stone-600 hover:text-amber-900 text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Добавить ещё сорт в купаж ({components.length}/5)</span>
+                <span>Добавить ещё чай в купаж ({components.length}/5)</span>
               </button>
             )}
           </div>
@@ -921,7 +921,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
               <div className="flex items-center space-x-2">
                 <Layers className="w-4 h-4 text-amber-800" />
                 <h3 className="text-sm font-bold text-stone-900">
-                  {pickerIndex === -1 ? 'Добавить сорт в купаж' : 'Выбрать сорт для купажа'}
+                  {pickerIndex === -1 ? 'Добавить чай в купаж' : 'Выбрать чай для купажа'}
                 </h3>
               </div>
               <button

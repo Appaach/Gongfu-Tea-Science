@@ -3,8 +3,25 @@ import {
   ChemicalCompoundInfo, 
   WaterHardnessInfo, 
   VesselMaterialInfo, 
-  OptimizationPreset 
+  OptimizationPreset,
+  BrewingMethodInfo 
 } from '../types';
+import { EXTRA_TEAS_PART1 } from './extraTeasPart1';
+import { EXTRA_TEAS_PART2 } from './extraTeasPart2';
+import { EXTRA_TEAS_PART3 } from './extraTeasPart3';
+import { EXTRA_TEAS_PART4 } from './extraTeasPart4';
+import { EXTRA_TEAS_PART5 } from './extraTeasPart5';
+import { EXTRA_TEAS_PART6 } from './extraTeasPart6';
+import { EXTRA_TEAS_PART7 } from './extraTeasPart7';
+import { EXTRA_TEAS_PART8 } from './extraTeasPart8';
+import { EXTRA_TEAS_PART9 } from './extraTeasPart9';
+import { EXTRA_TEAS_PART10 } from './extraTeasPart10';
+import { EXTRA_TEAS_PART11 } from './extraTeasPart11';
+import { EXTRA_TEAS_PART12 } from './extraTeasPart12';
+import { EXTRA_TEAS_PART13 } from './extraTeasPart13';
+import { EXTRA_TEAS_PART14 } from './extraTeasPart14';
+import { EXTRA_TEAS_PART15 } from './extraTeasPart15';
+import { EXTRA_TEAS_PART16 } from './extraTeasPart16';
 
 export const TEA_VARIETIES: TeaVariety[] = [
   // --- 1. ЗЕЛЁНЫЙ ЧАЙ (Green Tea) ---
@@ -1619,7 +1636,23 @@ export const TEA_VARIETIES: TeaVariety[] = [
     scientificDescription: 'Крупнолистовой юньнаньский культивар с высоким запасом полисахаридов TPS и теафлавинов. Анаэробная фаза придает мягкость без малейшей терпкости.',
     recommendedSteeps: 9,
     categoryGroup: 'specific'
-  }
+  },
+  ...EXTRA_TEAS_PART1,
+  ...EXTRA_TEAS_PART2,
+  ...EXTRA_TEAS_PART3,
+  ...EXTRA_TEAS_PART4,
+  ...EXTRA_TEAS_PART5,
+  ...EXTRA_TEAS_PART6,
+  ...EXTRA_TEAS_PART7,
+  ...EXTRA_TEAS_PART8,
+  ...EXTRA_TEAS_PART9,
+  ...EXTRA_TEAS_PART10,
+  ...EXTRA_TEAS_PART11,
+  ...EXTRA_TEAS_PART12,
+  ...EXTRA_TEAS_PART13,
+  ...EXTRA_TEAS_PART14,
+  ...EXTRA_TEAS_PART15,
+  ...EXTRA_TEAS_PART16
 ];
 
 export const GENERIC_TEA_ARCHETYPES: TeaVariety[] = [
@@ -1648,12 +1681,12 @@ export const GENERIC_TEA_ARCHETYPES: TeaVariety[] = [
   },
   {
     id: 'generic_white_needle',
-    nameRu: 'Белый чай: Почечный (ранний типсовый сбор)',
+    nameRu: 'Белый чай: Почечный',
     transcriptionRu: 'Почечный белый чай / 100% нераскрытые типсы с ворсом / Байхао Иньчжэнь',
-    nameZh: '白茶 (芽头)',
-    namePinyin: 'Bái Chá (Yátóu)',
+    nameZh: '白茶 芽头',
+    namePinyin: 'Bái Chá Yátóu',
     type: 'white',
-    typeNameRu: 'Белый чай (чистые нераскрытые почки)',
+    typeNameRu: 'Белый чай: Почечный',
     origin: 'Фудин / Чжэнхэ, пров. Фуцзянь',
     cultivar: 'Фудин Дабайча / Дахаоча',
     oxidationLevel: '5–8% (Естественное завяливание на солнце)',
@@ -1671,12 +1704,12 @@ export const GENERIC_TEA_ARCHETYPES: TeaVariety[] = [
   },
   {
     id: 'generic_white_mudan',
-    nameRu: 'Белый чай: Листо-почечный (почка и нежные листья)',
+    nameRu: 'Белый чай: Листо-почечный',
     transcriptionRu: 'Листо-почечный белый чай / Почка + 1–2 молодых листа / Бай Мудань',
-    nameZh: '白茶 (一芽一二叶)',
-    namePinyin: 'Bái Chá (Yī Yá Yī Èr Yè)',
+    nameZh: '白茶 一芽一二叶',
+    namePinyin: 'Bái Chá Yī Yá Yī Èr Yè',
     type: 'white',
-    typeNameRu: 'Белый чай (почка + 1–2 молодых листа)',
+    typeNameRu: 'Белый чай: Листо-почечный',
     origin: 'Фудин / Сунси / Цзяньян, Фуцзянь',
     cultivar: 'Дабайча / Шуйсянь',
     oxidationLevel: '8–15% (Солнечное завяливание)',
@@ -1694,12 +1727,12 @@ export const GENERIC_TEA_ARCHETYPES: TeaVariety[] = [
   },
   {
     id: 'generic_white_shoumei',
-    nameRu: 'Белый чай: Зрелый лист (поздний сбор с черенками)',
+    nameRu: 'Белый чай: Зрелый лист',
     transcriptionRu: 'Зрелый листовой белый чай / Крупный лист с черенками / Шоу Мэй',
-    nameZh: '白茶 (成熟叶)',
-    namePinyin: 'Bái Chá (Chéngshú Yè)',
+    nameZh: '白茶 成熟叶',
+    namePinyin: 'Bái Chá Chéngshú Yè',
     type: 'white',
-    typeNameRu: 'Белый чай (зрелые листья и черенки)',
+    typeNameRu: 'Белый чай: Зрелый лист',
     origin: 'Фудин / Чжэнхэ, Фуцзянь',
     cultivar: 'Фудин Дабайча / Сяобайча',
     oxidationLevel: '12–20% (Глубокое естественное завяливание)',
@@ -1717,12 +1750,12 @@ export const GENERIC_TEA_ARCHETYPES: TeaVariety[] = [
   },
   {
     id: 'generic_white_aged',
-    nameRu: 'Белый чай: Выдержанный (многолетнее автоокисление)',
+    nameRu: 'Белый чай: Выдержанный',
     transcriptionRu: 'Выдержанный белый чай / Лао Байча / Прессованный блин или рассыпной',
-    nameZh: '老白茶 (陈化)',
-    namePinyin: 'Lǎo Bái Chá (Chénhuà)',
+    nameZh: '老白茶 陈化',
+    namePinyin: 'Lǎo Bái Chá Chénhuà',
     type: 'white',
-    typeNameRu: 'Белый чай (выдержка от 3–5 лет)',
+    typeNameRu: 'Белый чай: Выдержанный',
     origin: 'Фудин / Чжэнхэ / Юньнань',
     cultivar: 'Дабайча / Дахаоча',
     oxidationLevel: '30–50% (Медленное естественное автоокисление)',
@@ -2044,6 +2077,10 @@ export const ALL_TEA_OPTIONS: TeaVariety[] = [
   ...GENERIC_TEA_ARCHETYPES
 ];
 
+export const ALL_TEA_MAP: Map<string, TeaVariety> = new Map(
+  ALL_TEA_OPTIONS.map((t) => [t.id, t])
+);
+
 export interface UniversalBrewingRule {
   stepNumber: number;
   titleRu: string;
@@ -2286,6 +2323,221 @@ export const OPTIMIZATION_PRESETS: OptimizationPreset[] = [
     tempOffsetC: +1,
     timeFactor: 0.9,
     descriptionRu: 'Короткие динамичные проливы для мгновенного раскрытия летучих эфирных масел и ярких цветочных оттенков.'
+  },
+  {
+    id: 'oil_tar',
+    nameRu: 'Режим «Нефть»',
+    targetRatio: 9, // 1:9 (11г на 100мл)
+    tempOffsetC: +3, // 100°C кипяток
+    timeFactor: 2.2, // Пролонгированные экспозиции
+    descriptionRu: 'Плотная экстракция шу пуэров и тёмных чаёв (1:9, 100°C): смолянистый маслянистый настой с высокой концентрацией теабровининов и бархатным вкусом.',
+    allowedTeaTypes: ['shou_puerh', 'sheng_puerh', 'heicha']
+  }
+];
+
+export interface TeaEffectDefinition {
+  id: import('../types').TeaEffectCategory;
+  nameRu: string;
+  badgeRu: string;
+  shortDescRu: string;
+  bioMechanismRu: string;
+  recommendedTypes: import('../types').TeaType[];
+  icon?: string;
+}
+
+export const TEA_EFFECT_DEFINITIONS: TeaEffectDefinition[] = [
+  {
+    id: 'focus_zen',
+    nameRu: 'Концентрация',
+    badgeRu: 'L-Теанин',
+    shortDescRu: 'Глубокая концентрация, ясность ума и собранность без тремора',
+    bioMechanismRu: 'Высокое отношение L-теанина к кофеину стимулирует альфа-волны головного мозга (8–12 Гц), вызывая состояние спокойной собранности (Alert Relaxation).',
+    recommendedTypes: ['green', 'white', 'yellow'],
+    icon: ''
+  },
+  {
+    id: 'energy_power',
+    nameRu: 'Бодрость',
+    badgeRu: 'Кофеин',
+    shortDescRu: 'Энергетический подъем, тонус и физический драйв для активной работы',
+    bioMechanismRu: 'Быстрорастворимый кофеин в синергии с теафлавинами активирует ЦНС, стимулируя выработку дофамина и повышая тонус.',
+    recommendedTypes: ['shou_puerh', 'red', 'sheng_puerh'],
+    icon: ''
+  },
+  {
+    id: 'calm_gaba',
+    nameRu: 'Спокойствие',
+    badgeRu: 'GABA',
+    shortDescRu: 'Снятие тревожности, глубокое мышечное расслабление и внутренний покой',
+    bioMechanismRu: 'Эндогенная γ-аминомасляная кислота (GABA ≥ 150 мг/100г) тормозит гипервозбуждение синапсов и выравнивает психоэмоциональный фон.',
+    recommendedTypes: ['gaba_oolong', 'gaba_red', 'white'],
+    icon: ''
+  },
+  {
+    id: 'warmth_comfort',
+    nameRu: 'Уют',
+    badgeRu: 'Пиразины',
+    shortDescRu: 'Глубокий согрев тела, ощущение комфорта и умиротворения',
+    bioMechanismRu: 'Продукты карамелизации Майяра, пиразины и сесквитерпены утёсного прогрева расширяют капилляры, вызывая волну комфортного тепла.',
+    recommendedTypes: ['oolong_strip', 'oolong_ball', 'red'],
+    icon: ''
+  },
+  {
+    id: 'digest_detox',
+    nameRu: 'Легкость',
+    badgeRu: 'Теабровинины',
+    shortDescRu: 'Легкость после еды, очищение организма и гармоничный баланс',
+    bioMechanismRu: 'Макромолекулярные теабровинины (TB) и полисахариды стимулируют секрецию защитного муцина желудка и ускоряют обмен веществ.',
+    recommendedTypes: ['shou_puerh', 'heicha', 'sheng_puerh'],
+    icon: ''
+  }
+];
+
+export interface TeaRinseInfo {
+  required: boolean;
+  seconds: number;
+  tempC: number;
+  badgeRu: string;
+  actionRu: string;
+  scientificReasonRu: string;
+}
+
+export function getTeaRinseInfo(tea: TeaVariety, customTempC?: number): TeaRinseInfo {
+  // If explicitly configured on variety
+  if (tea.rinseRecommended !== undefined) {
+    const isReq = tea.rinseRecommended;
+    return {
+      required: isReq,
+      seconds: tea.rinseSeconds ?? (isReq ? 5 : 0),
+      tempC: customTempC ?? (tea.type === 'shou_puerh' || tea.type === 'heicha' ? 100 : tea.optimalTemp),
+      badgeRu: isReq ? 'Слив (не пить)' : 'Не требуется',
+      actionRu: isReq ? 'Быстрый омыв и слив в чабань' : 'Пейте сразу с Пролива #1',
+      scientificReasonRu: tea.rinseNoteRu || (isReq ? 'Гидротермический прогрев листа' : 'Сохранение свободного L-теанина')
+    };
+  }
+
+  // Smart heuristic based on morphology & tea classification
+  if (tea.type === 'shou_puerh' || tea.type === 'heicha') {
+    return {
+      required: true,
+      seconds: tea.leafMorphology === 'compressed_cake' ? 6 : 5,
+      tempC: 100,
+      badgeRu: 'Обязательный промыв',
+      actionRu: 'Залить крутым кипятком 100°C, выдержать 5–6 сек и слить в чабань (не пить)',
+      scientificReasonRu: 'Смыв микропыли постферментации («Дуй Вэй»), открытие пор спрессованного листа и термодинамическая активация гидролиза полисахаридов (TPS).'
+    };
+  }
+
+  if (tea.type === 'sheng_puerh') {
+    return {
+      required: true,
+      seconds: 5,
+      tempC: 95,
+      badgeRu: 'Обязательный промыв',
+      actionRu: 'Залить водой 95–98°C на 5 сек и сразу слить в чабань',
+      scientificReasonRu: 'Гидротермическое размягчение плотного прессованного блина, снятие поверхностной грубой танинности молодого шэна.'
+    };
+  }
+
+  if (tea.leafMorphology === 'tight_ball') {
+    return {
+      required: true,
+      seconds: 4,
+      tempC: 95,
+      badgeRu: 'Пробуждение листа',
+      actionRu: 'Быстрый омыв 3–4 сек для снятия поверхностного натяжения скрутки',
+      scientificReasonRu: 'Снятие гидрофобного барьера с восковой кутикулы сферической скрутки. 1-й питьевой пролив сразу отдаст богатый сбалансированный настой.'
+    };
+  }
+
+  if (tea.type === 'oolong_strip') {
+    return {
+      required: true,
+      seconds: 3,
+      tempC: 95,
+      badgeRu: 'Ароматический омыв',
+      actionRu: 'Омыть лист кипятком 3 сек и слить, вдыхая аромат с крышечки',
+      scientificReasonRu: 'Мгновенное раскрытие летучих монотерпенов и пиразинов прожарки на огне. Прогревает посуду.'
+    };
+  }
+
+  if (tea.type === 'white' && tea.leafMorphology === 'compressed_cake') {
+    return {
+      required: true,
+      seconds: 5,
+      tempC: 90,
+      badgeRu: 'Промыв прессовки',
+      actionRu: 'Быстрый прогрев прессованного блина 5 сек',
+      scientificReasonRu: 'Разделение спрессованных слоев выдержанного белого чая для равномерной последующей диффузии.'
+    };
+  }
+
+  // Green teas, yellow teas, uncompressed delicate white and black teas
+  return {
+    required: false,
+    seconds: 0,
+    tempC: tea.optimalTemp,
+    badgeRu: 'Промыв не нужен',
+    actionRu: 'Начинайте сразу с Пролива #1',
+    scientificReasonRu: 'Нежный цельный лист без микропыли. Промыв вымоет в чабань 40–50% свободного L-теанина (сладости и умами), испортив чаепитие.'
+  };
+}
+
+export function getTeaEffect(tea: TeaVariety): TeaEffectDefinition {
+  if (tea.effectCategory) {
+    const found = TEA_EFFECT_DEFINITIONS.find(e => e.id === tea.effectCategory);
+    if (found) return found;
+  }
+
+  if (tea.type === 'gaba_oolong' || tea.type === 'gaba_red') {
+    return TEA_EFFECT_DEFINITIONS.find(e => e.id === 'calm_gaba')!;
+  }
+  if (tea.type === 'shou_puerh' || tea.type === 'heicha') {
+    return TEA_EFFECT_DEFINITIONS.find(e => e.id === 'digest_detox')!;
+  }
+  if (tea.type === 'green' || (tea.type === 'white' && tea.leafMorphology === 'needle') || tea.type === 'yellow') {
+    return TEA_EFFECT_DEFINITIONS.find(e => e.id === 'focus_zen')!;
+  }
+  if (tea.type === 'red' || tea.type === 'sheng_puerh') {
+    return TEA_EFFECT_DEFINITIONS.find(e => e.id === 'energy_power')!;
+  }
+  if (tea.type === 'oolong_strip' || tea.type === 'oolong_ball') {
+    return TEA_EFFECT_DEFINITIONS.find(e => e.id === 'warmth_comfort')!;
+  }
+
+  return TEA_EFFECT_DEFINITIONS[0];
+}
+
+export const BREWING_METHODS_DATA: BrewingMethodInfo[] = [
+  {
+    id: 'gongfu',
+    nameRu: 'Гунфу Ча (Полный слив)',
+    nameZh: '功夫茶 / 沥干泡法',
+    namePinyin: 'Gōng Fū Chá',
+    shortDescRu: '100% слив настоя после каждого пролива',
+    fullDescRu: 'Классический китайский метод пошаговой экстракции. Настой полностью сливается в чахай после каждого контакта с водой. Максимально раскрывает ступенчатую смену вкусовых и ароматических фракций листа.',
+    drainModeRu: 'Полный слив (100% в чахай)',
+    idealForRu: 'Улуны (скальные и тайваньские), Пуэры (шэн и шу), Хэй ча, Красный чай'
+  },
+  {
+    id: 'liu_gen',
+    nameRu: 'Оставление корня (Лю Гэнь Пао)',
+    nameZh: '留根泡法 / 留根法',
+    namePinyin: 'Liú Gēn Pào Fǎ',
+    shortDescRu: 'Сохранение 1/3 настоя в сосуде перед доливом',
+    fullDescRu: 'Метод непрерывного буферного заваривания: после каждого пролива сливается 2/3 (или 1/2) настоя, а в сосуде оставляется 1/3 «чайного корня» (насыщенного маточного раствора). Свежий кипяток доливается в остаток. Буфер снижает градиент концентраций, предотвращает термошок листа и устраняет вкусовые «провалы» между проливами.',
+    drainModeRu: 'Частичный слив (1/3 остаётся как буфер)',
+    idealForRu: 'Зелёные чаи (Лунцзин, Билочунь), Белые чаи (Бай Хао Инь Чжэнь), Жёлтые чаи, заваривание в бокале/колбе, варка старого белого чая'
+  },
+  {
+    id: 'grandpa_cup',
+    nameRu: '«Ленивый» метод (Бэй Пао Фа / 杯泡法)',
+    nameZh: '杯泡法',
+    namePinyin: 'Bēi Pào Fǎ',
+    shortDescRu: 'Чай кладут прямо в кружку, заливают водой, пьют, потом доливают. 留根 (корень) получается сам собой.',
+    fullDescRu: '«Ленивый» метод — это 杯泡法 (бэй пао фа). Чай кладут прямо в кружку или стеклянный стакан (200–350 мл), заливают водой, пьют, а потом доливают. Здесь 留根 («лю гэнь» — оставление корня) часто получается сам собой: если не выпить всё до дна, а оставить немного (~1/3 настоя) и долить свежий кипяток — это уже тот самый «корень», сохраняющий насыщенность вкуса. Естественное остывание в открытом сосуде по закону Ньютона задерживает вымывание катехинов и бережёт L-теанин.',
+    drainModeRu: 'Непрерывный контакт в кружке + долив кипятка (автоматический 留根 при остатке 1/3)',
+    idealForRu: 'Зелёные чаи (Лунцзин, Билочунь, Аньцзи Байча), Белые чаи (Шоу Мэй, Бай Мудань), нежные Красные чаи и рассыпные Улуны, повседневное чаепитие'
   }
 ];
 

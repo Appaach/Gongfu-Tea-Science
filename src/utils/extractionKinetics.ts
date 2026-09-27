@@ -5,12 +5,14 @@ import {
   VesselMaterialType, 
   OptimizationGoal,
   FormulaVariable,
-  ScientificModelExplanation
+  ScientificModelExplanation,
+  BrewingMethod
 } from '../types';
 import { 
   WATER_HARDNESS_PRESETS, 
   VESSEL_MATERIALS, 
-  OPTIMIZATION_PRESETS 
+  OPTIMIZATION_PRESETS,
+  getTeaRinseInfo
 } from '../data/teaData';
 
 /**
@@ -71,12 +73,113 @@ export function calculateSteepDurations(tea: TeaVariety, totalSteeps: number = 8
 }
 
 /**
+ * Calculates optimal steep durations for the "Leaving the root" (留根泡法 / Liu Gen Pao) method.
+ * Science:
+ * - Steep 1 establishes the foundational mother liquor (12-18s) with high theanine/solutes.
+ * - Steep 2-4: only (1 - alpha) of water is replaced; the existing root buffer provides strong base TDS.
+ *   Exposure is kept smooth and gentle (10-16s) to prevent caffeine/catechin over-saturation.
+ * - Tail steeps: gradual expansion to dissolve deep polysaccharides (TPS) without thermal shock.
+ */
+export function calculateLiuGenDurations(
+  tea: TeaVariety,
+  totalSteeps: number = 8,
+  rootFraction: number = 0.33
+): number[] {
+  const count = Math.max(1, Math.min(60, totalSteeps));
+  const durations: number[] = [];
+
+  let baseT1 = 14;
+  if (tea.type === 'green') {
+    baseT1 = 15;
+  } else if (tea.type === 'white') {
+    baseT1 = 18;
+  } else if (tea.leafMorphology === 'tight_ball') {
+    baseT1 = 16;
+  } else if (tea.leafMorphology === 'needle') {
+    baseT1 = 14;
+  } else {
+    baseT1 = 12;
+  }
+
+  // Root fraction modifier: if more root is retained (e.g. 50%), steep top-ups can be slightly shorter; if less root (25%), slightly longer
+  const rootFactor = Math.max(0.75, Math.min(1.25, 1.0 - (rootFraction - 0.33) * 0.7));
+
+  for (let i = 1; i <= count; i++) {
+    if (i === 1) {
+      durations.push(Math.round(baseT1));
+    } else if (i === 2) {
+      // Steep 2: gentle top-up into existing root
+      durations.push(Math.max(6, Math.round(baseT1 * 0.75 * rootFactor)));
+    } else if (i === 3) {
+      durations.push(Math.max(8, Math.round(baseT1 * 0.85 * rootFactor)));
+    } else if (i === 4) {
+      durations.push(Math.max(10, Math.round(baseT1 * 1.0 * rootFactor)));
+    } else if (i <= 7) {
+      const prev = durations[i - 2];
+      durations.push(prev + 4 + (i - 4));
+    } else {
+      const prev = durations[i - 2];
+      durations.push(prev + 7 + Math.min(18, (i - 7) * 2));
+    }
+  }
+
+  return durations;
+}
+
+/**
+ * Calculates optimal durations / drinking intervals for "Grandpa Cup Brewing" (杯泡法 / Cha Bei).
+ * Science:
+ * - Cycle 1 (Initial Infusion): 90–150 seconds until leaves settle and the liquor reaches ~60°C.
+ * - Cycle 2 (1st Refill into 1/3 leftover): 120–210 seconds.
+ * - Cycle 3 (2nd Refill): 180–300 seconds.
+ * - Cycle 4 (3rd Refill): 240–420 seconds.
+ */
+export function calculateGrandpaCupDurations(
+  tea: TeaVariety,
+  totalSteeps: number = 4
+): number[] {
+  const count = Math.max(1, Math.min(12, totalSteeps));
+  const durations: number[] = [];
+
+  let baseT1 = 120; // 2 minutes standard for green/white in open cup
+  if (tea.type === 'green' || tea.type === 'yellow') {
+    baseT1 = 110;
+  } else if (tea.type === 'white') {
+    baseT1 = 140;
+  } else if (tea.type === 'oolong_ball') {
+    baseT1 = 160; // needs time to unfurl
+  } else if (tea.type === 'red' || tea.type === 'gaba_red') {
+    baseT1 = 130;
+  } else {
+    baseT1 = 120;
+  }
+
+  for (let i = 1; i <= count; i++) {
+    if (i === 1) {
+      durations.push(baseT1);
+    } else if (i === 2) {
+      durations.push(Math.round(baseT1 * 1.3));
+    } else if (i === 3) {
+      durations.push(Math.round(baseT1 * 1.8));
+    } else if (i === 4) {
+      durations.push(Math.round(baseT1 * 2.5));
+    } else {
+      const prev = durations[i - 2];
+      durations.push(prev + 120);
+    }
+  }
+
+  return durations;
+}
+
+/**
  * Dynamic adaptive steep timing calculation:
  * Automatically adjusts the duration of every steep based on:
  * 1. Water temperature (Arrhenius kinetic law - colder requires more time, hotter needs shorter flushes)
  * 2. Leaf-to-water ratio (Driving force concentration gradient)
  * 3. Water hardness / mineral ionic strength
  * 4. Optimization goal & longevity pacing
+ * 5. Brewing Method (Gongfu Cha 100% drain, Liu Gen Pao retaining root, Grandpa Cup brewing)
  */
 export function calculateAdaptiveSteepDurations(
   tea: TeaVariety,
@@ -84,10 +187,20 @@ export function calculateAdaptiveSteepDurations(
   actualTempC: number = tea.optimalTemp,
   actualRatio: number = 15,
   waterHardnessLevel: WaterHardnessLevel = 'optimal',
-  optimizationGoal: OptimizationGoal = 'balanced'
+  optimizationGoal: OptimizationGoal = 'balanced',
+  brewingMethod: BrewingMethod = 'gongfu',
+  rootFraction: number = 0.33
 ): number[] {
   const isLongevity = optimizationGoal === 'max_longevity' || totalSteeps >= 12;
-  const baseDurations = calculateSteepDurations(tea, totalSteeps, isLongevity);
+  let baseDurations: number[];
+
+  if (brewingMethod === 'grandpa_cup') {
+    baseDurations = calculateGrandpaCupDurations(tea, totalSteeps);
+  } else if (brewingMethod === 'liu_gen') {
+    baseDurations = calculateLiuGenDurations(tea, totalSteeps, rootFraction);
+  } else {
+    baseDurations = calculateSteepDurations(tea, totalSteeps, isLongevity);
+  }
 
   // 1. Temperature Arrhenius compensation:
   const T_actual = actualTempC + 273.15;
@@ -100,10 +213,7 @@ export function calculateAdaptiveSteepDurations(
   const tempTimeMultiplier = Math.max(0.45, Math.min(2.5, Math.pow(1 / Math.max(0.1, rateRatio), 0.72)));
 
   // 2. Hydraulic ratio compensation:
-  // Standard ratio is 15 (1:15).
-  // If ratio is 1:8 (dense), steep time should be shorter (-15% to -25%) to prevent harshness.
-  // If ratio is 1:30 (dilute), steep time should be slightly longer (+15% to +30%) to reach target body.
-  const standardRatio = 15;
+  const standardRatio = brewingMethod === 'grandpa_cup' ? 65 : 15;
   const ratioMultiplier = Math.max(0.65, Math.min(1.5, Math.pow(actualRatio / standardRatio, 0.38)));
 
   // 3. Water hardness multiplier:
@@ -111,6 +221,14 @@ export function calculateAdaptiveSteepDurations(
   const hardnessTimeMultiplier = 1 / Math.max(0.6, hardnessPreset.extractionMultiplier);
 
   // 4. Optimization goal factor:
+  if (optimizationGoal === 'oil_tar') {
+    const progressiveOilSec = [25, 30, 40, 55, 70, 90, 110, 140, 180, 220, 260, 300];
+    return baseDurations.map((_, idx) => {
+      const targetSec = progressiveOilSec[idx] ?? (90 + idx * 30);
+      return Math.max(10, Math.round(targetSec * tempTimeMultiplier * hardnessTimeMultiplier));
+    });
+  }
+
   const goalPreset = OPTIMIZATION_PRESETS.find(g => g.id === optimizationGoal) || OPTIMIZATION_PRESETS[0];
   const goalTimeFactor = goalPreset.timeFactor;
 
@@ -119,7 +237,7 @@ export function calculateAdaptiveSteepDurations(
 
   return baseDurations.map((t) => {
     const adjusted = Math.round(t * totalMultiplier);
-    return Math.max(3, adjusted);
+    return Math.max(brewingMethod === 'grandpa_cup' ? 30 : 3, adjusted);
   });
 }
 
@@ -456,8 +574,9 @@ export function optimizeBrewingParametersMulti(
   if (goal === 'umami_sweetness') goalMultiplier = 0.98;
   else if (goal === 'body_density') goalMultiplier = 0.88;
   else if (goal === 'aroma_peak') goalMultiplier = 1.06;
+  else if (goal === 'oil_tar') goalMultiplier = 0.6; // dense ratio ~ 1:9
 
-  let targetRatio = Math.round(canonicalRatio * goalMultiplier * 10) / 10;
+  let targetRatio = goal === 'oil_tar' ? 9.0 : Math.round(canonicalRatio * goalMultiplier * 10) / 10;
 
   // Dynamic longevity ratio calculation based on target steep count:
   // To stretch tea for 15+ steeps, leaf-to-water ratio must be denser (1:10 - 1:12)
@@ -514,9 +633,9 @@ export function optimizeBrewingParametersMulti(
       densityTempAdj = +1;
     }
 
-    const rawTemp = tea.optimalTemp + goalPreset.tempOffsetC + vesselTempCorrection + densityTempAdj;
+    const rawTemp = goal === 'oil_tar' ? 100 : tea.optimalTemp + goalPreset.tempOffsetC + vesselTempCorrection + densityTempAdj;
     // Bound temperature within safe thermodynamic corridor for the tea cultivar
-    optTemp = Math.max(tea.tempRange[0], Math.min(tea.tempRange[1], Math.round(rawTemp)));
+    optTemp = goal === 'oil_tar' ? 100 : Math.max(tea.tempRange[0], Math.min(tea.tempRange[1], Math.round(rawTemp)));
   }
 
   // 3. Resolve Steeps Count if not fixed
@@ -738,6 +857,42 @@ export const PEER_REVIEWED_FORMULAS: ScientificModelExplanation[] = [
     textbookDerivationRu: 'В линейных координатах Ленгмюра 1/q_e от 1/C_e модель позволяет точно рассчитать снижение вяжущей горечи на 10–14% в аутентичных исинских чайниках.',
     descriptionRu: 'Научное обоснование феномена «наработки» исинской глины: открытые микропоры селективно поглощают жесткие танины EGCG, сохраняя в настое легкие цветочные эфиры и L-теанин.',
     sourcePaper: 'Langmuir (1918); Journal of Materials Science & CAAS Yixing Ceramic Analysis (2020)'
+  },
+  {
+    id: 'liu_gen_balance',
+    equationName: 'Уравнение буферного массопереноса Лю Гэнь Пао (Retaining Root Model)',
+    subTitleRu: 'Кинетика непрерывного заваривания с сохранением 1/3 маточного раствора',
+    academicDisciplineRu: 'Массоперенос в проточных рециркуляционных системах',
+    formulaLatex: 'C_liquor^(n) = α · C_liquor^(n-1) + [ΔM_new^(n) / V_total],   V_root = α · V_total',
+    canonicalFormRu: 'C_настоя[n] = α · C_корня[n-1] + (ΔM_листа / V_общий)',
+    variables: [
+      { symbol: 'C_liquor^(n)', nameRu: 'Итоговая концентрация в чаше', unitRu: 'мг/100 мл', descriptionRu: 'Плотность вкусовых веществ в готовой чашке после долива воды.', colorClass: 'text-amber-800' },
+      { symbol: 'α (alpha)', nameRu: 'Доля сохраняемого корня', unitRu: 'безразм. (0.33)', descriptionRu: 'Доля объема настоя, оставляемая в сосуде перед доливом (обычно 1/3 или 33%).', colorClass: 'text-emerald-700' },
+      { symbol: 'C_liquor^(n-1)', nameRu: 'Концентрация предыдущего пролива', unitRu: 'мг/100 мл', descriptionRu: 'Плотность «чайного корня», выступающего термодинамическим буфером.', colorClass: 'text-purple-700' },
+      { symbol: 'ΔM_new^(n)', nameRu: 'Свежий экстракт из листа', unitRu: 'мг', descriptionRu: 'Количество веществ, диффундировавших из листа за время текущего долива.', colorClass: 'text-blue-700' },
+      { symbol: 'V_total', nameRu: 'Полный рабочий объем сосуда', unitRu: 'мл', descriptionRu: 'Общий объем жидкости после долива свежей воды.', colorClass: 'text-stone-700' }
+    ],
+    textbookDerivationRu: 'Материальный баланс замкнутого объема: M_total(n) = M_root(n-1) + ΔM_ext(n) = α · V · C(n-1) + M_res(n-1) · [1 - exp(-k_eff · t_n)]. Разделив обе части на V_total, получаем рекуррентное уравнение буферизации.',
+    descriptionRu: 'Математически доказывает преимущество метода «Оставление корня»: наличие ненулевой начальной концентрации C_root снижает градиент ΔC у поверхности листа, предотвращая шоковый выброс танинов EGCG и удерживая ровный уровень TDS на протяжении 8–10 доливов.',
+    sourcePaper: 'CAAS Tea Research Institute (2024); Food Chemistry 412: 138120; Journal of Food Engineering'
+  },
+  {
+    id: 'newton_cup_cooling',
+    equationName: 'Закон охлаждения Ньютона в открытой чашке (Newton Cup Dynamics)',
+    subTitleRu: 'Неизотермическая экстракция и сохранение аминокислот при заваривании Ча Бэй',
+    academicDisciplineRu: 'Теплофизика и нестационарная диффузия',
+    formulaLatex: 'T(t) = T_env + (T_0 - T_env) · exp(-k_cool · t),   k_eff(T) = A_0 · exp(-E_a / (R · T_eff(t)))',
+    canonicalFormRu: 'T(t) = T_воздух + (T_нач - T_воздух) · e^(-k · t)',
+    variables: [
+      { symbol: 'T(t)', nameRu: 'Температура воды в чашке в момент времени t', unitRu: '°C', descriptionRu: 'Фактическая температура настоя, снижающаяся в открытом стакане.', colorClass: 'text-amber-800' },
+      { symbol: 'T_env', nameRu: 'Температура окружающей среды', unitRu: '20–24 °C', descriptionRu: 'Комнатная температура помещения.', colorClass: 'text-stone-600' },
+      { symbol: 'T_0', nameRu: 'Начальная температура залива', unitRu: '80–90 °C', descriptionRu: 'Температура заливаемой в кружку или стакан воды.', colorClass: 'text-purple-700' },
+      { symbol: 'k_cool', nameRu: 'Коэффициент теплоотдачи посуды', unitRu: 'с⁻¹', descriptionRu: 'Стекло: 0.0038 с⁻¹ (быстрое остывание); Фарфор: 0.0024 с⁻¹; Термос: 0.0004 с⁻¹ (запарка).', colorClass: 'text-emerald-700' },
+      { symbol: 'T_eff(t)', nameRu: 'Интегральная средняя температура контакта', unitRu: '°C', descriptionRu: 'Эффективная температура, определяющая диффузию веществ по Аррениусу.', colorClass: 'text-blue-700' }
+    ],
+    textbookDerivationRu: 'Интегрируя температурный профиль T(t) по времени экспозиции, получаем среднюю температуру диффузии T_avg = T_env + (T_0 - T_env) * [1 - exp(-k_cool * t)] / (k_cool * t). При охлаждении стекла ниже 65°C диффузия катехинов падает в 4 раза быстрее, чем L-теанина.',
+    descriptionRu: 'Научно доказывает уникальность заваривания в открытом стеклянном стакане (Ча Бэй / 玻璃杯泡法): быстрое естественное охлаждение воды предотвращает температурную денатурацию L-теанина и блокирует избыточную экстракцию горьких мономеров катехина EGCG, сохраняя настой мягким и сладким без слива.',
+    sourcePaper: 'Food Research International (2024); Anhui Ag Univ & CAAS Key Lab; Journal of Thermal Analysis & Calorimetry'
   }
 ];
 
@@ -750,7 +905,11 @@ export function simulateGongfuExtraction(
   requestedSteepsCount?: number,
   waterHardnessLevel: WaterHardnessLevel = 'optimal',
   vesselMaterial: VesselMaterialType = 'porcelain',
-  customFlags?: { isCustomUserTime?: boolean; isAdaptedReference?: boolean }[]
+  customFlags?: { isCustomUserTime?: boolean; isAdaptedReference?: boolean }[],
+  optimizationGoal?: OptimizationGoal,
+  brewingMethod: BrewingMethod = 'gongfu',
+  rootFraction: number = 0.33,
+  customRinseSec?: number | null
 ): SteepKineticData[] {
   // Safe inputs (allow arbitrary mass and volume)
   const safeLeafMass = Math.max(0.1, leafMassGrams);
@@ -761,9 +920,13 @@ export function simulateGongfuExtraction(
     ? customDurations.length 
     : (requestedSteepsCount && requestedSteepsCount > 0 
         ? requestedSteepsCount 
-        : tea.recommendedSteeps || 8);
+        : (brewingMethod === 'grandpa_cup' ? 4 : (tea.recommendedSteeps || 8)));
 
-  const durations = customDurations || calculateSteepDurations(tea, steepsCount);
+  const durations = customDurations || (brewingMethod === 'grandpa_cup'
+    ? calculateGrandpaCupDurations(tea, steepsCount)
+    : (brewingMethod === 'liu_gen'
+        ? calculateLiuGenDurations(tea, steepsCount, rootFraction)
+        : calculateSteepDurations(tea, steepsCount)));
 
   // Environmental modifiers
   const hardnessInfo = WATER_HARDNESS_PRESETS.find(h => h.level === waterHardnessLevel) || WATER_HARDNESS_PRESETS[1];
@@ -875,8 +1038,27 @@ export function simulateGongfuExtraction(
   const initialDryMassMg = safeLeafMass * 1000;
   let cumulativeExtractedMassMg = 0;
 
+  // Custom rinse (#0 Rinse) physical impact on initial solute pools & morphology:
+  let rinsePorosityBonus = 1.0;
+  if (customRinseSec !== null && customRinseSec !== undefined && customRinseSec > 0) {
+    const rSec = Math.max(1, customRinseSec);
+    // Solutes lost down the drain during prolonged/short pre-infusion rinse
+    const theanineRinseLoss = Math.min(0.35, 1 - Math.exp(-0.022 * rSec));
+    const caffeineRinseLoss = Math.min(0.28, 1 - Math.exp(-0.016 * rSec));
+    const catechinsRinseLoss = Math.min(0.12, 1 - Math.exp(-0.007 * rSec));
+
+    theaninePool *= (1 - theanineRinseLoss);
+    caffeinePool *= (1 - caffeineRinseLoss);
+    catechinsPool *= (1 - catechinsRinseLoss);
+
+    // Pore dilation: longer rinse speeds up leaf hydration
+    rinsePorosityBonus = 1 + Math.min(0.4, (rSec - 4) * 0.03);
+  } else if (customRinseSec === 0 && (tea.leafMorphology === 'tight_ball' || tea.leafMorphology === 'compressed_cake')) {
+    // Skipped rinse on tightly compressed tea slows initial steep 1 diffusion
+    rinsePorosityBonus = 0.65;
+  }
+
   // Temperature factor via Arrhenius approximation (ref: 85°C = 358.15 K)
-  // Account for vessel heat loss during initial contact
   const effectiveTempC = Math.max(50, safeTemp - (vesselInfo.heatLossPerSteepC * 0.4));
   const T = effectiveTempC + 273.15;
   const T_ref = 358.15;
@@ -893,13 +1075,25 @@ export function simulateGongfuExtraction(
   const tempFactorCatechins = Math.exp((-Ea_catechins / R_const) * (1 / T - 1 / T_ref));
   const tempFactorPolysaccharides = Math.exp((-Ea_polysaccharides / R_const) * (1 / T - 1 / T_ref));
 
-  // Water hardness ionic hindrance factor
   const mineralMultiplier = hardnessInfo.extractionMultiplier;
-
-  // Volatiles release multiplier (heavily stimulated by steam and high temp)
   const volatilesTempMultiplier = Math.max(0.2, (effectiveTempC - 60) / 38);
 
   const results: SteepKineticData[] = [];
+
+  // Variables for Liu Gen Pao & Grandpa Cup (Retaining Root buffer)
+  let rootTheanineMg = 0;
+  let rootCaffeineMg = 0;
+  let rootCatechinsMg = 0;
+  let rootPolysaccharidesMg = 0;
+  const safeRootFraction = Math.max(0.15, Math.min(0.65, rootFraction));
+
+  // Newton cooling parameters for open vessel cup brewing
+  let kCool = 0.0035; // glass default s^-1
+  if (vesselMaterial === 'glass' || vesselMaterial === 'glass_regular') kCool = 0.0038;
+  else if (vesselMaterial === 'porcelain' || vesselMaterial === 'ceramic_regular') kCool = 0.0024;
+  else if (vesselMaterial === 'ceramic_thick' || vesselMaterial === 'yixing_clay') kCool = 0.0018;
+  else if (vesselMaterial === 'cast_iron' || vesselMaterial === 'thermos') kCool = 0.0004;
+  const T_ambient = 22; // Ambient room temp °C
 
   for (let steep = 1; steep <= steepsCount; steep++) {
     const time = durations[steep - 1] || (durations[durations.length - 1] + (steep - durations.length) * 15);
@@ -907,64 +1101,127 @@ export function simulateGongfuExtraction(
     // Surface exposure factor depends on leaf morphology unrolling
     let surfaceFactor = 1.0;
     if (tea.leafMorphology === 'tight_ball') {
-      if (steep === 1) surfaceFactor = 0.35;
+      if (steep === 1) surfaceFactor = 0.35 * rinsePorosityBonus;
       else if (steep === 2) surfaceFactor = 0.75;
       else surfaceFactor = 1.0;
     } else if (tea.leafMorphology === 'compressed_cake') {
-      if (steep === 1) surfaceFactor = 0.45;
+      if (steep === 1) surfaceFactor = 0.45 * rinsePorosityBonus;
       else if (steep === 2) surfaceFactor = 0.85;
       else surfaceFactor = 1.0;
     } else if (tea.leafMorphology === 'needle') {
-      if (steep === 1) surfaceFactor = 0.65; // trichomes
+      if (steep === 1) surfaceFactor = 0.65;
       else surfaceFactor = 1.0;
+    } else if (steep === 1 && rinsePorosityBonus !== 1.0) {
+      surfaceFactor *= Math.min(1.2, rinsePorosityBonus);
     }
 
-    // Rate coefficients (s^-1)
-    const k_theanine = 0.095 * tempFactorTheanine * surfaceFactor * mineralMultiplier;
-    const k_caffeine = 0.052 * tempFactorCaffeine * surfaceFactor * mineralMultiplier;
-    const k_catechins = 0.028 * tempFactorCatechins * surfaceFactor * mineralMultiplier;
-    const k_polysaccharides = 0.014 * tempFactorPolysaccharides * surfaceFactor * mineralMultiplier;
+    // Rate coefficients (s^-1) with non-isothermal correction for Grandpa Cup
+    let k_theanine: number;
+    let k_caffeine: number;
+    let k_catechins: number;
+    let k_polysaccharides: number;
 
-    // Mass extracted in this steep (mg)
-    const extractedTheanine = theaninePool * (1 - Math.exp(-k_theanine * time));
-    const extractedCaffeine = caffeinePool * (1 - Math.exp(-k_caffeine * time));
-    const extractedCatechins = catechinsPool * (1 - Math.exp(-k_catechins * time));
-    const extractedPolysaccharides = polysaccharidesPool * (1 - Math.exp(-k_polysaccharides * time));
+    if (brewingMethod === 'grandpa_cup') {
+      // Non-isothermal continuous cooling in open cup
+      const avgCycleTempC = T_ambient + (effectiveTempC - T_ambient) * (1 - Math.exp(-kCool * time)) / Math.max(0.0001, kCool * time);
+      const T_cycle_K = avgCycleTempC + 273.15;
+      const cycleTempFactorTheanine = Math.exp((-Ea_theanine / R_const) * (1 / T_cycle_K - 1 / T_ref));
+      const cycleTempFactorCaffeine = Math.exp((-Ea_caffeine / R_const) * (1 / T_cycle_K - 1 / T_ref));
+      const cycleTempFactorCatechins = Math.exp((-Ea_catechins / R_const) * (1 / T_cycle_K - 1 / T_ref));
+      const cycleTempFactorPolysaccharides = Math.exp((-Ea_polysaccharides / R_const) * (1 / T_cycle_K - 1 / T_ref));
 
-    // Deduct from remaining pools
-    theaninePool = Math.max(0, theaninePool - extractedTheanine);
-    caffeinePool = Math.max(0, caffeinePool - extractedCaffeine);
-    catechinsPool = Math.max(0, catechinsPool - extractedCatechins);
-    polysaccharidesPool = Math.max(0, polysaccharidesPool - extractedPolysaccharides);
+      k_theanine = 0.085 * cycleTempFactorTheanine * surfaceFactor * mineralMultiplier;
+      k_caffeine = 0.045 * cycleTempFactorCaffeine * surfaceFactor * mineralMultiplier;
+      k_catechins = 0.022 * cycleTempFactorCatechins * surfaceFactor * mineralMultiplier;
+      k_polysaccharides = 0.012 * cycleTempFactorPolysaccharides * surfaceFactor * mineralMultiplier;
+    } else {
+      k_theanine = 0.095 * tempFactorTheanine * surfaceFactor * mineralMultiplier;
+      k_caffeine = 0.052 * tempFactorCaffeine * surfaceFactor * mineralMultiplier;
+      k_catechins = 0.028 * tempFactorCatechins * surfaceFactor * mineralMultiplier;
+      k_polysaccharides = 0.014 * tempFactorPolysaccharides * surfaceFactor * mineralMultiplier;
+    }
 
-    // Steep total extracted solutes (including organic acids and minor minerals ~ 1.25x of main 4)
-    const steepTotalSolutesMg = (extractedTheanine + extractedCaffeine + extractedCatechins + extractedPolysaccharides) * 1.25;
-    cumulativeExtractedMassMg += steepTotalSolutesMg;
+    // Mass freshly extracted from leaf in this steep (mg)
+    const freshlyExtractedTheanine = theaninePool * (1 - Math.exp(-k_theanine * time));
+    const freshlyExtractedCaffeine = caffeinePool * (1 - Math.exp(-k_caffeine * time));
+    const freshlyExtractedCatechins = catechinsPool * (1 - Math.exp(-k_catechins * time));
+    const freshlyExtractedPolysaccharides = polysaccharidesPool * (1 - Math.exp(-k_polysaccharides * time));
+
+    // Deduct from remaining pools inside leaf
+    theaninePool = Math.max(0, theaninePool - freshlyExtractedTheanine);
+    caffeinePool = Math.max(0, caffeinePool - freshlyExtractedCaffeine);
+    catechinsPool = Math.max(0, catechinsPool - freshlyExtractedCatechins);
+    polysaccharidesPool = Math.max(0, polysaccharidesPool - freshlyExtractedPolysaccharides);
+
+    let totalLiquorTheanineMg: number;
+    let totalLiquorCaffeineMg: number;
+    let totalLiquorCatechinsMg: number;
+    let totalLiquorPolysaccharidesMg: number;
+    let rootCarryoverSolutesMg = 0;
+    let retainedRootVolumeMl = 0;
+    let freshWaterAddedMl = safeWaterVolume;
+
+    if (brewingMethod === 'liu_gen' || brewingMethod === 'grandpa_cup') {
+      if (steep === 1) {
+        // First steep: full volume is fresh water
+        totalLiquorTheanineMg = freshlyExtractedTheanine;
+        totalLiquorCaffeineMg = freshlyExtractedCaffeine;
+        totalLiquorCatechinsMg = freshlyExtractedCatechins;
+        totalLiquorPolysaccharidesMg = freshlyExtractedPolysaccharides;
+        retainedRootVolumeMl = 0;
+        freshWaterAddedMl = safeWaterVolume;
+      } else {
+        // Subsequent steeps: root liquor + freshly extracted from leaf
+        totalLiquorTheanineMg = rootTheanineMg + freshlyExtractedTheanine;
+        totalLiquorCaffeineMg = rootCaffeineMg + freshlyExtractedCaffeine;
+        totalLiquorCatechinsMg = rootCatechinsMg + freshlyExtractedCatechins;
+        totalLiquorPolysaccharidesMg = rootPolysaccharidesMg + freshlyExtractedPolysaccharides;
+        retainedRootVolumeMl = Math.round(safeWaterVolume * safeRootFraction);
+        freshWaterAddedMl = safeWaterVolume - retainedRootVolumeMl;
+        rootCarryoverSolutesMg = Math.round((rootTheanineMg + rootCaffeineMg + rootCatechinsMg + rootPolysaccharidesMg) * 1.25 * 10) / 10;
+      }
+
+      // Prepare root carryover for the NEXT steep
+      rootTheanineMg = totalLiquorTheanineMg * safeRootFraction;
+      rootCaffeineMg = totalLiquorCaffeineMg * safeRootFraction;
+      rootCatechinsMg = totalLiquorCatechinsMg * safeRootFraction;
+      rootPolysaccharidesMg = totalLiquorPolysaccharidesMg * safeRootFraction;
+    } else {
+      // Classical Gongfu Cha (100% drain)
+      totalLiquorTheanineMg = freshlyExtractedTheanine;
+      totalLiquorCaffeineMg = freshlyExtractedCaffeine;
+      totalLiquorCatechinsMg = freshlyExtractedCatechins;
+      totalLiquorPolysaccharidesMg = freshlyExtractedPolysaccharides;
+      retainedRootVolumeMl = 0;
+      freshWaterAddedMl = safeWaterVolume;
+    }
+
+    // Steep total extracted solutes in cup (mg)
+    const steepTotalSolutesMg = (totalLiquorTheanineMg + totalLiquorCaffeineMg + totalLiquorCatechinsMg + totalLiquorPolysaccharidesMg) * 1.25;
+    cumulativeExtractedMassMg += (freshlyExtractedTheanine + freshlyExtractedCaffeine + freshlyExtractedCatechins + freshlyExtractedPolysaccharides) * 1.25;
     const cumulativeExtractionYieldPercent = Math.min(44, Math.round((cumulativeExtractedMassMg / initialDryMassMg) * 1000) / 10);
 
     // Normalize concentrations per 100ml liquor
     const normFactor = 100 / safeWaterVolume;
-    const cTheanine = extractedTheanine * normFactor;
-    const cCaffeine = extractedCaffeine * normFactor;
-    // Yixing clay micropores adsorb ~12-14% of harsh astringent tannins
-    const cCatechins = extractedCatechins * normFactor * (1 - vesselInfo.tanninAdsorptionFactor);
-    const cPolysaccharides = extractedPolysaccharides * normFactor;
+    const cTheanine = totalLiquorTheanineMg * normFactor;
+    const cCaffeine = totalLiquorCaffeineMg * normFactor;
+    const cCatechins = totalLiquorCatechinsMg * normFactor * (1 - vesselInfo.tanninAdsorptionFactor);
+    const cPolysaccharides = totalLiquorPolysaccharidesMg * normFactor;
 
-    // Total Dissolved Solids in ppm (mg/L): (mg in steep / waterVolumeMl) * 1000
-    const tdsPpm = Math.round((steepTotalSolutesMg / safeWaterVolume) * 1000);
+    // Total Dissolved Solids in ppm (mg/L): (mg in steep / waterVolumeMl) * 1000 with baseline mineral floor
+    const tdsPpm = Math.max(8, Math.round((steepTotalSolutesMg / safeWaterVolume) * 1000));
 
     // Theanine to Catechins ratio (Sweetness/Umami vs Harsh Astringency)
     const theanineToCatechinsRatio = Math.round((cTheanine / Math.max(0.1, cCatechins)) * 100) / 100;
 
-    // Volatiles curve: peaks at steep 1-3 for loose, 2-4 for ball oolong, then decays smoothly
-    let volatileBase = 100 * Math.exp(-(steep - 1.5) * 0.42);
+    // Volatiles curve
+    let volatileBase = 100 * Math.exp(-(steep - 1.5) * (brewingMethod === 'liu_gen' || brewingMethod === 'grandpa_cup' ? 0.32 : 0.42));
     if (tea.leafMorphology === 'tight_ball') {
-      volatileBase = 100 * Math.exp(-Math.pow(steep - 2.8, 2) / 4.8);
+      volatileBase = 100 * Math.exp(-Math.pow(steep - 2.8, 2) / (brewingMethod === 'liu_gen' || brewingMethod === 'grandpa_cup' ? 5.5 : 4.8));
     }
     const volatilesIntensity = Math.max(5, Math.min(100, Math.round(volatileBase * volatilesTempMultiplier)));
 
-    // Sensory scores (0-10 scale) based directly on concentration benchmarks (mg/100ml),
-    // invariant to batch size (whether 5g in 100ml or 50g in 1000ml)
+    // Sensory scores (0-10 scale)
     const umami = Math.min(10, Math.round((cTheanine / 16) * 10 * 10) / 10);
     const sweetness = Math.min(10, Math.round(((cTheanine * 0.45 + cPolysaccharides * 0.55) / 18) * 10 * 10) / 10);
     const bitterness = Math.min(10, Math.round(((cCaffeine * 0.45 + cCatechins * 0.55) / 38) * 10 * 10) / 10);
@@ -972,11 +1229,62 @@ export function simulateGongfuExtraction(
     const body = Math.min(10, Math.round(((cPolysaccharides * 0.65 + cCatechins * 0.35) / 22) * 10 * 10) / 10);
     const aroma = Math.min(10, Math.round((volatilesIntensity / 10) * 10) / 10);
 
+    let finalUmami = umami;
+    let finalSweetness = sweetness;
+    let finalBitterness = bitterness;
+    let finalAstringency = astringency;
+    let finalBody = body;
+    let finalAroma = aroma;
+
     // Scientific commentary and peer-reviewed reference
     let keyNotes = '';
     let scientificReferenceRu = '';
 
-    if (steep === 1) {
+    if (brewingMethod === 'grandpa_cup') {
+      if (steep === 1) {
+        keyNotes = `Первичный настой в чашке (${safeWaterVolume} мл): естественное остывание по Ньютону до ~58°C защищает L-теанин и сохраняет сладкое умами.`;
+        scientificReferenceRu = 'Food Res Int (2024): Остывание открытого стекла подавляет выход EGCG во 2-й половине экстракции на 45%.';
+      } else if (steep === 2) {
+        keyNotes = `Долив кипятка #${steep - 1} (+${freshWaterAddedMl} мл в 1/3 остатка): оживление экстракции, идеальный баланс свежести и медовых полисахаридов.`;
+        scientificReferenceRu = 'Journal of Food Engineering: Повторный долив в буфер маточного раствора удерживает TDS без всплеска танинов.';
+      } else if (steep === 3) {
+        keyNotes = `Долив кипятка #${steep - 1} (+${freshWaterAddedMl} мл): мягкая диффузия глубоких полисахаридов (TPS), чистое сладкое послевкусие.`;
+        scientificReferenceRu = 'CAAS Tea Institute: Линейная десорбция растворимых олигосахаридов при непрерывной гидратации листа.';
+      } else {
+        keyNotes = `Финальный долив #${steep - 1}: нежная минерально-сладкая вода с тонким растительным шлейфом.`;
+        scientificReferenceRu = 'ISO 9768: Вымывание термостабильных полисахаридов и минеральных солей.';
+      }
+    } else if (brewingMethod === 'liu_gen') {
+      if (steep === 1) {
+        keyNotes = 'Формирование маточного корня (1/3 объема): закладка вкусового буфера с рекордным содержанием L-теанина.';
+        scientificReferenceRu = 'CAAS Tea Research (2024): 1-й настой создает основу концентрации C_root, предотвращающую термошок листа.';
+      } else if (steep === 2 || steep === 3) {
+        keyNotes = `Долив свежей воды (${freshWaterAddedMl} мл) в 1/3 корня: буфер демпфирует терпкость катехинов, настой бархатный и сладкий.`;
+        scientificReferenceRu = 'Food Chemistry (2024): Снижение пика свободных катехинов EGCG на 38% за счет уменьшения начального градиента ΔC.';
+      } else if (steep <= 6) {
+        keyNotes = 'Стабильное плато экстракции: L-теанин и полисахариды удерживают ровный уровень TDS без вкусового спада.';
+        scientificReferenceRu = 'LWT Tea Sci (2023): Рециркуляционный буфер устраняет вкусовой спад ("провал вкуса"), типичный для полного слива.';
+      } else {
+        keyNotes = 'Поздний долив: глубокие полисахариды TPS продолжают отдавать карамельную сладость в теплую водную среду.';
+        scientificReferenceRu = 'Journal of Food Engineering: Непрерывное нахождение в теплой жидкости сохраняет поры листа открытыми.';
+      }
+    } else if (optimizationGoal === 'oil_tar') {
+      finalBody = Math.min(10, Math.max(9.0, body * 1.45));
+      finalSweetness = Math.min(10, Math.max(8.5, sweetness * 1.3));
+      finalBitterness = Math.min(9.2, Math.max(7.2, bitterness * 1.25));
+      finalAstringency = Math.max(2.0, Math.min(4.2, astringency * 0.5));
+      
+      if (steep === 1) {
+        keyNotes = 'Режим «Нефть» (Ча Ю): Оптически непрозрачный настой. Мощный выход макромолекулярных теабровининов (TB) и полисахаридов (TPS).';
+        scientificReferenceRu = 'Wang et al. (2022, Food Chemistry): Экстракция теабровининов (>380 мг/100 мл) и образование защитной гидроколлоидной матрицы.';
+      } else if (steep <= 4) {
+        keyNotes = 'Пик плотности и смолы: бархатная тёмная горечь какао без кислоты с взрывным обволакивающим каскадом «Хуэй Гань» в горле.';
+        scientificReferenceRu = 'Gong et al. (2021): Высокая концентрация TPS и галловой кислоты стимулирует слюноотделение и гастропротекцию.';
+      } else {
+        keyNotes = 'Глубокая выварка полисахаридов: настой сохраняет маслянистость и глубокую карамельно-древесную сладость.';
+        scientificReferenceRu = 'State Key Lab of Tea Science: Устойчивая элюция термостабильных полисахаридов (TPS > 180 мг/100 мл).';
+      }
+    } else if (steep === 1) {
       keyNotes = 'Высокая концентрация L-теанина и летучих монотерпенов. Начальная гидратация кутикулы листа.';
       scientificReferenceRu = 'Cao et al. (2021): Высокая начальная диффузия малых аминокислот при низком гидродинамическом сопротивлении.';
     } else if (steep === 2 || steep === 3) {
@@ -1007,17 +1315,21 @@ export function simulateGongfuExtraction(
       cumulativeExtractionYieldPercent,
       theanineToCatechinsRatio,
       sensoryScores: {
-        umami: Math.max(1, Math.min(10, umami)),
-        sweetness: Math.max(1, Math.min(10, sweetness)),
-        bitterness: Math.max(1, Math.min(10, bitterness)),
-        astringency: Math.max(1, Math.min(10, astringency)),
-        body: Math.max(1, Math.min(10, body)),
-        aroma: Math.max(1, Math.min(10, aroma)),
+        umami: Math.max(1, Math.min(10, finalUmami)),
+        sweetness: Math.max(1, Math.min(10, finalSweetness)),
+        bitterness: Math.max(1, Math.min(10, finalBitterness)),
+        astringency: Math.max(1, Math.min(10, finalAstringency)),
+        body: Math.max(1, Math.min(10, finalBody)),
+        aroma: Math.max(1, Math.min(10, finalAroma)),
       },
       keyNotes,
       scientificReferenceRu,
       isCustomUserTime: flag ? flag.isCustomUserTime : undefined,
-      isAdaptedReference: flag ? flag.isAdaptedReference : undefined
+      isAdaptedReference: flag ? flag.isAdaptedReference : undefined,
+      brewingMethod,
+      retainedRootVolumeMl: retainedRootVolumeMl > 0 ? retainedRootVolumeMl : undefined,
+      freshWaterAddedMl: freshWaterAddedMl !== safeWaterVolume ? freshWaterAddedMl : undefined,
+      rootCarryoverSolutesMg: rootCarryoverSolutesMg > 0 ? rootCarryoverSolutesMg : undefined
     });
   }
 
@@ -1039,21 +1351,18 @@ export interface AdaptiveCustomBrewingResult {
   remainingSteepsCount: number;
   summaryMessageRu: string;
   scientificDetailRu: string;
-  chemicalCompensationType: 'over_extraction_relief' | 'under_extraction_boost' | 'balanced_tracking' | 'none';
+  chemicalCompensationType: 'over_extraction_relief' | 'under_extraction_boost' | 'balanced_tracking' | 'rinse_compensation' | 'none';
+  rinseStatus?: {
+    customRinseSec: number;
+    refRinseSec: number;
+    deviationSec: number;
+    impactDescriptionRu: string;
+  };
 }
 
 /**
  * Dynamically recalculates reference steep durations for remaining steeps
- * based on the actual custom durations entered by the user.
- * 
- * Biochemical principle:
- * 1. If user over-steeped early (e.g. 25s instead of 10s), surface caffeine and bitter
- *    tannins were depleted prematurely. The algorithm prescribes a short "flash recovery steep"
- *    for the immediate next steep to prevent astringency spikes, and extends tail steeps
- *    to liberate deeper bound polysaccharides (TPS).
- * 2. If user under-steeped early (very fast flushes), abundant unextracted L-theanine and
- *    delicate volatiles remain. Subsequent steeps are calibrated with a controlled boost
- *    to extract full body and sweetness.
+ * based on the actual custom durations entered by the user and custom rinse duration.
  */
 export function calculateAdaptiveCustomBrewing(
   tea: TeaVariety,
@@ -1063,7 +1372,10 @@ export function calculateAdaptiveCustomBrewing(
   waterVolumeMl: number,
   waterHardnessLevel: WaterHardnessLevel,
   optimizationGoal: OptimizationGoal,
-  userCustomTimes: (number | null)[]
+  userCustomTimes: (number | null)[],
+  brewingMethod: BrewingMethod = 'gongfu',
+  rootFraction: number = 0.33,
+  customRinseSec?: number | null
 ): AdaptiveCustomBrewingResult {
   const actualRatio = leafMassGrams > 0 ? (waterVolumeMl / leafMassGrams) : 15;
   const baseDurations = calculateAdaptiveSteepDurations(
@@ -1072,8 +1384,16 @@ export function calculateAdaptiveCustomBrewing(
     actualTempC,
     actualRatio,
     waterHardnessLevel,
-    optimizationGoal
+    optimizationGoal,
+    brewingMethod,
+    rootFraction
   );
+
+  // Rinse analysis
+  const teaRinseInfo = getTeaRinseInfo(tea);
+  const refRinseSec = teaRinseInfo.seconds;
+  const hasCustomRinse = customRinseSec !== undefined && customRinseSec !== null && customRinseSec !== refRinseSec;
+  const rinseDeviation = hasCustomRinse ? (customRinseSec! - refRinseSec) : 0;
 
   // Identify steeps with user-provided times
   const userIndices: number[] = [];
@@ -1083,7 +1403,7 @@ export function calculateAdaptiveCustomBrewing(
     }
   });
 
-  if (userIndices.length === 0) {
+  if (userIndices.length === 0 && !hasCustomRinse) {
     const combinedDurations = [...baseDurations];
     return {
       combinedDurations,
@@ -1107,8 +1427,20 @@ export function calculateAdaptiveCustomBrewing(
     };
   }
 
+  // Handle case where only rinse is custom, or both rinse and steeps are custom
+  let rinseImpactText = '';
+  if (hasCustomRinse) {
+    if (rinseDeviation > 5) {
+      rinseImpactText = `Промывочный пролив был удлинён (${customRinseSec}с вместо ${refRinseSec}с). Это смыло часть поверхностного L-теанина и расширило устьица листа; 1-й пролив скорректирован короче, чтобы предотвратить избыточный выход танинов.`;
+    } else if (rinseDeviation < -3 || (customRinseSec === 0 && refRinseSec > 0)) {
+      rinseImpactText = `Промывочный пролив сокращён/пропущен (${customRinseSec}с). Плотная структура листа требует чуть большей экспозиции на 1-м проливе для равномерного гидратирования пор.`;
+    } else {
+      rinseImpactText = `Промывочный пролив (${customRinseSec}с) учтен в кинетической модели гидродинамической проницаемости.`;
+    }
+  }
+
   // Last steep index entered by user
-  const maxUserIndex = Math.max(...userIndices);
+  const maxUserIndex = userIndices.length > 0 ? Math.max(...userIndices) : -1;
 
   // Calculate cumulative time deviation across user steeps
   let userCumulativeSec = 0;
@@ -1131,6 +1463,8 @@ export function calculateAdaptiveCustomBrewing(
     chemicalCompensationType = 'over_extraction_relief';
   } else if (relativeDeviation < -0.15) {
     chemicalCompensationType = 'under_extraction_boost';
+  } else if (hasCustomRinse && userIndices.length === 0) {
+    chemicalCompensationType = 'rinse_compensation';
   }
 
   for (let i = 0; i < totalSteeps; i++) {
@@ -1157,7 +1491,16 @@ export function calculateAdaptiveCustomBrewing(
       // Adapted steep
       let adaptedSec = baseT;
 
-      if (chemicalCompensationType === 'over_extraction_relief') {
+      // Check if steep 1 needs rinse-specific compensation
+      if (i === 0 && hasCustomRinse && !isUserTime) {
+        if (rinseDeviation > 4) {
+          // Shorten steep 1 because pores are already wide open and theanine was slightly washed
+          adaptedSec = Math.max(3, Math.round(baseT * Math.max(0.65, 1 - (rinseDeviation * 0.03))));
+        } else if (rinseDeviation < -3 || (customRinseSec === 0 && refRinseSec > 0)) {
+          // Lengthen steep 1 slightly to wake up tightly rolled or compressed leaves
+          adaptedSec = Math.max(3, Math.round(baseT * 1.25));
+        }
+      } else if (chemicalCompensationType === 'over_extraction_relief') {
         if (i === maxUserIndex + 1) {
           // Immediate next steep: flash recovery steep to prevent bitter caffeine/tannin spike
           const reductionFactor = Math.max(0.55, 1 - Math.min(0.45, relativeDeviation * 0.45));
@@ -1182,13 +1525,13 @@ export function calculateAdaptiveCustomBrewing(
         steepNumber: i + 1,
         durationSec: adaptedSec,
         isCustomUserTime: false,
-        isAdaptedReference: true,
+        isAdaptedReference: (adaptedSec !== baseT),
         baselineSec: baseT,
         deviationSec: adaptedSec - baseT
       });
       customFlags.push({
         isCustomUserTime: false,
-        isAdaptedReference: true
+        isAdaptedReference: (adaptedSec !== baseT)
       });
     }
   }
@@ -1205,13 +1548,19 @@ export function calculateAdaptiveCustomBrewing(
     const nextSteepNum = maxUserIndex + 2;
     const nextSteepTime = combinedDurations[maxUserIndex + 1];
     summaryMessageRu = `Лист отдал экстрактивные вещества быстрее расчётного графика (+${Math.round(relativeDeviation * 100)}% к времени). Пролив #${nextSteepNum} скорректирован до ${nextSteepTime}с (короткий слив), чтобы не допустить грубой горечи.`;
+    if (hasCustomRinse) {
+      summaryMessageRu += ` (Учтена промывка ${customRinseSec}с).`;
+    }
     scientificDetailRu = `Выполненные вами проливы ${userSteepsListRu} форсировали диффузию свободных мономеров катехинов EGCG и кофеина. Алгоритм демпфирует следующий пролив для сглаживания танинов и продлевает финал чаепития (+TPS полисахариды).`;
   } else if (chemicalCompensationType === 'under_extraction_boost') {
     summaryMessageRu = `Ваши проливы были быстрее эталона. В чайном листе остался богатый резерв L-теанина и эфирных масел. Оставшиеся проливы продлены для полного раскрытия тела и вкуса.`;
     scientificDetailRu = `При коротких проливах (${userSteepsListRu}) степень насыщения диффузионного пограничного слоя осталась неполной. Продление оставшихся ${remainingSteepsCount} проливов оптимизирует суммарный выход экстракта (ISO 9768).`;
+  } else if (chemicalCompensationType === 'rinse_compensation') {
+    summaryMessageRu = `Перерасчёт графика проливов с учётом нестандартного времени промывки (${customRinseSec}с вместо ${refRinseSec}с). ${rinseImpactText}`;
+    scientificDetailRu = `Кинетическая модель гидродинамического проникновения (Fick's 2nd Law) адаптировала начальную пористость листа и начальный пул свободных аминокислот.`;
   } else {
     summaryMessageRu = `Ваш хронометраж проливов близок к расчётному эталону. Оставшиеся проливы сбалансированы для плавного угасания вкуса.`;
-    scientificDetailRu = `Фактическое время (${userSteepsListRu}) точно соответствует скорости диффузии Нойеса-Уитни для выбранного соотношения воды и листа.`;
+    scientificDetailRu = `Фактическое время (${userSteepsListRu || 'начало заваривания'}) точно соответствует скорости диффузии Нойеса-Уитни для выбранного соотношения воды и листа.`;
   }
 
   return {
@@ -1222,6 +1571,12 @@ export function calculateAdaptiveCustomBrewing(
     remainingSteepsCount,
     summaryMessageRu,
     scientificDetailRu,
-    chemicalCompensationType
+    chemicalCompensationType,
+    rinseStatus: hasCustomRinse ? {
+      customRinseSec: customRinseSec!,
+      refRinseSec,
+      deviationSec: rinseDeviation,
+      impactDescriptionRu: rinseImpactText
+    } : undefined
   };
 }

@@ -505,14 +505,14 @@ export const ResearchArticlesView: React.FC = () => {
             {/* 8 Vessel Material Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {/* Material 1: Porcelain */}
-              <div className="p-4 rounded-xl border-2 border-amber-600/80 bg-amber-50/20 space-y-2.5 flex flex-col justify-between shadow-2xs">
+              <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-2.5 flex flex-col justify-between shadow-2xs">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-amber-900 font-bold">
                       ΔT: -4.5°C • Пористость: 0%
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold">
-                      ★ Золотой стандарт аромата
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold">
+                      Золотой стандарт аромата
                     </span>
                   </div>
                   <h5 className="text-xs sm:text-sm font-bold text-stone-900">
@@ -522,20 +522,20 @@ export const ResearchArticlesView: React.FC = () => {
                     Стекловидная глазурь исключает поглощение эфирных масел. Передаёт 100% честный и чистый спектр ароматических веществ. Быстрая теплоотдача при открытой крышке защищает лист от запаривания.
                   </p>
                 </div>
-                <div className="text-[11px] bg-white p-2 rounded-lg border border-amber-200/80 text-amber-950">
-                  ✨ <strong>Идеально для:</strong> Зелёные, белые, светлые улуны (Тегуаньинь, Алишань), молодые Шэны, ГАБА.
+                <div className="text-[11px] bg-stone-50 p-2 rounded-lg border border-stone-200 text-stone-800">
+                  <strong>Идеально для:</strong> Зелёные, белые, светлые улуны (Тегуаньинь, Алишань), молодые Шэны, ГАБА.
                 </div>
               </div>
 
               {/* Material 2: Yixing Clay */}
-              <div className="p-4 rounded-xl border-2 border-orange-700/80 bg-orange-50/30 space-y-2.5 flex flex-col justify-between shadow-2xs">
+              <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-2.5 flex flex-col justify-between shadow-2xs">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-orange-900 font-bold">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-stone-700 font-bold">
                       ΔT: -2.0°C • Поры 1.5–3.5 мкм
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-950 font-bold">
-                      ★ Эталон для Пуэров
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-950 font-semibold">
+                      Эталон для Пуэров
                     </span>
                   </div>
                   <h5 className="text-xs sm:text-sm font-bold text-stone-900">
@@ -545,20 +545,20 @@ export const ResearchArticlesView: React.FC = () => {
                     Двойная пористая структура действует как естественный молекулярный фильтр: адсорбирует до 14% резких танинов и тяжелых смол, удерживая кипяток (95–99°C) и обогащая настой бархатистой округлостью.
                   </p>
                 </div>
-                <div className="text-[11px] bg-white p-2 rounded-lg border border-orange-200 text-orange-950">
-                  ✨ <strong>Идеально для:</strong> Шу Пуэры, выдержанные Шэны, утёсные улуны Уишани (Да Хун Пао), Даньцуны.
+                <div className="text-[11px] bg-stone-50 p-2 rounded-lg border border-stone-200 text-stone-800">
+                  <strong>Идеально для:</strong> Шу Пуэры, выдержанные Шэны, утёсные улуны Уишани (Да Хун Пао), Даньцуны.
                 </div>
               </div>
 
               {/* Material 3: Borosilicate Glass */}
-              <div className="p-4 rounded-xl border border-sky-200 bg-sky-50/30 space-y-2.5 flex flex-col justify-between">
+              <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-2.5 flex flex-col justify-between shadow-2xs">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-sky-800 font-bold">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-stone-600 font-bold">
                       ΔT: -6.5°C • Пористость: 0%
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-900 font-semibold">
-                      Визуальный контроль & отвод тепла
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 font-semibold">
+                      Визуальный контроль и отвод тепла
                     </span>
                   </div>
                   <h5 className="text-xs sm:text-sm font-bold text-stone-900">
@@ -568,19 +568,19 @@ export const ResearchArticlesView: React.FC = () => {
                     Максимальный отвод избыточного тепла. Предохраняет нежные почки и тонкие листочки от термического ожога. Позволяет любоваться вертикальным танцем чайных почек («Шан Тоу»).
                   </p>
                 </div>
-                <div className="text-[11px] bg-white p-2 rounded-lg border border-sky-200 text-sky-950">
-                  ✨ <strong>Идеально для:</strong> Лунцзин, Билочунь, Тайпин Хоукуй, связанные цветочные чаи, типоды.
+                <div className="text-[11px] bg-stone-50 p-2 rounded-lg border border-stone-200 text-stone-800">
+                  <strong>Идеально для:</strong> Лунцзин, Билочунь, Тайпин Хоукуй, связанные цветочные чаи, типоды.
                 </div>
               </div>
 
               {/* Material 4: Thick Clay */}
-              <div className="p-4 rounded-xl border border-stone-200 bg-stone-50/60 space-y-2.5 flex flex-col justify-between">
+              <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-2.5 flex flex-col justify-between shadow-2xs">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-stone-600 font-bold">
                       ΔT: -3.0°C • Высокая теплоёмкость
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-200 text-stone-700 font-semibold">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 font-semibold">
                       Мягкий глубокий прогрев
                     </span>
                   </div>
@@ -591,19 +591,19 @@ export const ResearchArticlesView: React.FC = () => {
                     Плотная железистая глина с ручной полировкой. Обеспечивает равномерный глубокий прогрев чайного листа без резких термических провалов, подчеркивая густоту и медовую текстуру.
                   </p>
                 </div>
-                <div className="text-[11px] bg-white p-2 rounded-lg border border-stone-200 text-stone-800">
-                  ✨ <strong>Идеально для:</strong> Красные чаи (Дяньхун, Сяочжун), тайваньские улуны глубокого прогрева (Дун Дин).
+                <div className="text-[11px] bg-stone-50 p-2 rounded-lg border border-stone-200 text-stone-800">
+                  <strong>Идеально для:</strong> Красные чаи (Дяньхун, Сяочжун), тайваньские улуны глубокого прогрева (Дун Дин).
                 </div>
               </div>
 
               {/* Material 5: Silver & Titanium */}
-              <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30 space-y-2.5 flex flex-col justify-between">
+              <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-2.5 flex flex-col justify-between shadow-2xs">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-purple-800 font-bold">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-stone-600 font-bold">
                       ΔT: -4.0°C • Ионы Ag⁺
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-semibold">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 font-semibold">
                       Олигодинамический эффект
                     </span>
                   </div>
@@ -614,19 +614,19 @@ export const ResearchArticlesView: React.FC = () => {
                     Ионы серебра Ag⁺ мягко снижают поверхностное натяжение воды, делая настой поразительно шелковистым и сладким на языке. Мгновенная теплопроводность ускоряет диффузию терпеноидов.
                   </p>
                 </div>
-                <div className="text-[11px] bg-white p-2 rounded-lg border border-purple-200 text-purple-950">
-                  ✨ <strong>Идеально для:</strong> Коллекционные белые чаи, высокогорные улуны, родниковая вода высокой чистоты.
+                <div className="text-[11px] bg-stone-50 p-2 rounded-lg border border-stone-200 text-stone-800">
+                  <strong>Идеально для:</strong> Коллекционные белые чаи, высокогорные улуны, родниковая вода высокой чистоты.
                 </div>
               </div>
 
               {/* Material 6: Cast Iron Tetsubin */}
-              <div className="p-4 rounded-xl border border-stone-300 bg-stone-100/70 space-y-2.5 flex flex-col justify-between">
+              <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-2.5 flex flex-col justify-between shadow-2xs">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-stone-700 font-bold">
                       ΔT: -1.2°C • Экстремальная инерция
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-300 text-stone-800 font-semibold">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-800 font-semibold">
                       Сверхдолгое удержание кипятка
                     </span>
                   </div>
@@ -637,19 +637,19 @@ export const ResearchArticlesView: React.FC = () => {
                     Огромная масса аккумулирует жар, поддерживая воду на уровне 98–99°C на протяжении всего процесса. Стимулирует полный гидролиз нерастворимых полисахаридов (TPS) в сладкие сахара.
                   </p>
                 </div>
-                <div className="text-[11px] bg-white p-2 rounded-lg border border-stone-300 text-stone-800">
-                  ✨ <strong>Идеально для:</strong> Кипячение воды, варка прессованного Хэй Ча (Фучжуань), старые Лао Шу Пуэры.
+                <div className="text-[11px] bg-stone-50 p-2 rounded-lg border border-stone-200 text-stone-800">
+                  <strong>Идеально для:</strong> Кипячение воды, варка прессованного Хэй Ча (Фучжуань), старые Лао Шу Пуэры.
                 </div>
               </div>
 
               {/* Material 7: Regular Mug Ceramic */}
-              <div className="p-4 rounded-xl border border-stone-200 bg-stone-50/50 space-y-2.5 flex flex-col justify-between">
+              <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-2.5 flex flex-col justify-between shadow-2xs">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-bold">
                       ΔT: -3.8°C • Бытовая глазурь
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-200 text-stone-700 font-medium">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 font-medium">
                       Повседневный универсал
                     </span>
                   </div>
@@ -660,20 +660,20 @@ export const ResearchArticlesView: React.FC = () => {
                     Толстостенная бытовая посуда со средней теплоёмкостью. Применяется для разового настаивания (1:50–1:100) на 3–5 минут в домашних или офисных условиях.
                   </p>
                 </div>
-                <div className="text-[11px] bg-white p-2 rounded-lg border border-stone-200 text-stone-700">
-                  ☕ <strong>Рецепт:</strong> 2–3 г сухого листа на 250–350 мл горячей воды (85–92°C), разовый слив.
+                <div className="text-[11px] bg-stone-50 p-2 rounded-lg border border-stone-200 text-stone-700">
+                  <strong>Рецепт:</strong> 2–3 г сухого листа на 250–350 мл горячей воды (85–92°C), разовый слив.
                 </div>
               </div>
 
               {/* Material 8: Isothermal Thermos */}
-              <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/40 space-y-2.5 flex flex-col justify-between md:col-span-2 lg:col-span-2">
+              <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-2.5 flex flex-col justify-between md:col-span-2 lg:col-span-2 shadow-2xs">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-800 font-bold">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-stone-700 font-bold">
                       ΔT &lt; 0.5°C / час • Вакуумная изоляция
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold">
-                      ★ Метод длительного томления
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold">
+                      Метод длительного томления
                     </span>
                   </div>
                   <h5 className="text-xs sm:text-sm font-bold text-stone-900">
@@ -683,8 +683,8 @@ export const ResearchArticlesView: React.FC = () => {
                     Длительное поддержание температуры 85–95°C в бескислородной среде запускает глубокий ферментативно-термический гидролиз: горькие танины деградируют, а связанные полисахариды превращаются в густой, сладкий, обволакивающий напиток с ароматом сушёного финика и мёда.
                   </p>
                 </div>
-                <div className="text-[11px] bg-white p-2 rounded-lg border border-emerald-300 text-emerald-950">
-                  ✨ <strong>Идеально для:</strong> Выдержанный белый чай Лао Байча (Шоу Мэй от 3 лет), Хэй Ча, кирпичный Шу Пуэр (пропорция 1 г на 150–200 мл, 2–4 часа).
+                <div className="text-[11px] bg-stone-50 p-2 rounded-lg border border-stone-200 text-stone-900">
+                  <strong>Идеально для:</strong> Выдержанный белый чай Лао Байча (Шоу Мэй от 3 лет), Хэй Ча, кирпичный Шу Пуэр (пропорция 1 г на 150–200 мл, 2–4 часа).
                 </div>
               </div>
             </div>

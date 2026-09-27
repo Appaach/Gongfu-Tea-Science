@@ -1,18 +1,30 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, useEffect, memo } from 'react';
 import { 
   TEA_VARIETIES, 
   GENERIC_TEA_ARCHETYPES, 
-  ALL_TEA_OPTIONS, 
+  ALL_TEA_OPTIONS,
+  ALL_TEA_MAP, 
   WATER_HARDNESS_PRESETS,
   VESSEL_MATERIALS,
-  OPTIMIZATION_PRESETS
+  OPTIMIZATION_PRESETS,
+  BREWING_METHODS_DATA,
+  TEA_EFFECT_DEFINITIONS,
+  getTeaEffect,
+  getTeaRinseInfo,
+  TeaEffectDefinition,
+  TeaRinseInfo
 } from '../data/teaData';
 import { 
   simulateGongfuExtraction, 
   optimizeBrewingParametersMulti,
   calculateAdaptiveCustomBrewing
 } from '../utils/extractionKinetics';
-import { matchTeaSearch } from '../utils/teaSearch';
+import { 
+  matchTeaSearch, 
+  matchTeaBySensory, 
+  POPULAR_SENSORY_GROUPS,
+  cleanTeaChars 
+} from '../utils/teaSearch';
 
 interface SteepBubbleCardProps {
   idx: number;
@@ -22,12 +34,18 @@ interface SteepBubbleCardProps {
   statusObj?: { deviationSec: number; isAdaptedReference?: boolean };
   userVal: number | null;
   effectiveSec: number;
-  isCustomTimingMode: boolean;
+  isEditing: boolean;
+  isManualModeActive: boolean;
+  brewingMethod?: BrewingMethod;
+  rootFraction?: number;
+  waterVolume?: number;
   onSelect: (idx: number) => void;
-  onSetCustomTime: (idx: number, timeSec: number | null) => void;
+  onDoubleClick: (idx: number) => void;
+  onSaveTime: (idx: number, val: number | null) => void;
+  onCancelEdit: () => void;
 }
 
-// Unified, memoized steep bubble card for both Standard and Custom timing modes
+// Unified, memoized steep bubble card with double-click inline editing and clean indicators
 const SteepBubbleCard = memo(function SteepBubbleCard({
   idx,
   steepNum,
@@ -36,166 +54,188 @@ const SteepBubbleCard = memo(function SteepBubbleCard({
   statusObj,
   userVal,
   effectiveSec,
-  isCustomTimingMode,
+  isEditing,
+  isManualModeActive,
+  brewingMethod = 'gongfu',
+  rootFraction = 0.33,
+  waterVolume = 100,
   onSelect,
-  onSetCustomTime,
+  onDoubleClick,
+  onSaveTime,
+  onCancelEdit,
 }: SteepBubbleCardProps) {
   const isCustom = userVal !== null && userVal !== undefined && userVal > 0;
   const isAdapted = !isCustom && Boolean(statusObj?.isAdaptedReference);
+  const isLiuGen = brewingMethod === 'liu_gen';
+  const isGrandpaCup = brewingMethod === 'grandpa_cup';
+  const refillMl = Math.round(waterVolume * (isGrandpaCup ? 0.67 : (1 - rootFraction)));
 
-  // Local typing draft state so input changes never cause full-app re-renders
-  const [localDraft, setLocalDraft] = useState<string | null>(null);
-
-  const displayVal = localDraft !== null
-    ? localDraft
-    : (isCustom ? String(userVal) : String(effectiveSec));
-
-  return (
-    <div
-      onClick={() => onSelect(idx)}
-      className={`group relative rounded-xl border p-2 flex flex-col justify-between transition-all cursor-pointer select-none shadow-2xs ${
-        isSelected
-          ? 'ring-2 ring-amber-800 border-amber-800 bg-amber-50/40 shadow-xs'
-          : ''
-      } ${
-        isCustom
-          ? 'bg-amber-100/80 border-amber-400/80 text-amber-950'
-          : isAdapted
-          ? 'bg-amber-50/80 border-amber-300 text-amber-900 hover:bg-amber-50'
-          : 'bg-white border-stone-200 hover:border-amber-300 hover:bg-amber-50/20 text-stone-800'
-      }`}
-    >
-      {/* Top: Steep Number & Status Badge */}
-      <div className="flex items-center justify-between gap-1">
-        <span className={`text-[11px] font-bold font-mono ${
-          isSelected ? 'text-amber-950 font-black' : isCustom ? 'text-amber-950' : isAdapted ? 'text-amber-900' : 'text-stone-700'
-        }`}>
-          #{steepNum}
-        </span>
-
-        {isCustomTimingMode ? (
-          isCustom ? (
-            <div className="flex items-center space-x-1">
-              <span className="text-[9px] uppercase tracking-wider font-bold bg-amber-800 text-amber-50 px-1 py-0.2 rounded leading-none">
-                факт
-              </span>
-              <button
-                type="button"
-                title="Стереть и вернуть эталон"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLocalDraft(null);
-                  onSetCustomTime(idx, null);
-                }}
-                className="w-3.5 h-3.5 rounded-full bg-amber-200/90 hover:bg-amber-300 text-amber-900 text-[9px] font-bold flex items-center justify-center transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-          ) : isAdapted ? (
-            <span className="text-[9px] uppercase tracking-wider font-bold bg-amber-200/90 text-amber-900 border border-amber-300/80 px-1 py-0.2 rounded leading-none">
-              адапт
-            </span>
-          ) : (
-            <span className="text-[9px] text-stone-400 font-medium px-0.5 leading-none">
-              эталон
-            </span>
-          )
-        ) : (
-          <span className="text-[9px] text-stone-400 font-medium px-0.5 leading-none">
-            эталон
-          </span>
-        )}
-      </div>
-
-      {/* Center: Exposure time or Interactive Input */}
-      <div 
-        className="my-1 flex items-center justify-center space-x-1"
-        onClick={(e) => isCustomTimingMode && e.stopPropagation()}
+  if (isEditing) {
+    return (
+      <div
+        className="group relative min-h-[92px] rounded-xl border p-2 flex flex-col justify-between text-left transition-all shadow-xs ring-2 ring-amber-800 border-amber-800 bg-amber-50/95"
+        onClick={(e) => e.stopPropagation()}
       >
-        {isCustomTimingMode ? (
+        <div className="flex items-center justify-between gap-1 w-full">
+          <span className="text-[11px] font-bold font-mono text-amber-950 font-black">
+            {isGrandpaCup ? (steepNum === 1 ? '#1 НАСТОЙ' : `#${steepNum} ДОЛИВ`) : `#${steepNum}`}
+          </span>
+          <span className="text-[9px] uppercase tracking-wider font-bold bg-amber-800 text-amber-50 px-1 py-0.2 rounded leading-none">
+            ввод
+          </span>
+        </div>
+
+        <div className="my-0.5 flex items-center justify-center space-x-1 w-full">
           <input
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            value={displayVal}
-            placeholder={String(baselineSec)}
-            onFocus={() => {
-              onSelect(idx);
-              if (localDraft === null) {
-                setLocalDraft(isCustom ? String(userVal) : String(effectiveSec));
-              }
-            }}
-            onChange={(e) => {
-              const filtered = e.target.value.replace(/\D/g, '');
-              setLocalDraft(filtered);
-            }}
-            onBlur={() => {
-              if (localDraft !== null) {
-                const clean = localDraft.trim();
-                if (clean === '' || Number(clean) <= 0 || isNaN(Number(clean))) {
-                  onSetCustomTime(idx, null);
-                } else {
-                  const valNum = Math.min(600, Math.max(1, parseInt(clean, 10)));
-                  onSetCustomTime(idx, valNum);
-                }
-                setLocalDraft(null);
-              }
-            }}
+            autoFocus
+            defaultValue={userVal ?? effectiveSec}
+            onFocus={(e) => e.target.select()}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                (e.target as HTMLInputElement).blur();
+                const raw = (e.target as HTMLInputElement).value.trim();
+                const parsed = parseInt(raw.replace(/\D/g, ''), 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                  onSaveTime(idx, Math.min(300, parsed));
+                } else if (raw === '') {
+                  onSaveTime(idx, null);
+                }
+                onCancelEdit();
               } else if (e.key === 'Escape') {
-                setLocalDraft(null);
+                onCancelEdit();
               }
             }}
-            className={`w-11 text-center font-mono font-bold text-sm py-0.5 px-0.5 rounded-md border focus:outline-hidden transition-all ${
-              isCustom
-                ? 'bg-white border-amber-400 text-amber-950 focus:ring-2 focus:ring-amber-500/40 shadow-2xs'
-                : isAdapted
-                ? 'bg-white border-amber-300 text-amber-900 focus:ring-2 focus:ring-amber-400/40'
-                : 'bg-stone-50 border-stone-200 text-stone-800 focus:bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-500/30'
-            } [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+            onBlur={(e) => {
+              const raw = e.target.value.trim();
+              const parsed = parseInt(raw.replace(/\D/g, ''), 10);
+              if (!isNaN(parsed) && parsed > 0) {
+                onSaveTime(idx, Math.min(300, parsed));
+              } else if (raw === '') {
+                onSaveTime(idx, null);
+              }
+              onCancelEdit();
+            }}
+            className="w-12 text-center font-mono font-bold text-sm py-0.5 px-1 bg-white border border-amber-500 rounded-md text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-800 shadow-xs"
           />
-        ) : (
-          <span className={`text-sm font-mono font-bold ${
-            isSelected ? 'text-amber-950 font-black' : 'text-stone-800'
-          }`}>
-            {effectiveSec}
+          <span className="text-xs font-mono font-bold text-amber-900/60">
+            с
           </span>
-        )}
-        <span className="text-xs font-mono font-bold text-amber-900/60 select-none">
+        </div>
+
+        <div className="pt-0.5 border-t border-amber-200/80 text-center flex items-center justify-center leading-none text-[8.5px] text-amber-900 font-semibold w-full">
+          Enter — готово
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(idx)}
+      onDoubleClick={(e) => {
+        e.preventDefault();
+        if (isManualModeActive) {
+          onDoubleClick(idx);
+        }
+      }}
+      title={isManualModeActive ? "Двойной клик для ввода своего времени" : undefined}
+      className={`group relative min-h-[92px] rounded-xl border p-2.5 flex flex-col justify-between text-left transition-all cursor-pointer select-none shadow-2xs ${
+        isSelected
+          ? 'ring-2 ring-amber-800 border-amber-800 bg-amber-50/90 shadow-xs'
+          : isCustom
+          ? 'bg-amber-50 border-amber-300 text-amber-950 hover:border-amber-400'
+          : isAdapted
+          ? 'bg-amber-50/50 border-amber-200 text-amber-900 hover:bg-amber-50'
+          : 'bg-white border-stone-200 hover:border-amber-300 hover:bg-stone-50 text-stone-800'
+      }`}
+    >
+      {/* Top: Steep Number & Status Badge */}
+      <div className="flex items-center justify-between gap-1 w-full">
+        <span className={`text-[11px] font-bold font-mono ${
+          isSelected ? 'text-amber-950 font-black' : isCustom ? 'text-amber-950' : isAdapted ? 'text-amber-900' : 'text-stone-700'
+        }`}>
+          {isGrandpaCup ? (steepNum === 1 ? '#1 НАСТОЙ' : `#${steepNum} ДОЛИВ`) : `#${steepNum}`}
+        </span>
+
+        {isCustom ? (
+          <span className="text-[9px] uppercase tracking-wider font-bold bg-amber-800 text-amber-50 px-1 py-0.2 rounded leading-none">
+            факт
+          </span>
+        ) : isAdapted ? (
+          <span className="text-[9px] uppercase tracking-wider font-bold bg-amber-100 text-amber-900 border border-amber-200 px-1 py-0.2 rounded leading-none">
+            адапт
+          </span>
+        ) : isGrandpaCup && steepNum === 1 ? (
+          <span className="text-[8.5px] font-bold bg-amber-100 text-amber-900 px-1 py-0.2 rounded leading-none">
+            стакан
+          </span>
+        ) : isGrandpaCup ? (
+          <span className="text-[8.5px] font-mono font-medium text-amber-800 bg-amber-100/70 px-1 py-0.2 rounded leading-none">
+            +{refillMl}мл
+          </span>
+        ) : isLiuGen && steepNum === 1 ? (
+          <span className="text-[8.5px] font-bold bg-emerald-100 text-emerald-900 px-1 py-0.2 rounded leading-none">
+            корень
+          </span>
+        ) : isLiuGen ? (
+          <span className="text-[8.5px] font-mono font-medium text-amber-800 bg-amber-100/70 px-1 py-0.2 rounded leading-none">
+            +{refillMl}мл
+          </span>
+        ) : null}
+      </div>
+
+      {/* Center: Exposure time */}
+      <div className="my-1 flex items-center justify-center space-x-1 w-full">
+        <span className={`text-sm font-mono font-bold ${
+          isSelected ? 'text-amber-950 font-black' : isCustom ? 'text-amber-950' : isAdapted ? 'text-amber-900' : 'text-stone-800'
+        }`}>
+          {effectiveSec}
+        </span>
+        <span className="text-xs font-mono font-bold text-amber-900/60">
           с
         </span>
       </div>
 
-      {/* Bottom: Benchmark comparison if custom/adapted, or uniform spacing */}
-      {isCustomTimingMode && (isCustom || isAdapted) ? (
-        <div className="pt-0.5 border-t border-amber-200/50 text-center flex items-center justify-center gap-1 leading-none">
+      {/* Bottom: Benchmark comparison if custom/adapted without duplicate labels */}
+      {isCustom || isAdapted ? (
+        <div className="pt-0.5 border-t border-stone-200/80 text-center flex items-center justify-center gap-1 leading-none w-full">
           <span className="text-[9.5px] text-stone-400">
             эт: <strong className="font-mono text-stone-600 font-medium">{baselineSec}с</strong>
           </span>
           {isCustom && statusObj && statusObj.deviationSec !== 0 && (
             <span className={`text-[9px] font-mono font-bold ${
-              statusObj.deviationSec > 0 ? 'text-amber-800' : 'text-amber-700'
+              statusObj.deviationSec > 0 ? 'text-amber-800' : 'text-stone-600'
             }`}>
               {statusObj.deviationSec > 0 ? `+${statusObj.deviationSec}` : `${statusObj.deviationSec}`}
             </span>
           )}
           {isAdapted && statusObj && statusObj.deviationSec !== 0 && (
             <span className={`text-[9px] font-mono font-bold ${
-              statusObj.deviationSec > 0 ? 'text-amber-700' : 'text-amber-600'
+              statusObj.deviationSec > 0 ? 'text-amber-700' : 'text-emerald-700'
             }`}>
               {statusObj.deviationSec > 0 ? `+${statusObj.deviationSec}` : `${statusObj.deviationSec}`}
             </span>
           )}
         </div>
-      ) : (
-        <div className="pt-0.5 text-center flex items-center justify-center leading-none opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-[9px] text-stone-400 font-medium">пролив</span>
+      ) : isGrandpaCup ? (
+        <div className="pt-0.5 border-t border-stone-100 text-center flex items-center justify-center leading-none w-full">
+          <span className="text-[8.5px] font-mono text-stone-500">
+            {steepNum === 1 ? '1-й залив' : '2/3 долив'}
+          </span>
         </div>
+      ) : isLiuGen ? (
+        <div className="pt-0.5 border-t border-stone-100 text-center flex items-center justify-center leading-none w-full">
+          <span className="text-[8.5px] font-mono text-stone-500">
+            {steepNum === 1 ? '100% залив' : '1/3 буфер'}
+          </span>
+        </div>
+      ) : (
+        <div className="pt-0.5 min-h-[14px]" />
       )}
-    </div>
+    </button>
   );
 });
 import { 
@@ -203,7 +243,10 @@ import {
   TeaCategoryGroup, 
   WaterHardnessLevel, 
   VesselMaterialType, 
-  OptimizationGoal 
+  OptimizationGoal,
+  TeaEffectCategory,
+  BrewingMethod,
+  InitialTastingSessionData
 } from '../types';
 import { 
   Flame, 
@@ -231,58 +274,204 @@ import {
   Search,
   X,
   Lightbulb,
-  CheckCircle
+  CheckCircle,
+  ArrowRight,
+  Star,
+  FlaskConical,
+  Printer,
+  Bookmark,
+  Scale as ScaleIcon
 } from 'lucide-react';
+import { TeaBlendStudio } from './TeaBlendStudio';
+import { TeaCheatSheetModal } from './TeaCheatSheetModal';
 
-export const ExtractionSimulator: React.FC = () => {
-  // Tea Category Tab: 'generic' (archetypes) first, then 'specific' (popular teas)
-  const [activeCategoryTab, setActiveCategoryTab] = useState<TeaCategoryGroup>('generic');
-  const [selectedTeaId, setSelectedTeaId] = useState<string>('generic_oolong_ball');
+export interface ExtractionSimulatorProps {
+  initialSelectedTea?: TeaVariety | null;
+  onOpenComparison?: (tea: TeaVariety) => void;
+  onOpenJournal?: (sessionData: InitialTastingSessionData | TeaVariety) => void;
+}
 
-  // Search and Filter State
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
+export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
+  initialSelectedTea,
+  onOpenComparison,
+  onOpenJournal
+}) => {
+  // Tea Category Tab: 'generic' (archetypes) first, 'specific' (popular teas) second, 'flavor' (search by flavor notes) third
+  const [activeCategoryTab, setActiveCategoryTab] = useState<TeaCategoryGroup>(
+    initialSelectedTea?.categoryGroup === 'generic' ? 'generic' : initialSelectedTea ? 'specific' : 'generic'
+  );
+  const [selectedTeaId, setSelectedTeaId] = useState<string>(initialSelectedTea?.id || 'generic_green');
 
-  // Find active tea from the comprehensive list
+  // Cheat Sheet Modal state
+  const [isCheatSheetOpen, setIsCheatSheetOpen] = useState<boolean>(false);
+
+  // Favorites state with localStorage persistence
+  const FAVORITES_STORAGE_KEY = 'gongfu_tea_favorite_ids_v2';
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(FAVORITES_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return [];
+  });
+
+  const toggleFavorite = (teaId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setFavoriteIds((prev) => {
+      const next = prev.includes(teaId) ? prev.filter((id) => id !== teaId) : [...prev, teaId];
+      try {
+        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const [favoritesSearchQuery, setFavoritesSearchQuery] = useState<string>('');
+  const [favoritesTypeFilter, setFavoritesTypeFilter] = useState<string>('all');
+
+  // Custom synthesized tea blend state (from TeaBlendStudio)
+  const [customBlendTea, setCustomBlendTea] = useState<TeaVariety | null>(null);
+
+  // Search and Filter State: strictly isolated by tab
+  // 1. Popular Teas search & category filter + integrated sensory flavor search
+  const [popularSearchQuery, setPopularSearchQuery] = useState<string>('');
+  const [popularTypeFilter, setPopularTypeFilter] = useState<string>('all');
+  const [showFlavorInPopular, setShowFlavorInPopular] = useState<boolean>(false);
+
+  // Flavor Search within Popular Teas (Sensory notes & bouquet)
+  const [flavorSearchQuery, setFlavorSearchQuery] = useState<string>('');
+  const [selectedFlavorGroupId, setSelectedFlavorGroupId] = useState<string | null>(null);
+  const [selectedFlavorTag, setSelectedFlavorTag] = useState<string | null>(null);
+
+  // 3. Biochemical Effect Filter (shared/global)
+  const [selectedEffectFilter, setSelectedEffectFilter] = useState<TeaEffectCategory | 'all'>('all');
+
+  // Find active tea from the comprehensive list in O(1) time
   const selectedTea = useMemo(() => {
-    return ALL_TEA_OPTIONS.find((t) => t.id === selectedTeaId) || GENERIC_TEA_ARCHETYPES[0];
-  }, [selectedTeaId]);
+    if (customBlendTea && selectedTeaId === customBlendTea.id) {
+      return customBlendTea;
+    }
+    return ALL_TEA_MAP.get(selectedTeaId) || ALL_TEA_OPTIONS[0];
+  }, [selectedTeaId, customBlendTea]);
+
+  // Fast rendering limits for 500+ tea varieties database (prevents frame drops and ensures 60 FPS)
+  const [popularDisplayLimit, setPopularDisplayLimit] = useState<number>(40);
 
   // Key Environmental Parameters (Water Hardness & Vessel Material)
   const [waterHardness, setWaterHardness] = useState<WaterHardnessLevel>('optimal');
   const [vesselMaterial, setVesselMaterial] = useState<VesselMaterialType>('porcelain');
   const [isVesselDropdownOpen, setIsVesselDropdownOpen] = useState(false);
   const [isGoalDropdownOpen, setIsGoalDropdownOpen] = useState(false);
+  const [isEffectDropdownOpen, setIsEffectDropdownOpen] = useState(false);
+  const [customRinseTime, setCustomRinseTime] = useState<number | null>(null);
 
-  // Filtered generic archetypes based on search query and category filter
+  // Filtered generic archetypes:
+  // Strictly isolated: NOT affected by popular teas' name search or type filters!
+  // Displays the full set of 18 archetypes (filtered only if a specific biochemical effect is chosen).
   const filteredGenericTeas = useMemo(() => {
     return GENERIC_TEA_ARCHETYPES.filter((tea) => {
-      if (selectedTypeFilter !== 'all') {
-        if (selectedTypeFilter === 'oolong' && !tea.type.includes('oolong')) return false;
-        else if (selectedTypeFilter === 'gaba' && !tea.type.startsWith('gaba')) return false;
-        else if (selectedTypeFilter === 'puerh' && !tea.type.includes('puerh')) return false;
-        else if (selectedTypeFilter !== 'oolong' && selectedTypeFilter !== 'gaba' && selectedTypeFilter !== 'puerh' && tea.type !== selectedTypeFilter) {
-          return false;
-        }
+      if (selectedEffectFilter !== 'all') {
+        const eff = getTeaEffect(tea);
+        if (eff.id !== selectedEffectFilter) return false;
       }
-      return matchTeaSearch(tea, searchQuery);
+      return true;
     });
-  }, [searchQuery, selectedTypeFilter]);
+  }, [selectedEffectFilter]);
 
-  // Filtered popular teas based on search query and category filter
+  // Filtered popular teas: seamlessly combines name search, type filter, effect filter AND flavor bouquet notes!
   const filteredPopularTeas = useMemo(() => {
-    return TEA_VARIETIES.filter((tea) => {
-      if (selectedTypeFilter !== 'all') {
-        if (selectedTypeFilter === 'oolong' && !tea.type.includes('oolong')) return false;
-        else if (selectedTypeFilter === 'gaba' && !tea.type.startsWith('gaba')) return false;
-        else if (selectedTypeFilter === 'puerh' && !tea.type.includes('puerh')) return false;
-        else if (selectedTypeFilter !== 'oolong' && selectedTypeFilter !== 'gaba' && selectedTypeFilter !== 'puerh' && tea.type !== selectedTypeFilter) {
-          return false;
+    const activeSensoryQuery = (selectedFlavorTag || flavorSearchQuery || '').trim();
+
+    return TEA_VARIETIES.map((tea) => {
+      if (popularTypeFilter !== 'all') {
+        if (popularTypeFilter === 'oolong' && !tea.type.includes('oolong')) return null;
+        else if (popularTypeFilter === 'gaba' && !tea.type.startsWith('gaba')) return null;
+        else if (popularTypeFilter === 'puerh' && !tea.type.includes('puerh') && tea.type !== 'heicha') return null;
+        else if (popularTypeFilter !== 'oolong' && popularTypeFilter !== 'gaba' && popularTypeFilter !== 'puerh' && tea.type !== popularTypeFilter) {
+          return null;
         }
       }
-      return matchTeaSearch(tea, searchQuery);
-    });
-  }, [searchQuery, selectedTypeFilter]);
+      if (selectedEffectFilter !== 'all') {
+        const eff = getTeaEffect(tea);
+        if (eff.id !== selectedEffectFilter) return null;
+      }
+      if (selectedFlavorGroupId) {
+        const grp = POPULAR_SENSORY_GROUPS.find((g) => g.id === selectedFlavorGroupId);
+        if (grp) {
+          const notes = tea.keySensoryNotes || [];
+          const matchesGroup = grp.popularTags.some((tag) => {
+            const cleanTag = cleanTeaChars(tag);
+            return notes.some((n) => cleanTeaChars(n).includes(cleanTag));
+          });
+          if (!matchesGroup) return null;
+        }
+      }
+      let matchedNotes: string[] = tea.keySensoryNotes || [];
+      if (activeSensoryQuery) {
+        const { matches, matchedNotes: sensoryMatches } = matchTeaBySensory(tea, activeSensoryQuery);
+        if (!matches) return null;
+        matchedNotes = sensoryMatches;
+      }
+      if (popularSearchQuery.trim()) {
+        if (!matchTeaSearch(tea, popularSearchQuery)) return null;
+      }
+      return { tea, matchedNotes };
+    }).filter((item): item is { tea: TeaVariety; matchedNotes: string[] } => item !== null);
+  }, [popularSearchQuery, popularTypeFilter, selectedEffectFilter, selectedFlavorGroupId, selectedFlavorTag, flavorSearchQuery]);
+
+  // Filtered favorites
+  const filteredFavoriteTeas = useMemo(() => {
+    return favoriteIds
+      .map((id) => {
+        if (customBlendTea && id === customBlendTea.id) return customBlendTea;
+        return ALL_TEA_MAP.get(id);
+      })
+      .filter((tea): tea is TeaVariety => {
+        if (!tea) return false;
+        if (favoritesTypeFilter !== 'all') {
+          if (favoritesTypeFilter === 'oolong' && !tea.type.includes('oolong')) return false;
+          else if (favoritesTypeFilter === 'gaba' && !tea.type.startsWith('gaba')) return false;
+          else if (favoritesTypeFilter === 'puerh' && !tea.type.includes('puerh') && tea.type !== 'heicha') return false;
+          else if (favoritesTypeFilter !== 'oolong' && favoritesTypeFilter !== 'gaba' && favoritesTypeFilter !== 'puerh' && tea.type !== favoritesTypeFilter) {
+            return false;
+          }
+        }
+        if (selectedEffectFilter !== 'all') {
+          const eff = getTeaEffect(tea);
+          if (eff.id !== selectedEffectFilter) return false;
+        }
+        return matchTeaSearch(tea, favoritesSearchQuery);
+      });
+  }, [favoriteIds, customBlendTea, favoritesSearchQuery, favoritesTypeFilter, selectedEffectFilter]);
+
+  // Progressive rendering slices:
+  // When active text search or flavor query is typed, show all matching results immediately.
+  // When browsing all 483+ teas, show smooth chunked rendering to prevent DOM bloat.
+  const visiblePopularTeas = useMemo(() => {
+    if (popularSearchQuery.trim() || flavorSearchQuery.trim() || selectedFlavorTag) {
+      return filteredPopularTeas;
+    }
+    return filteredPopularTeas.slice(0, popularDisplayLimit);
+  }, [filteredPopularTeas, popularSearchQuery, flavorSearchQuery, selectedFlavorTag, popularDisplayLimit]);
+
+  // If a tea is selected that is beyond the current limit, automatically expand to ensure visibility
+  useEffect(() => {
+    if (activeCategoryTab === 'specific') {
+      const idx = filteredPopularTeas.findIndex(({ tea }) => tea.id === selectedTeaId);
+      if (idx >= popularDisplayLimit) {
+        setPopularDisplayLimit(Math.ceil((idx + 1) / 40) * 40);
+      }
+    }
+  }, [selectedTeaId, activeCategoryTab, filteredPopularTeas, popularDisplayLimit]);
 
   // Unified Multi-Parameter Optimizer State (Single source of truth)
   const [fixVolume, setFixVolume] = useState<boolean>(true);
@@ -310,16 +499,22 @@ export const ExtractionSimulator: React.FC = () => {
   const handleTeaChange = (tea: TeaVariety) => {
     setSelectedTeaId(tea.id);
     setSelectedSteepIndex(0);
+    setCustomRinseTime(null);
 
     setRawVolumeStr(null);
     setRawMassStr(null);
     setRawTempStr(null);
     setRawSteepsStr(null);
 
-    if (!fixVolume) setFixedVolumeVal(tea.defaultVolume);
-    if (!fixMass) setFixedMassVal(tea.defaultMass);
-    if (!fixTemp) setFixedTempVal(tea.optimalTemp);
-    if (!fixSteeps) setFixedSteepsVal(tea.recommendedSteeps || 8);
+    // If active goal was oil_tar but current tea does not support it, reset to balanced
+    if (optimizationGoal === 'oil_tar' && tea.type !== 'shou_puerh' && tea.type !== 'sheng_puerh' && tea.type !== 'heicha') {
+      setOptimizationGoal('balanced');
+    }
+
+    if (!fixVolume || tea.categoryGroup === 'blend') setFixedVolumeVal(tea.defaultVolume);
+    if (!fixMass || tea.categoryGroup === 'blend') setFixedMassVal(tea.defaultMass);
+    if (!fixTemp || tea.categoryGroup === 'blend') setFixedTempVal(tea.optimalTemp);
+    if (!fixSteeps || tea.categoryGroup === 'blend') setFixedSteepsVal(tea.recommendedSteeps || 8);
   };
 
   const handleCategoryTabChange = (tab: TeaCategoryGroup) => {
@@ -327,9 +522,46 @@ export const ExtractionSimulator: React.FC = () => {
     if (tab === 'generic') {
       handleTeaChange(GENERIC_TEA_ARCHETYPES[0]);
     } else if (tab === 'specific') {
-      handleTeaChange(TEA_VARIETIES[0]);
+      if (!TEA_VARIETIES.some((t) => t.id === selectedTeaId) && (!customBlendTea || selectedTeaId !== customBlendTea.id)) {
+        handleTeaChange(TEA_VARIETIES[0]);
+      }
+    } else if (tab === 'favorites') {
+      if (favoriteIds.length > 0 && !favoriteIds.includes(selectedTeaId)) {
+        const favTea = (customBlendTea && favoriteIds[0] === customBlendTea.id) 
+          ? customBlendTea 
+          : ALL_TEA_MAP.get(favoriteIds[0]);
+        if (favTea) handleTeaChange(favTea);
+      }
     }
   };
+
+  const handleApplyBlend = (compositeTea: TeaVariety) => {
+    setCustomBlendTea(compositeTea);
+    setSelectedTeaId(compositeTea.id);
+    setSelectedSteepIndex(0);
+    setCustomRinseTime(null);
+    setRawVolumeStr(null);
+    setRawMassStr(null);
+    setRawTempStr(null);
+    setRawSteepsStr(null);
+
+    // Forcefully sync optimizer parameters to blend's exact calculations
+    setFixVolume(true);
+    setFixedVolumeVal(compositeTea.defaultVolume);
+    setFixMass(true);
+    setFixedMassVal(compositeTea.defaultMass);
+    setFixTemp(true);
+    setFixedTempVal(compositeTea.optimalTemp);
+    setFixSteeps(false);
+    setFixedSteepsVal(compositeTea.recommendedSteeps || 8);
+
+    // Switch to generic tab to view the active brewing simulation
+    setActiveCategoryTab('generic');
+  };
+
+  // Brewing Method State: 'gongfu' (Полный слив) or 'liu_gen' (Оставление корня)
+  const [brewingMethod, setBrewingMethod] = useState<BrewingMethod>('gongfu');
+  const [rootFraction, setRootFraction] = useState<number>(0.333);
 
   const resetToOptimized = () => {
     setFixVolume(true);
@@ -348,6 +580,9 @@ export const ExtractionSimulator: React.FC = () => {
     setWaterHardness('optimal');
     setVesselMaterial('porcelain');
     setSelectedSteepIndex(0);
+    setCustomRinseTime(null);
+    setBrewingMethod('gongfu');
+    setRootFraction(0.333);
   };
 
   // Dynamic Multi-Parameter Optimization (Single unified solver)
@@ -395,15 +630,15 @@ export const ExtractionSimulator: React.FC = () => {
   // Dynamic adaptive steep durations computed in real-time by kinetics model (always active)
   const computedAdaptiveDurations = activeOptimization.recommendedDurations;
 
-  // Custom Steeps Timing Mode ("Своё время") State
-  const [isCustomTimingMode, setIsCustomTimingMode] = useState<boolean>(false);
+  // Custom Steeps Timing Mode ("Своё время") State - double click edit mode toggle
+  const [isManualTimeEditMode, setIsManualTimeEditMode] = useState<boolean>(false);
+  const [editingSteepIndex, setEditingSteepIndex] = useState<number | null>(null);
   const [customSteepTimes, setCustomSteepTimes] = useState<(number | null)[]>([]);
   // Local keyboard typing drafts for direct in-bubble editing
   const [steepDrafts, setSteepDrafts] = useState<{ [steepIndex: number]: string }>({});
 
   // Adaptive Recalculation Engine for User-defined Steeps
   const adaptiveCustomBrewing = useMemo(() => {
-    if (!isCustomTimingMode) return null;
     return calculateAdaptiveCustomBrewing(
       selectedTea,
       steepsCount,
@@ -412,10 +647,12 @@ export const ExtractionSimulator: React.FC = () => {
       waterVolume,
       waterHardness,
       optimizationGoal,
-      customSteepTimes
+      customSteepTimes,
+      brewingMethod,
+      rootFraction,
+      customRinseTime
     );
   }, [
-    isCustomTimingMode,
     selectedTea,
     steepsCount,
     waterTemp,
@@ -423,23 +660,26 @@ export const ExtractionSimulator: React.FC = () => {
     waterVolume,
     waterHardness,
     optimizationGoal,
-    customSteepTimes
+    customSteepTimes,
+    brewingMethod,
+    rootFraction,
+    customRinseTime
   ]);
 
   // Effective durations and flags feeding into the chemical simulation
   const effectiveDurations = useMemo(() => {
-    if (isCustomTimingMode && adaptiveCustomBrewing) {
+    if (adaptiveCustomBrewing) {
       return adaptiveCustomBrewing.combinedDurations;
     }
     return computedAdaptiveDurations;
-  }, [isCustomTimingMode, adaptiveCustomBrewing, computedAdaptiveDurations]);
+  }, [adaptiveCustomBrewing, computedAdaptiveDurations]);
 
   const effectiveCustomFlags = useMemo(() => {
-    if (isCustomTimingMode && adaptiveCustomBrewing) {
+    if (adaptiveCustomBrewing) {
       return adaptiveCustomBrewing.customFlags;
     }
     return undefined;
-  }, [isCustomTimingMode, adaptiveCustomBrewing]);
+  }, [adaptiveCustomBrewing]);
 
   const handleSetCustomSteepTime = useCallback((steepIndex: number, timeSec: number | null) => {
     setCustomSteepTimes((prev) => {
@@ -468,7 +708,11 @@ export const ExtractionSimulator: React.FC = () => {
       steepsCount,
       waterHardness,
       vesselMaterial,
-      effectiveCustomFlags
+      effectiveCustomFlags,
+      optimizationGoal,
+      brewingMethod,
+      rootFraction,
+      customRinseTime
     );
   }, [
     selectedTea, 
@@ -479,11 +723,37 @@ export const ExtractionSimulator: React.FC = () => {
     steepsCount,
     waterHardness,
     vesselMaterial,
-    effectiveCustomFlags
+    effectiveCustomFlags,
+    optimizationGoal,
+    brewingMethod,
+    rootFraction,
+    customRinseTime
   ]);
 
-  const safeSteepIndex = Math.min(selectedSteepIndex, Math.max(0, simulationResults.length - 1));
+  // Scientific rinse parameters based on leaf morphology and cultivar
+  const baseTeaRinseInfo = useMemo(() => {
+    return getTeaRinseInfo(selectedTea, waterTemp);
+  }, [selectedTea, waterTemp]);
+
+  const teaRinseInfo = useMemo(() => {
+    return {
+      ...baseTeaRinseInfo,
+      seconds: customRinseTime !== null ? customRinseTime : baseTeaRinseInfo.seconds,
+      isCustomUserTime: customRinseTime !== null
+    };
+  }, [baseTeaRinseInfo, customRinseTime]);
+
+  const isRinseEnabled = teaRinseInfo.required;
+  const isRinseSelected = selectedSteepIndex === -1 && isRinseEnabled;
+  const safeSteepIndex = isRinseSelected ? 0 : Math.min(selectedSteepIndex, Math.max(0, simulationResults.length - 1));
   const currentSteepData = simulationResults[safeSteepIndex] || simulationResults[0];
+
+  // Auto reset steep index if current tea does not have a rinse
+  useEffect(() => {
+    if (!isRinseEnabled && selectedSteepIndex === -1) {
+      setSelectedSteepIndex(0);
+    }
+  }, [isRinseEnabled, selectedSteepIndex]);
 
   // Visual liquor color based on tea type and steep progression
   const getLiquorColor = (tea: TeaVariety, steepNum: number) => {
@@ -649,18 +919,152 @@ export const ExtractionSimulator: React.FC = () => {
     };
   }, [simulationResults, maxConcentration, chartW, chartH]);
 
+  // Continuous minute-by-minute timeline data for «Ленивый» метод (Бэй Пао Фа)
+  const lazyCupTimeline = useMemo(() => {
+    if (brewingMethod !== 'grandpa_cup') return [];
+    const points: {
+      minute: number;
+      sec: number;
+      tempC: number;
+      theanine: number;
+      caffeine: number;
+      catechins: number;
+      polysaccharides: number;
+      tdsPpm: number;
+      isRefill: boolean;
+      label?: string;
+    }[] = [];
+
+    const cycleDurationSec = effectiveDurations[0] || 180;
+    const totalMinutes = Math.min(15, Math.max(8, (steepsCount * cycleDurationSec) / 60));
+
+    const base0 = simulationResults[0] || {
+      theanineConcentration: 12,
+      caffeineConcentration: 14,
+      catechinsConcentration: 18,
+      polysaccharidesConcentration: 10,
+      tdsPpm: 350
+    };
+
+    let curTh = 0;
+    let curCaf = 0;
+    let curCat = 0;
+    let curPoly = 0;
+
+    for (let m = 0; m <= totalMinutes; m += 0.25) {
+      const sec = Math.round(m * 60);
+      const currentCycle = Math.floor(sec / Math.max(1, cycleDurationSec));
+      const timeInCycle = sec % Math.max(1, cycleDurationSec);
+
+      const cycleData = simulationResults[Math.min(currentCycle, simulationResults.length - 1)] || base0;
+      const targetTh = cycleData.theanineConcentration;
+      const targetCaf = cycleData.caffeineConcentration;
+      const targetCat = cycleData.catechinsConcentration;
+      const targetPoly = cycleData.polysaccharidesConcentration;
+
+      const isRefill = sec > 0 && timeInCycle === 0;
+
+      if (isRefill) {
+        curTh = curTh * 0.33;
+        curCaf = curCaf * 0.33;
+        curCat = curCat * 0.33;
+        curPoly = curPoly * 0.33;
+      }
+
+      const curTemp = Math.round(22 + (waterTemp - 22) * Math.exp(-0.0028 * timeInCycle));
+
+      const progress = 1 - Math.exp(-0.016 * timeInCycle);
+      curTh = Math.max(curTh, targetTh * progress);
+      curCaf = Math.max(curCaf, targetCaf * progress);
+      curCat = Math.max(curCat, targetCat * progress);
+      curPoly = Math.max(curPoly, targetPoly * progress);
+
+      const tds = Math.round((curTh + curCaf + curCat + curPoly) * 12.5);
+
+      let label: string | undefined;
+      if (m === 0) label = 'Заливка';
+      else if (m === 2.0) label = '✨ Первый глоток!';
+      else if (isRefill) label = `🫖 Долив #${currentCycle} (+${Math.round(waterVolume * 0.67)}мл)`;
+
+      points.push({
+        minute: m,
+        sec,
+        tempC: curTemp,
+        theanine: Math.round(curTh * 10) / 10,
+        caffeine: Math.round(curCaf * 10) / 10,
+        catechins: Math.round(curCat * 10) / 10,
+        polysaccharides: Math.round(curPoly * 10) / 10,
+        tdsPpm: tds,
+        isRefill,
+        label
+      });
+    }
+
+    return points;
+  }, [brewingMethod, simulationResults, waterTemp, waterVolume, steepsCount, effectiveDurations]);
+
+  const lazyCupPaths = useMemo(() => {
+    if (lazyCupTimeline.length === 0) return null;
+    const svgW = 650;
+    const svgH = 200;
+    const pLeft = 45;
+    const pRight = 35;
+    const pTop = 20;
+    const pBottom = 35;
+    const cW = svgW - pLeft - pRight;
+    const cH = svgH - pTop - pBottom;
+
+    const maxVal = Math.max(
+      15,
+      ...lazyCupTimeline.map(pt => Math.max(pt.theanine, pt.caffeine, pt.catechins, pt.polysaccharides))
+    ) * 1.15;
+
+    const totalMins = lazyCupTimeline[lazyCupTimeline.length - 1]?.minute || 12;
+
+    const getLx = (m: number) => pLeft + (m / totalMins) * cW;
+    const getLy = (v: number) => pTop + cH - (v / maxVal) * cH;
+    const getTempY = (tC: number) => pTop + cH - ((tC - 20) / 80) * cH;
+
+    const thPts = lazyCupTimeline.map(pt => ({ x: getLx(pt.minute), y: getLy(pt.theanine) }));
+    const cafPts = lazyCupTimeline.map(pt => ({ x: getLx(pt.minute), y: getLy(pt.caffeine) }));
+    const catPts = lazyCupTimeline.map(pt => ({ x: getLx(pt.minute), y: getLy(pt.catechins) }));
+    const polyPts = lazyCupTimeline.map(pt => ({ x: getLx(pt.minute), y: getLy(pt.polysaccharides) }));
+    const tempPts = lazyCupTimeline.map(pt => ({ x: getLx(pt.minute), y: getTempY(pt.tempC) }));
+
+    return {
+      svgW,
+      svgH,
+      pLeft,
+      pRight,
+      pTop,
+      pBottom,
+      cW,
+      cH,
+      maxVal,
+      totalMins,
+      getLx,
+      getLy,
+      getTempY,
+      thPath: generateSmoothPath(thPts),
+      cafPath: generateSmoothPath(cafPts),
+      catPath: generateSmoothPath(catPts),
+      polyPath: generateSmoothPath(polyPts),
+      tempPath: generateSmoothPath(tempPts)
+    };
+  }, [lazyCupTimeline]);
+
   return (
     <div className="space-y-6">
-      {/* Top Utility Bar: Base Selector (Generic First, Popular Teas Second) */}
+      {/* Top Utility Bar: Base Selector (Generic, Popular Teas, Favorites, Blending Studio) */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-3 sm:px-4 rounded-xl border border-stone-200 shadow-xs">
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="text-xs font-bold text-stone-800">База сортов:</span>
-          <div className="flex rounded-lg bg-stone-100 p-0.5 border border-stone-200">
-            {/* 1. Общие архетипы (First) */}
+          <div className="flex flex-wrap rounded-lg bg-stone-100 p-0.5 border border-stone-200 gap-0.5">
+            {/* 1. Общие архетипы */}
             <button
               id="category-tab-generic"
               onClick={() => handleCategoryTabChange('generic')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                 activeCategoryTab === 'generic'
                   ? 'bg-amber-800 text-white shadow-xs'
                   : 'text-stone-600 hover:text-stone-900'
@@ -668,11 +1072,12 @@ export const ExtractionSimulator: React.FC = () => {
             >
               Общие архетипы ({GENERIC_TEA_ARCHETYPES.length})
             </button>
-            {/* 2. Популярные чаи (Second) */}
+
+            {/* 2. Популярные чаи */}
             <button
               id="category-tab-specific"
               onClick={() => handleCategoryTabChange('specific')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                 activeCategoryTab === 'specific'
                   ? 'bg-amber-800 text-white shadow-xs'
                   : 'text-stone-600 hover:text-stone-900'
@@ -680,26 +1085,98 @@ export const ExtractionSimulator: React.FC = () => {
             >
               Популярные чаи ({TEA_VARIETIES.length})
             </button>
+
+            {/* 3. Смешивание и купажирование */}
+            <button
+              id="category-tab-blend"
+              onClick={() => handleCategoryTabChange('blend')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeCategoryTab === 'blend'
+                  ? 'bg-amber-800 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
+            >
+              <FlaskConical className="w-3.5 h-3.5 text-amber-500" />
+              <span>Смешивание чаёв (Купажи)</span>
+            </button>
+
+            {/* 4. Избранные чаи */}
+            <button
+              id="category-tab-favorites"
+              onClick={() => handleCategoryTabChange('favorites')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeCategoryTab === 'favorites'
+                  ? 'bg-amber-800 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
+            >
+              <Star className={`w-3.5 h-3.5 ${favoriteIds.length > 0 ? 'text-amber-400 fill-amber-400' : ''}`} />
+              <span>Избранное ({favoriteIds.length})</span>
+            </button>
           </div>
         </div>
 
-        {/* Search & Filter Bar - Shown only for Popular Teas */}
-        {activeCategoryTab === 'specific' ? (
+        {/* Search Bar for Popular Teas */}
+        {activeCategoryTab === 'specific' && (
+          <div className="flex items-center gap-2 flex-1 max-w-lg">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Поиск по сорту, названию, региону, вкусу..."
+                value={popularSearchQuery}
+                onChange={(e) => setPopularSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-stone-200 bg-stone-50/70 focus:bg-white focus:border-amber-700 focus:outline-hidden focus:ring-1 focus:ring-amber-700/30 transition-all text-stone-900 placeholder:text-stone-400"
+              />
+              {popularSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setPopularSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 cursor-pointer"
+                  title="Очистить поиск"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Toggle Flavor Notes in Popular Teas */}
+            <button
+              type="button"
+              onClick={() => setShowFlavorInPopular(!showFlavorInPopular)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1 shrink-0 cursor-pointer ${
+                showFlavorInPopular || selectedFlavorTag || selectedFlavorGroupId || flavorSearchQuery
+                  ? 'bg-amber-100 text-amber-950 border-amber-300 font-bold'
+                  : 'bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200'
+              }`}
+              title="Открыть фильтр по нотам букета и вкусу"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+              <span className="hidden sm:inline">Вкус и ноты</span>
+              {(selectedFlavorTag || selectedFlavorGroupId || flavorSearchQuery) && (
+                <span className="w-2 h-2 rounded-full bg-amber-600" />
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Search Bar for Favorites */}
+        {activeCategoryTab === 'favorites' && (
           <div className="flex items-center gap-2 flex-1 max-w-md">
             <div className="relative flex-1">
               <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Поиск по названию, культивару, региону..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Поиск по избранным сортам..."
+                value={favoritesSearchQuery}
+                onChange={(e) => setFavoritesSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-stone-200 bg-stone-50/70 focus:bg-white focus:border-amber-700 focus:outline-hidden focus:ring-1 focus:ring-amber-700/30 transition-all text-stone-900 placeholder:text-stone-400"
               />
-              {searchQuery && (
+              {favoritesSearchQuery && (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5"
+                  onClick={() => setFavoritesSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 cursor-pointer"
                   title="Очистить поиск"
                 >
                   <X className="w-3 h-3" />
@@ -707,17 +1184,25 @@ export const ExtractionSimulator: React.FC = () => {
               )}
             </div>
           </div>
-        ) : (
+        )}
+
+        {activeCategoryTab === 'generic' && (
           <div className="text-xs text-stone-500 font-medium hidden sm:block">
-            Категории и архетипы для любых китайских чаев
+            Базовые архетипы для моделирования любых видов чая
+          </div>
+        )}
+
+        {activeCategoryTab === 'blend' && (
+          <div className="text-xs text-amber-900 font-semibold hidden sm:block">
+            Лаборатория блендинга и расчёта синергии
           </div>
         )}
       </div>
 
-      {/* Quick Category Filter Pills - Only shown for Popular Teas tab */}
+      {/* Quick Category Filter Pills - Shown for Popular Teas */}
       {activeCategoryTab === 'specific' && (
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
-          <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider shrink-0 mr-1">Фильтр:</span>
+          <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider shrink-0 mr-1">Тип чая:</span>
           {[
             { id: 'all', label: 'Все' },
             { id: 'green', label: 'Зелёный' },
@@ -728,13 +1213,13 @@ export const ExtractionSimulator: React.FC = () => {
             { id: 'red', label: 'Красный' },
             { id: 'puerh', label: 'Пуэр / Хэйча' }
           ].map((filter) => {
-            const isActive = selectedTypeFilter === filter.id;
+            const isActive = popularTypeFilter === filter.id;
             return (
               <button
                 key={filter.id}
                 type="button"
-                onClick={() => setSelectedTypeFilter(filter.id)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all shrink-0 border ${
+                onClick={() => setPopularTypeFilter(filter.id)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all shrink-0 border cursor-pointer ${
                   isActive
                     ? 'bg-amber-900 text-white border-amber-900 shadow-2xs'
                     : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
@@ -747,25 +1232,219 @@ export const ExtractionSimulator: React.FC = () => {
         </div>
       )}
 
-      {/* Tea Selection Grid */}
+      {/* Quick Category Filter Pills - Shown for Favorites */}
+      {activeCategoryTab === 'favorites' && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+          <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider shrink-0 mr-1">Тип чая:</span>
+          {[
+            { id: 'all', label: 'Все' },
+            { id: 'green', label: 'Зелёный' },
+            { id: 'white', label: 'Белый' },
+            { id: 'yellow', label: 'Жёлтый' },
+            { id: 'oolong', label: 'Улун' },
+            { id: 'gaba', label: 'Габа' },
+            { id: 'red', label: 'Красный' },
+            { id: 'puerh', label: 'Пуэр / Хэйча' }
+          ].map((filter) => {
+            const isActive = favoritesTypeFilter === filter.id;
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setFavoritesTypeFilter(filter.id)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all shrink-0 border cursor-pointer ${
+                  isActive
+                    ? 'bg-amber-900 text-white border-amber-900 shadow-2xs'
+                    : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Integrated Flavor Profile Explorer in Popular Teas */}
+      {activeCategoryTab === 'specific' && (showFlavorInPopular || selectedFlavorTag || selectedFlavorGroupId || flavorSearchQuery) && (
+        <div className="space-y-2.5 p-3.5 bg-amber-50/60 rounded-xl border border-amber-200 shadow-2xs animate-in fade-in duration-150">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-amber-800" />
+              <span className="text-xs font-bold text-stone-900">Вкусовой букет и ароматические направления:</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {(selectedFlavorGroupId || selectedFlavorTag || flavorSearchQuery) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFlavorGroupId(null);
+                    setSelectedFlavorTag(null);
+                    setFlavorSearchQuery('');
+                  }}
+                  className="text-xs text-amber-800 hover:text-amber-950 font-semibold cursor-pointer underline underline-offset-2"
+                >
+                  Сбросить ноты
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowFlavorInPopular(false)}
+                className="text-stone-400 hover:text-stone-700 p-0.5 cursor-pointer"
+                title="Скрыть панель нот"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Direct text search for specific flavor notes */}
+          <div className="relative max-w-sm">
+            <Search className="w-3.5 h-3.5 text-amber-700 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Поиск нот: мёд, орхидея, шоколад, сливки, персик..."
+              value={flavorSearchQuery}
+              onChange={(e) => {
+                setFlavorSearchQuery(e.target.value);
+                if (selectedFlavorTag) setSelectedFlavorTag(null);
+              }}
+              className="w-full pl-8 pr-7 py-1 text-xs rounded-lg border border-amber-300 bg-white focus:border-amber-700 focus:outline-hidden focus:ring-1 focus:ring-amber-700/30 text-stone-900 placeholder:text-stone-400"
+            />
+            {flavorSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setFlavorSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Group pills */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedFlavorGroupId(null);
+                setSelectedFlavorTag(null);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border cursor-pointer ${
+                !selectedFlavorGroupId && !selectedFlavorTag
+                  ? 'bg-amber-800 text-white border-amber-800 shadow-2xs'
+                  : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100'
+              }`}
+            >
+              Все направления
+            </button>
+            {POPULAR_SENSORY_GROUPS.map((grp) => {
+              const isActive = selectedFlavorGroupId === grp.id;
+              return (
+                <button
+                  key={grp.id}
+                  type="button"
+                  onClick={() => {
+                    if (isActive) {
+                      setSelectedFlavorGroupId(null);
+                    } else {
+                      setSelectedFlavorGroupId(grp.id);
+                      setSelectedFlavorTag(null);
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border cursor-pointer flex items-center gap-1 ${
+                    isActive
+                      ? 'bg-amber-800 text-white border-amber-800 shadow-2xs'
+                      : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100'
+                  }`}
+                >
+                  <span>{grp.icon}</span>
+                  <span>{grp.nameRu}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick tags */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-amber-200/60 text-xs">
+            <span className="text-[11px] font-semibold text-stone-500 mr-1">Популярные ноты:</span>
+            {(() => {
+              const activeGroup = POPULAR_SENSORY_GROUPS.find((g) => g.id === selectedFlavorGroupId);
+              const tagsToShow = activeGroup 
+                ? activeGroup.popularTags 
+                : ['мёд', 'орхидея', 'жасмин', 'персик', 'тёмный шоколад', 'хвоя', 'дым костра', 'карамель', 'сливки', 'чернослив', 'грецкий орех', 'каштан'];
+
+              return tagsToShow.map((tag) => {
+                const isSelected = selectedFlavorTag === tag || flavorSearchQuery.toLowerCase() === tag.toLowerCase();
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedFlavorTag(null);
+                        setFlavorSearchQuery('');
+                      } else {
+                        setSelectedFlavorTag(tag);
+                        setFlavorSearchQuery(tag);
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all border cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-900 text-white border-amber-900 shadow-2xs'
+                        : 'bg-white text-stone-700 border-amber-200/90 hover:bg-amber-100/60'
+                    }`}
+                  >
+                    #{tag}
+                  </button>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      )}
+      {/* Tea Selection Section */}
       <div className="space-y-3">
+        {/* 1. Generic Archetypes */}
         {activeCategoryTab === 'generic' ? (
           filteredGenericTeas.length === 0 ? (
             <div className="p-6 text-center bg-white rounded-2xl border border-stone-200 space-y-2">
-              <p className="text-xs text-stone-500 font-medium">По вашему запросу архитипов не найдено</p>
+              <p className="text-xs text-stone-500 font-medium">По выбранному состоянию архетипов не найдено</p>
               <button
                 type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedTypeFilter('all');
-                }}
-                className="text-xs font-semibold text-amber-800 hover:underline"
+                onClick={() => setSelectedEffectFilter('all')}
+                className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
               >
-                Сбросить фильтры поиска
+                Сбросить фильтр состояний
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 min-w-0">
+              {customBlendTea && (
+                <button
+                  key={customBlendTea.id}
+                  id={`tea-generic-${customBlendTea.id}`}
+                  onClick={() => handleTeaChange(customBlendTea)}
+                  className={`p-2.5 rounded-xl text-left border transition-all flex flex-col justify-between min-w-0 cursor-pointer col-span-2 ${
+                    customBlendTea.id === selectedTeaId
+                      ? 'bg-amber-800 text-white border-amber-800 shadow-xs ring-2 ring-amber-700/20'
+                      : 'bg-amber-50/80 hover:bg-amber-100/70 border-amber-300 text-amber-950'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Созданный купаж</span>
+                  </div>
+                  <span className="text-xs font-bold break-words leading-tight line-clamp-1 block mt-0.5">
+                    {customBlendTea.nameRu}
+                  </span>
+                  <span className={`text-[10px] mt-1 font-serif italic truncate block ${
+                    customBlendTea.id === selectedTeaId ? 'text-amber-200' : 'text-stone-500'
+                  }`}>
+                    {customBlendTea.optimalTemp}°C • 1:{Math.round(customBlendTea.defaultVolume / customBlendTea.defaultMass)}
+                  </span>
+                </button>
+              )}
               {filteredGenericTeas.map((tea) => {
                 const isSelected = tea.id === selectedTeaId;
                 return (
@@ -773,79 +1452,333 @@ export const ExtractionSimulator: React.FC = () => {
                     key={tea.id}
                     id={`tea-generic-${tea.id}`}
                     onClick={() => handleTeaChange(tea)}
-                    className={`p-2.5 rounded-xl text-left border transition-all flex flex-col justify-between min-w-0 ${
+                    className={`p-2.5 rounded-xl text-left border transition-all flex flex-col justify-between min-w-0 cursor-pointer ${
                       isSelected
-                        ? 'border-amber-700 bg-amber-50/90 text-stone-900 shadow-xs ring-1 ring-amber-700/30'
-                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
+                        ? 'bg-amber-800 text-white border-amber-800 shadow-xs ring-2 ring-amber-700/20'
+                        : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700'
                     }`}
                   >
-                    <div className="min-w-0">
-                      <div className="text-xs sm:text-[13px] font-bold text-stone-900 leading-snug line-clamp-2" title={tea.nameRu}>
-                        {tea.nameRu}
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-stone-400 mt-1.5 font-serif italic truncate">
+                    <span className="text-xs font-bold break-words leading-tight line-clamp-2 block">
+                      {tea.nameRu}
+                    </span>
+                    <span className={`text-[10px] mt-1.5 font-serif italic truncate block ${
+                      isSelected ? 'text-amber-200' : 'text-stone-400'
+                    }`}>
                       {tea.nameZh}
-                    </div>
+                    </span>
                   </button>
                 );
               })}
             </div>
           )
-        ) : filteredPopularTeas.length === 0 ? (
-          <div className="p-6 text-center bg-white rounded-2xl border border-stone-200 space-y-2">
-            <p className="text-xs text-stone-500 font-medium">По вашему запросу сортов не найдено</p>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedTypeFilter('all');
-              }}
-              className="text-xs font-semibold text-amber-800 hover:underline"
-            >
-              Сбросить фильтры поиска
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-1.5 sm:gap-2">
-            {filteredPopularTeas.map((tea) => {
-              const isSelected = tea.id === selectedTeaId;
-              return (
+        ) : activeCategoryTab === 'specific' ? (
+          /* 2. Popular Teas (with integrated flavor notes & search) */
+          filteredPopularTeas.length === 0 ? (
+            <div className="p-8 text-center bg-white rounded-2xl border border-stone-200 space-y-2.5">
+              <p className="text-sm font-semibold text-stone-800">По вашему запросу сортов не найдено</p>
+              <p className="text-xs text-stone-500 max-w-md mx-auto">
+                Попробуйте изменить запрос или сбросить фильтры по типу и нотам букета.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setPopularSearchQuery('');
+                  setFlavorSearchQuery('');
+                  setSelectedFlavorTag(null);
+                  setSelectedFlavorGroupId(null);
+                  setPopularTypeFilter('all');
+                  setSelectedEffectFilter('all');
+                }}
+                className="mt-2 inline-flex items-center text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-amber-800 text-white hover:bg-amber-900 transition-colors shadow-2xs cursor-pointer"
+              >
+                Сбросить фильтры
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-2.5">
+                {visiblePopularTeas.map(({ tea, matchedNotes }) => {
+                  const isSelected = tea.id === selectedTeaId;
+                  const teaEff = getTeaEffect(tea);
+                  const isFav = favoriteIds.includes(tea.id);
+                  const activeSearchNote = (flavorSearchQuery || selectedFlavorTag || popularSearchQuery).toLowerCase().trim();
+
+                  return (
+                    <div
+                      key={tea.id}
+                      id={`tea-select-${tea.id}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleTeaChange(tea)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleTeaChange(tea);
+                        }
+                      }}
+                      className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between select-none cursor-pointer shadow-2xs min-w-0 relative group ${
+                        isSelected
+                          ? 'bg-amber-800 text-white border-amber-800 shadow-xs ring-2 ring-amber-700/20'
+                          : 'bg-white hover:bg-amber-50/40 border-stone-200 text-stone-800'
+                      }`}
+                    >
+                      <div className="space-y-1.5 min-w-0 w-full">
+                        <div className="flex items-center justify-between gap-1 text-[11px]">
+                          <span className={`font-semibold truncate ${isSelected ? 'text-amber-200' : 'text-amber-800'}`}>
+                            {tea.typeNameRu}
+                          </span>
+                          <div className="flex items-center space-x-1 shrink-0">
+                            <span className={`font-serif italic text-[10px] ${isSelected ? 'text-amber-200' : 'text-stone-400'}`}>
+                              {tea.nameZh}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => toggleFavorite(tea.id, e)}
+                              className={`p-1 -mr-1 rounded-md transition-colors cursor-pointer ${
+                                isFav
+                                  ? 'text-amber-400 hover:text-amber-500'
+                                  : isSelected
+                                  ? 'text-amber-300/60 hover:text-amber-200'
+                                  : 'text-stone-300 hover:text-amber-500 opacity-80 group-hover:opacity-100'
+                              }`}
+                              title={isFav ? 'Удалить из избранного' : 'Добавить в избранное'}
+                            >
+                              <Star className={`w-3.5 h-3.5 ${isFav ? 'fill-amber-400' : ''}`} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className={`text-xs sm:text-[13px] font-bold truncate ${isSelected ? 'text-white' : 'text-stone-900'}`} title={tea.nameRu}>
+                          {tea.nameRu.split('(')[0].trim()}
+                        </div>
+
+                        {/* Sensory Notes Badges */}
+                        <div className="flex flex-wrap gap-1 pt-0.5">
+                          {(matchedNotes && matchedNotes.length > 0 ? matchedNotes : tea.keySensoryNotes || []).slice(0, 3).map((note, nIdx) => {
+                            const isHighlighted = activeSearchNote && note.toLowerCase().includes(activeSearchNote);
+                            return (
+                              <span
+                                key={nIdx}
+                                className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium transition-colors ${
+                                  isSelected
+                                    ? 'bg-amber-900/80 text-amber-100 border border-amber-700/60'
+                                    : isHighlighted
+                                    ? 'bg-amber-100 text-amber-950 border border-amber-300 font-semibold'
+                                    : 'bg-stone-100 text-stone-700 border border-stone-200'
+                                }`}
+                              >
+                                {note}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className={`flex items-center justify-between gap-1 mt-2.5 pt-1.5 border-t text-[10px] ${
+                        isSelected ? 'border-amber-700/50 text-amber-200' : 'border-stone-100 text-stone-500'
+                      }`}>
+                        <span className="truncate">{tea.origin.split(',')[0]}</span>
+                        <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                          isSelected ? 'bg-amber-900/60 text-amber-100' : 'bg-stone-100 text-stone-600'
+                        }`}>
+                          {teaEff.nameRu}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filteredPopularTeas.length > visiblePopularTeas.length && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 pb-1 border-t border-stone-200 text-xs text-stone-600">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-stone-700">
+                      Показано {visiblePopularTeas.length} из {filteredPopularTeas.length} сортов
+                    </span>
+                    <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-mono font-medium border border-emerald-200">
+                      60 FPS Fast Render
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPopularDisplayLimit((prev) => prev + 40)}
+                      className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 font-medium transition-colors cursor-pointer text-xs"
+                    >
+                      Показать ещё (+40)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPopularDisplayLimit(filteredPopularTeas.length)}
+                      className="px-3.5 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white font-medium transition-colors cursor-pointer text-xs shadow-2xs"
+                    >
+                      Показать все ({filteredPopularTeas.length})
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        ) : activeCategoryTab === 'favorites' ? (
+          /* 3. Favorites Tab */
+          filteredFavoriteTeas.length === 0 ? (
+            <div className="p-8 text-center bg-white rounded-2xl border border-stone-200 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                <Star className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 max-w-sm mx-auto">
+                <h4 className="text-sm font-bold text-stone-900">
+                  {favoriteIds.length === 0 ? 'Список избранного пуст' : 'Ничего не найдено в избранном'}
+                </h4>
+                <p className="text-xs text-stone-500">
+                  {favoriteIds.length === 0
+                    ? 'Нажмите на иконку звёздочки на любой карточке чая в «Популярных чаях», чтобы добавить сорт в личную коллекцию.'
+                    : 'Попробуйте изменить поисковый запрос или сбросить фильтр по типу чая.'}
+                </p>
+              </div>
+              {favoriteIds.length === 0 ? (
                 <button
-                  key={tea.id}
-                  id={`tea-select-${tea.id}`}
-                  onClick={() => handleTeaChange(tea)}
-                  className={`p-2 sm:p-2.5 rounded-xl text-left border transition-all flex flex-col justify-between min-w-0 ${
-                    isSelected
-                      ? 'border-amber-700 bg-amber-50/90 text-stone-900 shadow-xs ring-1 ring-amber-700/30'
-                      : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
-                  }`}
+                  type="button"
+                  onClick={() => handleCategoryTabChange('specific')}
+                  className="px-4 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer"
                 >
-                  <div className="min-w-0">
-                    <div className="text-[11px] sm:text-xs font-medium text-amber-800 truncate">
-                      {tea.typeNameRu}
-                    </div>
-                    <div className="text-xs sm:text-[13px] font-bold text-stone-900 truncate mt-0.5" title={tea.nameRu}>
-                      {tea.nameRu.split('(')[0].trim()}
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-stone-400 mt-1.5 font-serif italic truncate">
-                    {tea.nameZh}
-                  </div>
+                  Перейти к популярным чаям
                 </button>
-              );
-            })}
-          </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFavoritesSearchQuery('');
+                    setFavoritesTypeFilter('all');
+                    setSelectedEffectFilter('all');
+                  }}
+                  className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
+                >
+                  Сбросить фильтры поиска
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              {filteredFavoriteTeas.map((tea) => {
+                const isSelected = tea.id === selectedTeaId;
+                const teaEff = getTeaEffect(tea);
+                return (
+                  <div
+                    key={tea.id}
+                    id={`tea-fav-${tea.id}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleTeaChange(tea)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleTeaChange(tea);
+                      }
+                    }}
+                    className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between select-none cursor-pointer shadow-2xs min-w-0 relative group ${
+                      isSelected
+                        ? 'bg-amber-800 text-white border-amber-800 shadow-xs ring-2 ring-amber-700/20'
+                        : 'bg-white hover:bg-amber-50/40 border-stone-200 text-stone-800'
+                    }`}
+                  >
+                    <div className="space-y-1.5 min-w-0 w-full">
+                      <div className="flex items-center justify-between gap-1 text-[11px]">
+                        <span className={`font-semibold truncate ${isSelected ? 'text-amber-200' : 'text-amber-800'}`}>
+                          {tea.typeNameRu}
+                        </span>
+                        <div className="flex items-center space-x-1 shrink-0">
+                          <span className={`font-serif italic text-[10px] ${isSelected ? 'text-amber-200' : 'text-stone-400'}`}>
+                            {tea.nameZh}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => toggleFavorite(tea.id, e)}
+                            className="p-1 -mr-1 rounded-md text-amber-400 hover:text-amber-500 transition-colors cursor-pointer"
+                            title="Удалить из избранного"
+                          >
+                            <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={`text-xs sm:text-[13px] font-bold truncate ${isSelected ? 'text-white' : 'text-stone-900'}`} title={tea.nameRu}>
+                        {tea.nameRu.split('(')[0].trim()}
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {(tea.keySensoryNotes || []).slice(0, 3).map((note, nIdx) => (
+                          <span
+                            key={nIdx}
+                            className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${
+                              isSelected
+                                ? 'bg-amber-900/80 text-amber-100 border border-amber-700/60'
+                                : 'bg-stone-100 text-stone-700 border border-stone-200'
+                            }`}
+                          >
+                            {note}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={`flex items-center justify-between gap-1 mt-2.5 pt-1.5 border-t text-[10px] ${
+                      isSelected ? 'border-amber-700/50 text-amber-200' : 'border-stone-100 text-stone-500'
+                    }`}>
+                      <span className="truncate">{tea.origin.split(',')[0]}</span>
+                      <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                        isSelected ? 'bg-amber-900/60 text-amber-100' : 'bg-stone-100 text-stone-600'
+                      }`}>
+                        {teaEff.nameRu}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          /* 4. Tea Blending Studio */
+          <TeaBlendStudio 
+            allTeaMap={ALL_TEA_MAP} 
+            onApplyBlend={handleApplyBlend} 
+            onLogBlendToJournal={(sessionData) => {
+              if (onOpenJournal) {
+                onOpenJournal(sessionData);
+              }
+            }}
+          />
         )}
       </div>
 
-      {/* Selected Tea Info Card with Plain-Language Leaf Morphology */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row gap-6 items-start min-w-0 max-w-full overflow-hidden">
+      {/* Selected Tea Info Card and Main Simulator Controls (Shown for Archetypes, Popular Teas & non-empty Favorites) */}
+      {activeCategoryTab !== 'blend' && (activeCategoryTab !== 'favorites' || favoriteIds.length > 0) && (
+        <>
+          {/* Selected Tea Info Card with Plain-Language Leaf Morphology */}
+          <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row gap-6 items-start min-w-0 max-w-full overflow-hidden">
         <div className="flex-1 space-y-3 min-w-0 max-w-full">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <h3 className="text-lg sm:text-xl font-bold text-stone-900 font-serif break-words">
               {selectedTea.nameRu} {selectedTea.nameZh && `(${selectedTea.nameZh})`}
             </h3>
+
+            {/* Favorite toggle button for selected tea (only non-generic) */}
+            {selectedTea.categoryGroup !== 'generic' && (
+              <button
+                type="button"
+                onClick={() => toggleFavorite(selectedTea.id)}
+                className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold border transition-all cursor-pointer ${
+                  favoriteIds.includes(selectedTea.id)
+                    ? 'bg-amber-100 text-amber-950 border-amber-300 shadow-2xs'
+                    : 'bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200'
+                }`}
+                title={favoriteIds.includes(selectedTea.id) ? 'Удалить сорт из избранного' : 'Добавить сорт в избранное'}
+              >
+                <Star className={`w-3.5 h-3.5 ${favoriteIds.includes(selectedTea.id) ? 'text-amber-500 fill-amber-400' : 'text-stone-400'}`} />
+                <span>{favoriteIds.includes(selectedTea.id) ? 'В избранном' : 'В избранное'}</span>
+              </button>
+            )}
+
             <span className="inline-flex items-center text-xs px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 font-medium max-w-full break-words">
               {selectedTea.origin}
             </span>
@@ -857,6 +1790,35 @@ export const ExtractionSimulator: React.FC = () => {
                 Общий архетип
               </span>
             )}
+            {selectedTea.categoryGroup === 'blend' && (
+              <span className="inline-flex items-center text-xs px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-200 font-medium shrink-0">
+                Авторский купаж
+              </span>
+            )}
+            {/* Effect Badge */}
+            {(() => {
+              const currentEff = getTeaEffect(selectedTea);
+              return (
+                <span 
+                  className="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-950 border border-amber-300 font-medium cursor-help"
+                  title={currentEff.bioMechanismRu}
+                >
+                  <span className="font-semibold">{currentEff.nameRu}</span>
+                  <span className="text-[10px] text-amber-800 font-mono">({currentEff.badgeRu})</span>
+                </span>
+              );
+            })()}
+            {/* Rinse Status Badge */}
+            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium ${
+              teaRinseInfo.required
+                ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+            }`}>
+              <span>Промыв #0:</span>
+              <span className="font-semibold">
+                {teaRinseInfo.required ? `${teaRinseInfo.seconds}с (${teaRinseInfo.badgeRu})` : 'Не нужен'}
+              </span>
+            </span>
           </div>
 
           <p className="text-sm text-stone-600 leading-relaxed break-words">
@@ -874,15 +1836,57 @@ export const ExtractionSimulator: React.FC = () => {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-1.5 pt-1 min-w-0">
-            {selectedTea.keySensoryNotes.map((note, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center text-xs px-2.5 py-1 bg-stone-50 text-stone-700 border border-stone-200 rounded-lg font-medium max-w-full break-words"
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-100">
+            <button
+              type="button"
+              onClick={() => setIsCheatSheetOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs transition-all shadow-2xs cursor-pointer"
+              title="Открыть готовую шпаргалку проливов для печати или копирования"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Шпаргалка для чабани</span>
+            </button>
+
+            {onOpenJournal && (
+              <button
+                type="button"
+                onClick={() => {
+                  const vesselName = selectedTea.recommendedVesselRu?.split('(')[0]?.trim() || `Гайвань ${waterVolume} мл`;
+                  const eff = getTeaEffect(selectedTea);
+                  onOpenJournal({
+                    tea: selectedTea,
+                    waterTempC: waterTemp,
+                    teaMassG: leafMass,
+                    waterVolumeMl: waterVolume,
+                    steepsCount: steepsCount,
+                    steepScheduleSec: effectiveDurations,
+                    vesselUsed: vesselName,
+                    effectNote: eff.nameRu,
+                    userNotes: selectedTea.categoryGroup === 'blend'
+                      ? `Авторский купаж (${selectedTea.nameRu}): ${waterTemp}°C, ${leafMass}г / ${waterVolume}мл. Проливы: ${effectiveDurations.map(s => `${s}с`).join(', ')}.`
+                      : `Проведено заваривание (${waterTemp}°C, ${leafMass}г на ${waterVolume}мл). Проливы: ${effectiveDurations.map(s => `${s}с`).join(', ')}.`,
+                    tags: selectedTea.categoryGroup === 'blend' ? ['Авторский купаж', 'Гунфу Ча', 'Симулятор'] : ['Гунфу Ча', 'Симулятор']
+                  });
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 hover:border-amber-700 bg-white hover:bg-stone-50 text-stone-700 hover:text-amber-950 font-semibold text-xs transition-all cursor-pointer"
+                title="Зафиксировать результаты заваривания в дневник дегустаций"
               >
-                {note}
-              </span>
-            ))}
+                <Bookmark className="w-3.5 h-3.5 text-amber-700" />
+                <span>Записать в дневник</span>
+              </button>
+            )}
+
+            {onOpenComparison && (
+              <button
+                type="button"
+                onClick={() => onOpenComparison(selectedTea)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 hover:border-sky-700 bg-white hover:bg-stone-50 text-stone-700 hover:text-sky-950 font-semibold text-xs transition-all cursor-pointer"
+                title="Сравнить характеристики этого сорта с другим чаем"
+              >
+                <ScaleIcon className="w-3.5 h-3.5 text-sky-700" />
+                <span>Сравнить сорт</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -907,8 +1911,8 @@ export const ExtractionSimulator: React.FC = () => {
             <p className="text-stone-600 leading-relaxed text-[11px] break-words">
               {morphologyInfo.simpleDesc}
             </p>
-            <div className="text-[11px] text-amber-900 bg-amber-100/60 p-2 rounded-lg border border-amber-200/60 font-medium break-words min-w-0">
-              💡 <strong>Совет мастера:</strong> {morphologyInfo.userTip}
+            <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200 font-medium break-words min-w-0">
+              <strong>Совет мастера:</strong> {morphologyInfo.userTip}
             </div>
           </div>
         </div>
@@ -945,6 +1949,156 @@ export const ExtractionSimulator: React.FC = () => {
               <RotateCcw className="w-3.5 h-3.5" />
               <span>К оптимуму</span>
             </button>
+          </div>
+
+          {/* Brewing Method Selector (Gongfu Cha vs Liu Gen Pao / Оставление корня) */}
+          <div className="space-y-2.5 p-3.5 bg-stone-50 rounded-xl border border-stone-200">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-stone-800 flex items-center space-x-1.5">
+                <Flame className="w-3.5 h-3.5 text-amber-700" />
+                <span>Метод заваривания:</span>
+              </span>
+              <span className="text-[10px] font-mono text-stone-500">
+                {brewingMethod === 'liu_gen' ? 'Лю Гэнь (留根法)' : brewingMethod === 'grandpa_cup' ? 'Ленивый метод (杯泡法)' : 'Гунфу Ча (功夫茶)'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-white rounded-lg border border-stone-200">
+              <button
+                type="button"
+                id="brewing-method-gongfu"
+                onClick={() => setBrewingMethod('gongfu')}
+                className={`py-1.5 px-1.5 rounded-md text-xs font-semibold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                  brewingMethod === 'gongfu'
+                    ? 'bg-amber-800 text-white shadow-2xs'
+                    : 'text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                <span>Гунфу Ча</span>
+                <span className={`text-[9px] font-normal ${brewingMethod === 'gongfu' ? 'text-amber-100' : 'text-stone-400'}`}>
+                  100% слив
+                </span>
+              </button>
+
+              <button
+                type="button"
+                id="brewing-method-liu-gen"
+                onClick={() => setBrewingMethod('liu_gen')}
+                className={`py-1.5 px-1.5 rounded-md text-xs font-semibold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                  brewingMethod === 'liu_gen'
+                    ? 'bg-amber-800 text-white shadow-2xs'
+                    : 'text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                <span>Оставление корня</span>
+                <span className={`text-[9px] font-normal ${brewingMethod === 'liu_gen' ? 'text-amber-100' : 'text-stone-400'}`}>
+                  Лю Гэнь (буфер)
+                </span>
+              </button>
+
+              <button
+                type="button"
+                id="brewing-method-grandpa-cup"
+                onClick={() => {
+                  setBrewingMethod('grandpa_cup');
+                  if (!fixVolume && waterVolume < 200) {
+                    setFixedVolumeVal(250);
+                  }
+                  if (!fixMass && leafMass > 5) {
+                    setFixedMassVal(3.8);
+                  }
+                  if (!fixSteeps) {
+                    setFixedSteepsVal(4);
+                  }
+                }}
+                className={`py-1.5 px-1.5 rounded-md text-xs font-semibold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                  brewingMethod === 'grandpa_cup'
+                    ? 'bg-amber-800 text-white shadow-2xs'
+                    : 'text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                <span>«Ленивый» метод</span>
+                <span className={`text-[9px] font-normal ${brewingMethod === 'grandpa_cup' ? 'text-amber-100' : 'text-stone-400'}`}>
+                  Бэй Пао Фа (杯泡法)
+                </span>
+              </button>
+            </div>
+
+            {/* Cup brewing specific parameters */}
+            {brewingMethod === 'grandpa_cup' && (
+              <div className="pt-2 border-t border-stone-200/70 space-y-2.5 animate-in fade-in duration-200">
+                <div className="bg-amber-50/80 rounded-lg p-2.5 border border-amber-200 text-xs text-amber-950 space-y-1.5">
+                  <div className="font-bold flex items-center justify-between text-amber-900">
+                    <span>«Ленивый» метод — 杯泡法 (бэй пао фа):</span>
+                    <span className="text-[10px] font-mono bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                      T(t) = 22 + (T₀-22)e{'-kt'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 leading-relaxed">
+                    Чай кладут прямо в кружку, заливают водой, пьют, потом доливают. Эффект <strong>留根 (лю гэнь — оставление корня)</strong> получается сам собой: если оставить ~1/3 настоя на дне и долить воды — это уже тот самый «корень», сохраняющий насыщенность вкуса и ровную плотность.
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px] font-mono">
+                    <div className="bg-white p-1.5 rounded border border-amber-200">
+                      <span className="text-stone-500 block text-[9.5px]">«Корень» в кружке (~1/3):</span>
+                      <strong className="text-amber-950">{Math.round(waterVolume * 0.33)} мл</strong>
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-amber-200">
+                      <span className="text-stone-500 block text-[9.5px]">Долив кипятка (~2/3):</span>
+                      <strong className="text-stone-900">+{Math.round(waterVolume * 0.67)} мл</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Liu Gen specific parameters */}
+            {brewingMethod === 'liu_gen' && (
+              <div className="pt-2 border-t border-stone-200/70 space-y-2.5 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-stone-600 font-medium">Доля остатка корня (α):</span>
+                  <span className="font-mono font-bold text-amber-900">
+                    {Math.round(rootFraction * 100)}% ({Math.round(waterVolume * rootFraction)} мл)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-1 text-[11px]">
+                  {[
+                    { label: '1/4 (25%)', val: 0.25, tip: 'Лёгкий' },
+                    { label: '1/3 (33%)', val: 0.333, tip: 'Канон' },
+                    { label: '1/2 (50%)', val: 0.5, tip: 'Плотный' }
+                  ].map((preset) => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => setRootFraction(preset.val)}
+                      className={`py-1 px-1.5 rounded-lg border font-mono text-center transition-all cursor-pointer ${
+                        Math.abs(rootFraction - preset.val) < 0.05
+                          ? 'bg-amber-100 text-amber-950 border-amber-300 font-bold shadow-2xs'
+                          : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
+                      }`}
+                    >
+                      <div>{preset.label}</div>
+                      <div className="text-[9px] text-stone-400 font-sans">{preset.tip}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Real-time liquid volume breakdown */}
+                <div className="bg-amber-50/70 rounded-lg p-2 border border-amber-200/80 text-[11px] text-amber-950 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Остаток в сосуде («Корень»):</span>
+                    <span className="font-mono font-bold text-amber-900">{Math.round(waterVolume * rootFraction)} мл</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Слив в пиалу / Долив кипятка:</span>
+                    <span className="font-mono font-bold text-stone-900">+{Math.round(waterVolume * (1 - rootFraction))} мл</span>
+                  </div>
+                  <div className="text-[10px] text-stone-500 pt-1 border-t border-amber-200/60 leading-tight">
+                    💡 Маточный раствор сглаживает скачки TDS и удерживает нежный L-теанин, исключая резкий выброс катехинов EGCG.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Target Profile / Goal Preset Selector: Expandable Dropdown */}
@@ -999,16 +2153,23 @@ export const ExtractionSimulator: React.FC = () => {
 
                   {OPTIMIZATION_PRESETS.map((preset) => {
                     const isSelected = optimizationGoal === preset.id;
+                    const isEligible = !preset.allowedTeaTypes || preset.allowedTeaTypes.includes(selectedTea.type);
+
                     return (
                       <button
                         key={preset.id}
                         type="button"
+                        disabled={!isEligible}
                         onClick={() => {
-                          setOptimizationGoal(preset.id as OptimizationGoal);
-                          setIsGoalDropdownOpen(false);
+                          if (isEligible) {
+                            setOptimizationGoal(preset.id as OptimizationGoal);
+                            setIsGoalDropdownOpen(false);
+                          }
                         }}
                         className={`w-full p-2 rounded-lg text-left text-xs transition-all flex items-start justify-between gap-2 ${
-                          isSelected
+                          !isEligible
+                            ? 'opacity-40 cursor-not-allowed bg-stone-50 text-stone-400'
+                            : isSelected
                             ? 'bg-amber-50 border border-amber-300 text-amber-950 font-medium shadow-2xs'
                             : 'hover:bg-stone-50 text-stone-700 border border-transparent'
                         }`}
@@ -1024,6 +2185,11 @@ export const ExtractionSimulator: React.FC = () => {
                           </div>
                           <p className="text-[10px] text-stone-500 leading-relaxed">
                             {preset.descriptionRu}
+                            {!isEligible && (
+                              <span className="block text-rose-600 font-medium mt-0.5">
+                                (Только для Шу/Шэн Пуэров и Хэйча)
+                              </span>
+                            )}
                           </p>
                         </div>
 
@@ -1055,7 +2221,7 @@ export const ExtractionSimulator: React.FC = () => {
               <div className="flex items-center justify-between mb-2">
                 <label htmlFor="water-volume-input" className="text-xs font-bold text-stone-800 flex items-center space-x-1.5">
                   <Droplet className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Объём сосуда (мл)</span>
+                  <span>{brewingMethod === 'grandpa_cup' ? 'Объём чашки / стакана (мл)' : 'Объём сосуда (мл)'}</span>
                 </label>
                 <button
                   type="button"
@@ -1417,7 +2583,7 @@ export const ExtractionSimulator: React.FC = () => {
               <div className="flex items-center justify-between mb-2">
                 <label htmlFor="steeps-count-input" className="text-xs font-bold text-stone-800 flex items-center space-x-1.5">
                   <Hash className="w-3.5 h-3.5 text-amber-800" />
-                  <span>Количество проливов</span>
+                  <span>{brewingMethod === 'grandpa_cup' ? 'Циклы / Доливы в чашку' : 'Количество проливов'}</span>
                 </label>
                 <button
                   type="button"
@@ -1513,7 +2679,7 @@ export const ExtractionSimulator: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-1 text-[10px]">
-                  {[5, 8, 10, 12, 15, 20].map((num) => (
+                  {(brewingMethod === 'grandpa_cup' ? [2, 3, 4, 5, 6] : [5, 8, 10, 12, 15, 20]).map((num) => (
                     <button
                       key={num}
                       type="button"
@@ -1680,8 +2846,8 @@ export const ExtractionSimulator: React.FC = () => {
           </div>
 
           {/* 1. Гидромодуль: Пропорция чая и воды */}
-          <div className="p-4 rounded-xl border border-amber-200/80 bg-linear-to-br from-amber-50/70 via-white to-stone-50 space-y-3.5 shadow-2xs">
-            <div className="flex items-center justify-between border-b border-amber-100 pb-2.5">
+          <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-2">
               <div className="flex items-center space-x-2 min-w-0">
                 <Scale className="w-4 h-4 text-amber-800 shrink-0" />
                 <h5 className="text-xs font-bold text-stone-900 truncate">
@@ -1689,7 +2855,7 @@ export const ExtractionSimulator: React.FC = () => {
                 </h5>
               </div>
               <div className="text-right shrink-0">
-                <span className="font-mono font-bold text-sm bg-amber-100 text-amber-950 px-2.5 py-1 rounded-lg border border-amber-200">
+                <span className="font-mono font-bold text-xs bg-white text-stone-900 px-2.5 py-1 rounded-lg border border-stone-200 shadow-2xs">
                   1 : {ratio}
                 </span>
                 <span className="block text-[9px] text-stone-400 font-mono mt-0.5">
@@ -1699,8 +2865,8 @@ export const ExtractionSimulator: React.FC = () => {
             </div>
 
             {/* Карточка текущей пропорции с разбором */}
-            <div className="space-y-2.5 text-xs text-stone-700">
-              <div className="flex items-center justify-between bg-white/90 p-2.5 rounded-lg border border-stone-200/80 text-xs">
+            <div className="space-y-2 text-xs text-stone-700">
+              <div className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-stone-200 text-xs">
                 <span className="text-stone-600 font-medium">Текущая раскладка:</span>
                 <span className="font-bold text-stone-900 font-mono">
                   {leafMass} г на {waterVolume} мл
@@ -1708,11 +2874,11 @@ export const ExtractionSimulator: React.FC = () => {
               </div>
 
               {/* Понятное объяснение выбранного режима */}
-              <div className="p-3 bg-white/95 rounded-lg border border-amber-200/70 text-xs space-y-1.5">
+              <div className="p-2.5 bg-white rounded-lg border border-stone-200 text-xs space-y-1">
                 {ratio <= 15 ? (
                   <>
-                    <div className="font-bold text-amber-950 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
+                    <div className="font-bold text-stone-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-800 shrink-0"></span>
                       <span>Плотный метод проливов (Классика Гунфу Ча): 1:{ratio}</span>
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
@@ -1721,8 +2887,8 @@ export const ExtractionSimulator: React.FC = () => {
                   </>
                 ) : ratio <= 24 ? (
                   <>
-                    <div className="font-bold text-emerald-950 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                    <div className="font-bold text-stone-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-stone-700 shrink-0"></span>
                       <span>Деликатные мягкие проливы (Лёгкий баланс): 1:{ratio}</span>
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
@@ -1731,8 +2897,8 @@ export const ExtractionSimulator: React.FC = () => {
                   </>
                 ) : ratio <= 45 ? (
                   <>
-                    <div className="font-bold text-blue-950 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
+                    <div className="font-bold text-stone-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-stone-700 shrink-0"></span>
                       <span>Умеренное настаивание (Типод / Кофейник / Френч-пресс): 1:{ratio}</span>
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
@@ -1741,8 +2907,8 @@ export const ExtractionSimulator: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <div className="font-bold text-purple-950 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-purple-600 shrink-0"></span>
+                    <div className="font-bold text-stone-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-stone-700 shrink-0"></span>
                       <span>Европейское заваривание в кружке / Большом чайнике: 1:{ratio}</span>
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
@@ -1905,83 +3071,193 @@ export const ExtractionSimulator: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-stone-900 text-base font-serif">
-                      Проливы, тайминги и химический профиль пиалы
+                      {brewingMethod === 'grandpa_cup'
+                        ? 'Циклы заваривания и доливы воды в чашку'
+                        : 'Проливы, тайминги и химический профиль пиалы'}
                     </h4>
                     <p className="text-[11px] text-stone-500">
-                      Хронометраж экстракции, концентрация биоактивных веществ и баланс вкуса
+                      {brewingMethod === 'grandpa_cup'
+                        ? '1-й завар (2–3 мин.), затем питьё 2/3 и доливы кипятка при остатке 1/3 настоя'
+                        : 'Хронометраж экстракции, концентрация биоактивных веществ и баланс вкуса'}
                     </p>
                   </div>
                 </div>
 
-                {/* Custom Time Checkbox Option ("Своё время") */}
-                <label className="flex items-center space-x-2.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 px-3 py-2 rounded-xl cursor-pointer transition-all select-none self-start sm:self-auto shrink-0 group">
-                  <input
-                    type="checkbox"
-                    id="toggle-custom-steep-times"
-                    checked={isCustomTimingMode}
-                    onChange={(e) => {
-                      setIsCustomTimingMode(e.target.checked);
-                      if (e.target.checked && customSteepTimes.length === 0) {
-                        setCustomSteepTimes(new Array(steepsCount).fill(null));
-                      }
-                    }}
-                    className="w-4 h-4 rounded text-amber-800 focus:ring-amber-700 border-stone-300 cursor-pointer accent-amber-800"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
-                      <span>Своё время</span>
-                      {isCustomTimingMode && (
-                        <span className="text-[9px] uppercase tracking-wider font-bold bg-amber-800 text-white px-1.5 py-0.5 rounded">
-                          Вкл
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                </label>
-              </div>
+                {/* Header Controls for Custom Steeps */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-medium text-stone-700 bg-stone-50 hover:bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl transition-colors shadow-2xs">
+                    <input
+                      type="checkbox"
+                      checked={isManualTimeEditMode}
+                      onChange={(e) => {
+                        setIsManualTimeEditMode(e.target.checked);
+                        if (!e.target.checked) setEditingSteepIndex(null);
+                      }}
+                      className="rounded border-stone-300 text-amber-800 focus:ring-amber-800 h-3.5 w-3.5 accent-amber-800 cursor-pointer"
+                    />
+                    <span>Своё время (двойной клик)</span>
+                  </label>
 
-              {/* Status and guidance header when "Своё время" is checked */}
-              {isCustomTimingMode && (
-                <div className="p-3 bg-amber-50/70 border border-amber-200/90 rounded-2xl space-y-2 animate-in fade-in duration-200">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div className="flex items-start space-x-2.5">
-                      <div className="w-6 h-6 rounded-lg bg-amber-800 text-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-amber-950 flex flex-wrap items-center gap-2">
-                          <span>Ввод фактического времени пролива для последующей корректировки</span>
-                          {adaptiveCustomBrewing && adaptiveCustomBrewing.userSteepsCount > 0 && (
-                            <span className="text-[10px] font-semibold bg-amber-200/90 text-amber-950 border border-amber-300 px-2 py-0.5 rounded-full">
-                              Изменено: {adaptiveCustomBrewing.userSteepsCount} из {steepsCount}
-                            </span>
-                          )}
-                        </div>
-                        {adaptiveCustomBrewing && adaptiveCustomBrewing.userSteepsCount > 0 && (
-                          <p className="text-xs text-amber-900/90 mt-0.5 leading-relaxed">
-                            {adaptiveCustomBrewing.summaryMessageRu}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {adaptiveCustomBrewing && adaptiveCustomBrewing.userSteepsCount > 0 && (
+                  {adaptiveCustomBrewing && adaptiveCustomBrewing.userSteepsCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-amber-950 bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-xl">
+                        Изменено: {adaptiveCustomBrewing.userSteepsCount} из {steepsCount}
+                      </span>
                       <button
                         type="button"
                         onClick={handleResetAllCustomTimes}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-900 hover:text-amber-950 bg-white/90 border border-amber-200 hover:bg-white px-2.5 py-1 rounded-lg transition-colors shrink-0 self-start sm:self-center shadow-2xs cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-white hover:bg-stone-50 border border-stone-200 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer shadow-2xs"
                       >
                         <RotateCcw className="w-3 h-3" />
-                        <span>Сбросить все к эталонам</span>
+                        <span>Сбросить всё к эталонам</span>
                       </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Status and guidance header when custom times or custom rinse are altered */}
+              {adaptiveCustomBrewing && (adaptiveCustomBrewing.userSteepsCount > 0 || Boolean(adaptiveCustomBrewing.rinseStatus)) && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1.5 text-xs text-amber-950 animate-in fade-in duration-200">
+                  <div className="font-bold flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-800" />
+                      <span>Адаптивный перерасчёт проливов (кинетическая модель):</span>
+                    </span>
+                    {adaptiveCustomBrewing.rinseStatus && (
+                      <span className="text-[10px] bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded font-mono font-semibold">
+                        Промыв: {adaptiveCustomBrewing.rinseStatus.customRinseSec}с ({adaptiveCustomBrewing.rinseStatus.deviationSec > 0 ? '+' : ''}{adaptiveCustomBrewing.rinseStatus.deviationSec}с)
+                      </span>
                     )}
                   </div>
+                  <p className="text-stone-700 leading-relaxed font-medium">
+                    {adaptiveCustomBrewing.summaryMessageRu}
+                  </p>
+                  <p className="text-[11px] text-stone-500 leading-normal pt-0.5 border-t border-amber-200/60 font-mono">
+                    🔬 {adaptiveCustomBrewing.scientificDetailRu}
+                  </p>
                 </div>
               )}
 
               {/* Ergonomic Steeps Deck & Bubbles */}
               <div className="pt-0.5">
                 <div className="grid gap-2 grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 transition-all">
+                  {/* Rinse #0 Bubble if enabled */}
+                  {isRinseEnabled && (
+                    editingSteepIndex === -1 ? (
+                      <div
+                        className="group relative min-h-[92px] rounded-xl border p-2 flex flex-col justify-between text-left transition-all shadow-xs ring-2 ring-amber-800 border-amber-800 bg-amber-50/95"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className="text-[11px] font-bold font-mono text-amber-950 font-black">
+                            #0 ПРОМЫВ
+                          </span>
+                          <span className="text-[9px] uppercase tracking-wider font-bold bg-amber-800 text-amber-50 px-1 py-0.2 rounded leading-none">
+                            ввод
+                          </span>
+                        </div>
+
+                        <div className="my-0.5 flex items-center justify-center space-x-1 w-full">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            autoFocus
+                            defaultValue={customRinseTime ?? teaRinseInfo.seconds}
+                            onFocus={(e) => e.target.select()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const raw = (e.target as HTMLInputElement).value.trim();
+                                const parsed = parseInt(raw.replace(/\D/g, ''), 10);
+                                if (!isNaN(parsed) && parsed > 0) {
+                                  setCustomRinseTime(Math.min(60, parsed));
+                                } else if (raw === '') {
+                                  setCustomRinseTime(null);
+                                }
+                                setEditingSteepIndex(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingSteepIndex(null);
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const raw = e.target.value.trim();
+                              const parsed = parseInt(raw.replace(/\D/g, ''), 10);
+                              if (!isNaN(parsed) && parsed > 0) {
+                                setCustomRinseTime(Math.min(60, parsed));
+                              } else if (raw === '') {
+                                setCustomRinseTime(null);
+                              }
+                              setEditingSteepIndex(null);
+                            }}
+                            className="w-12 text-center font-mono font-bold text-sm py-0.5 px-1 bg-white border border-amber-500 rounded-md text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-800 shadow-xs"
+                          />
+                          <span className="text-xs font-mono font-bold text-amber-900/60">
+                            с
+                          </span>
+                        </div>
+
+                        <div className="pt-0.5 border-t border-amber-200/80 text-center flex items-center justify-center leading-none text-[8.5px] text-amber-900 font-semibold w-full">
+                          Enter — готово
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        id="steep-bubble-rinse-0"
+                        onClick={() => setSelectedSteepIndex(-1)}
+                        onDoubleClick={(e) => {
+                          e.preventDefault();
+                          if (isManualTimeEditMode) {
+                            setEditingSteepIndex(-1);
+                          }
+                        }}
+                        title={isManualTimeEditMode ? "Двойной клик для ввода своего времени" : undefined}
+                        className={`group relative min-h-[92px] p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all select-none cursor-pointer shadow-2xs ${
+                          selectedSteepIndex === -1
+                            ? 'border-amber-800 bg-amber-50/90 text-stone-900 shadow-xs ring-2 ring-amber-800'
+                            : customRinseTime !== null
+                            ? 'bg-amber-50 border-amber-300 text-amber-950 hover:border-amber-400'
+                            : 'border-stone-200 bg-white text-stone-700 hover:border-amber-300 hover:bg-stone-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className={`text-[11px] font-bold font-mono tracking-wider uppercase ${
+                            selectedSteepIndex === -1 ? 'text-amber-950 font-black' : customRinseTime !== null ? 'text-amber-950' : 'text-stone-700'
+                          }`}>
+                            #0 ПРОМЫВ
+                          </span>
+                          {customRinseTime !== null ? (
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1 py-0.2 rounded leading-none bg-amber-800 text-amber-50">
+                              ФАКТ
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="my-1 flex items-center justify-center space-x-1">
+                          <span className={`font-mono text-sm font-bold ${
+                            selectedSteepIndex === -1 ? 'text-amber-950 font-black' : customRinseTime !== null ? 'text-amber-950' : 'text-stone-800'
+                          }`}>
+                            {teaRinseInfo.seconds}
+                          </span>
+                          <span className="text-xs font-mono font-bold text-amber-900/60">
+                            с
+                          </span>
+                        </div>
+
+                        {customRinseTime !== null ? (
+                          <div className={`pt-0.5 border-t text-center leading-none text-[9.5px] truncate font-medium ${
+                            selectedSteepIndex === -1 ? 'border-amber-200 text-amber-900' : 'border-stone-200 text-stone-400'
+                          }`}>
+                            эт: {baseTeaRinseInfo.seconds}с
+                          </div>
+                        ) : (
+                          <div className="pt-0.5 min-h-[14px]" />
+                        )}
+                      </button>
+                    )
+                  )}
+
                   {simulationResults.map((d, idx) => {
                     const baselineSec = adaptiveCustomBrewing?.steepStatus[idx]?.baselineSec ?? computedAdaptiveDurations[idx] ?? 10;
                     const statusObj = adaptiveCustomBrewing?.steepStatus[idx];
@@ -1997,9 +3273,15 @@ export const ExtractionSimulator: React.FC = () => {
                         statusObj={statusObj}
                         userVal={userVal}
                         effectiveSec={d.timeSec}
-                        isCustomTimingMode={isCustomTimingMode}
+                        isEditing={editingSteepIndex === idx}
+                        isManualModeActive={isManualTimeEditMode}
+                        brewingMethod={brewingMethod}
+                        rootFraction={rootFraction}
+                        waterVolume={waterVolume}
                         onSelect={setSelectedSteepIndex}
-                        onSetCustomTime={handleSetCustomSteepTime}
+                        onDoubleClick={(i) => setEditingSteepIndex(i)}
+                        onSaveTime={handleSetCustomSteepTime}
+                        onCancelEdit={() => setEditingSteepIndex(null)}
                       />
                     );
                   })}
@@ -2008,6 +3290,50 @@ export const ExtractionSimulator: React.FC = () => {
             </div>
 
             {/* Active Selected Steep Deep-Dive Profile */}
+            {isRinseSelected ? (
+              /* Dedicated Clean Rinse #0 Window matching regular steep window without information */
+              <div className="space-y-6 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-14 h-14 rounded-full border-4 border-stone-100 shadow-inner flex items-center justify-center relative shrink-0 bg-stone-100">
+                      <span className="text-[10px] font-bold text-stone-900 bg-white/80 px-1.5 py-0.5 rounded-full backdrop-blur-xs">
+                        #0
+                      </span>
+                    </div>
+
+                    <div>
+                      <h5 className="text-lg font-bold text-stone-900 font-serif flex flex-wrap items-center gap-2">
+                        <span>Пролив #0: Промыв листа («Вэнь Жун» / Пробуждение)</span>
+                        <span className={`text-xs px-2.5 py-0.5 rounded-md font-mono font-bold ${
+                          customRinseTime !== null
+                            ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                            : 'bg-stone-100 text-stone-600'
+                        }`}>
+                          Экспозиция: {teaRinseInfo.seconds} секунд • {teaRinseInfo.tempC}°C
+                          {customRinseTime !== null && ' (своё время)'}
+                        </span>
+                        <span className="text-xs px-2.5 py-0.5 rounded-md font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                          {teaRinseInfo.badgeRu}
+                        </span>
+                      </h5>
+
+                      <p className="text-xs text-stone-600 mt-1.5 max-w-lg">
+                        {teaRinseInfo.actionRu}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSteepIndex(0)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
+                  >
+                    <span>Начать питьевой Пролив #1</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-4">
@@ -2027,58 +3353,33 @@ export const ExtractionSimulator: React.FC = () => {
 
                   <div>
                     <h5 className="text-lg font-bold text-stone-900 font-serif flex flex-wrap items-center gap-2">
-                      <span>Пролив #{currentSteepData.steepNumber}</span>
+                      <span>
+                        {brewingMethod === 'grandpa_cup'
+                          ? (currentSteepData.steepNumber === 1 ? 'Настой #1 (1-й залив в чашку)' : `Долив #${currentSteepData.steepNumber} (свежая вода)`)
+                          : `Пролив #${currentSteepData.steepNumber}`}
+                      </span>
                       <span className={`text-xs px-2.5 py-0.5 rounded-md font-mono font-bold ${
                         currentSteepData.isCustomUserTime
-                          ? 'bg-amber-200 text-amber-950 border border-amber-300'
+                          ? 'bg-amber-100 text-amber-950 border border-amber-300'
                           : currentSteepData.isAdaptedReference
-                          ? 'bg-amber-100/80 text-amber-900 border border-amber-200'
+                          ? 'bg-amber-50 text-amber-900 border border-amber-200'
                           : 'bg-stone-100 text-stone-600'
                       }`}>
                         Экспозиция: {currentSteepData.timeSec} секунд
                         {currentSteepData.isCustomUserTime && ' (своё время)'}
                         {currentSteepData.isAdaptedReference && ' (адаптировано)'}
                       </span>
+                      {brewingMethod === 'grandpa_cup' && (
+                        <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                          {currentSteepData.steepNumber === 1 ? 'Залив 100% стакана' : `Остаток корня 1/3 + Долив +${currentSteepData.freshWaterAddedMl || Math.round(waterVolume * 0.67)} мл`}
+                        </span>
+                      )}
+                      {brewingMethod === 'liu_gen' && (
+                        <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                          {currentSteepData.steepNumber === 1 ? 'Формирование корня' : `Остаток корня ${Math.round(rootFraction * 100)}% + Долив`}
+                        </span>
+                      )}
                     </h5>
-
-                    {/* Inline steep custom time status & reset if Custom Timing Mode is enabled */}
-                    {isCustomTimingMode && (
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        {currentSteepData.isCustomUserTime ? (
-                          <div className="flex items-center gap-2 bg-amber-100/90 border border-amber-300 text-amber-950 px-2.5 py-1 rounded-lg text-xs">
-                            <span className="font-semibold">
-                              Задано вручную: <strong className="font-mono">{currentSteepData.timeSec}с</strong> (исходный эталон {computedAdaptiveDurations[safeSteepIndex] || 10}с)
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleSetCustomSteepTime(safeSteepIndex, null);
-                                setSteepDrafts(prev => {
-                                  const next = { ...prev };
-                                  delete next[safeSteepIndex];
-                                  return next;
-                                });
-                              }}
-                              className="text-[11px] text-amber-800 hover:text-amber-950 font-bold underline ml-1 cursor-pointer"
-                            >
-                              Сбросить на эталон
-                            </button>
-                          </div>
-                        ) : currentSteepData.isAdaptedReference ? (
-                          <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-900 px-2.5 py-1 rounded-lg text-xs">
-                            <span>
-                              Скорректированный эталон: <strong className="font-mono">{currentSteepData.timeSec}с</strong> (базовый {computedAdaptiveDurations[safeSteepIndex] || 10}с)
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 bg-stone-100 border border-stone-200 text-stone-700 px-2.5 py-1 rounded-lg text-xs">
-                            <span>
-                              Эталонное время: <strong className="font-mono">{currentSteepData.timeSec}с</strong>
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
 
                     <p className="text-xs text-stone-600 mt-1.5 max-w-lg">
                       {currentSteepData.keyNotes}
@@ -2125,14 +3426,23 @@ export const ExtractionSimulator: React.FC = () => {
                 </div>
               </div>
 
-              {/* Peer-reviewed reference note for this steep */}
-              {currentSteepData.scientificReferenceRu && (
-                <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl text-xs text-amber-950 flex items-start space-x-2">
-                  <CheckCircle2 className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold">Обоснование динамики данного пролива: </span>
-                    <span className="italic">{currentSteepData.scientificReferenceRu}</span>
+              {/* Liu Gen Specific Thermodynamic & Concentration Matrix */}
+              {brewingMethod === 'liu_gen' && (
+                <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200 text-xs text-amber-950 space-y-2 animate-in fade-in duration-150">
+                  <div className="font-bold flex items-center justify-between text-amber-950">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-800" />
+                      <span>Кинетический буфер метода «Лю Гэнь» (留根法) на {currentSteepData.steepNumber}-м проливе:</span>
+                    </span>
+                    <span className="font-mono text-[11px] bg-amber-200/80 px-2 py-0.5 rounded text-amber-950">
+                      V_корень = {Math.round(waterVolume * rootFraction)} мл • V_долив = {Math.round(waterVolume * (1 - rootFraction))} мл
+                    </span>
                   </div>
+                  <p className="text-stone-700 text-[11px] leading-relaxed">
+                    {currentSteepData.steepNumber === 1
+                      ? `Первый пролив формирует «маточный настой» (чайный корень). Вы выпиваете ${Math.round(waterVolume * (1 - rootFraction))} мл, оставляя ${Math.round(waterVolume * rootFraction)} мл в посуде для сохранения гидродинамической стабильности листа.`
+                      : `Маточный настой удерживает накопленный L-теанин и снижает градиент концентрации (Cs - Cb), устраняя горький всплеск катехинов. В пиалу сливается ${Math.round(waterVolume * (1 - rootFraction))} мл готового бархатистого чая.`}
+                  </p>
                 </div>
               )}
 
@@ -2264,248 +3574,460 @@ export const ExtractionSimulator: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
           </div>
 
-          {/* 2. KINETIC CURVES VISUALIZATION (MOVED TO THE VERY BOTTOM AS REQUESTED) */}
-          <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <h4 className="font-bold text-stone-900 text-base flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 text-amber-700" />
-                  <span>Кинетические кривые экстракции ({steepsCount} {steepsCount === 1 ? 'пролив' : (steepsCount < 5 ? 'пролива' : 'проливов')})</span>
-                </h4>
-                <p className="text-xs text-stone-500">
-                  Динамика концентрации соединений в каждом отдельном проливе (мг / 100 мл)
-                </p>
+          {/* 2. KINETIC CURVES VISUALIZATION & ACTION RECOMMENDATIONS */}
+          {brewingMethod === 'grandpa_cup' && lazyCupPaths ? (
+            <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-stone-100 pb-3">
+                <div>
+                  <h4 className="font-bold text-stone-900 text-base flex items-center space-x-2 font-serif">
+                    <TrendingUp className="w-4 h-4 text-amber-700" />
+                    <span>«Ленивый» метод (Бэй Пао Фа): График экстракции и остывания во времени</span>
+                  </h4>
+                  <p className="text-xs text-stone-500">
+                    Динамика L-теанина, кофеина, катехинов и остывания T(t) по закону Ньютона с доливами кипятка (0–12+ мин)
+                  </p>
+                </div>
+
+                {/* Legend */}
+                <div className="flex flex-wrap items-center gap-3 text-[11px]">
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                    <span className="text-stone-700 font-medium">L-Теанин</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                    <span className="text-stone-700 font-medium">Кофеин</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+                    <span className="text-stone-700 font-medium">Катехины</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                    <span className="text-stone-700 font-medium">Полисахариды</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-0.5 bg-amber-600 font-bold"></span>
+                    <span className="text-amber-900 font-medium">Температура °C</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Legend */}
-              <div className="flex flex-wrap items-center gap-3 text-[11px]">
-                <div className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                  <span className="text-stone-700 font-medium">L-Теанин</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                  <span className="text-stone-700 font-medium">Кофеин</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                  <span className="text-stone-700 font-medium">Катехины (EGCG)</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-                  <span className="text-stone-700 font-medium">Полисахариды (TPS)</span>
-                </div>
-                {isCustomTimingMode && (
-                  <>
-                    <div className="w-px h-3.5 bg-stone-300 mx-0.5"></div>
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2 h-2 rounded-full bg-amber-800"></span>
-                      <span className="text-amber-950 font-bold">Ваш факт</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                      <span className="text-amber-800 font-bold">Адаптировано</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* SVG Multi-curve Chart with horizontal scroll when many steeps */}
-            <div className="w-full overflow-x-auto pb-2 border border-stone-100 rounded-xl p-1 bg-stone-50/50">
-              <svg 
-                viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
-                style={{ width: `${svgWidth}px`, minWidth: '100%', height: `${svgHeight}px` }} 
-                className="select-none"
-              >
-                {/* Grid lines */}
-                {[0, 0.25, 0.5, 0.75, 1].map((ratioVal, i) => {
-                  const y = padding.top + chartH * (1 - ratioVal);
-                  const valLabel = Math.round(maxConcentration * ratioVal);
-                  return (
-                    <g key={i}>
-                      <line
-                        x1={padding.left}
-                        y1={y}
-                        x2={svgWidth - padding.right}
-                        y2={y}
-                        stroke="#e7e5e4"
-                        strokeDasharray="3 3"
-                      />
-                      <text
-                        x={padding.left - 6}
-                        y={y + 3}
-                        fontSize="9"
-                        fill="#78716c"
-                        textAnchor="end"
-                        fontFamily="monospace"
-                      >
-                        {valLabel}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {/* X Axis Steeps & Vertical Grid Lines with Selected Steep Stripe */}
-                {simulationResults.map((d, i) => {
-                  const x = getX(i);
-                  const isSelected = i === selectedSteepIndex;
-                  const stripeWidth = Math.min(9, Math.max(5, Math.round((chartW / Math.max(1, simulationResults.length - 1)) * 0.125)));
-                  return (
-                    <g key={i} className="cursor-pointer" onClick={() => setSelectedSteepIndex(i)}>
-                      {/* Vertical highlight stripe for the selected steep (slender 2x narrower gray column) */}
-                      {isSelected && (
-                        <rect
-                          x={x - stripeWidth / 2}
-                          y={padding.top}
-                          width={stripeWidth}
-                          height={chartH}
-                          fill="rgba(148, 163, 184, 0.2)"
-                          stroke="rgba(100, 116, 139, 0.35)"
-                          strokeWidth={1}
-                          rx={2}
+              {/* Continuous Timeline SVG Chart */}
+              <div className="w-full overflow-x-auto pb-2 border border-stone-100 rounded-xl p-2 bg-stone-50/50">
+                <svg
+                  viewBox={`0 0 ${lazyCupPaths.svgW} ${lazyCupPaths.svgH}`}
+                  style={{ width: `${lazyCupPaths.svgW}px`, minWidth: '100%', height: `${lazyCupPaths.svgH}px` }}
+                  className="select-none"
+                >
+                  {/* Grid lines */}
+                  {[0, 0.25, 0.5, 0.75, 1].map((ratioVal, i) => {
+                    const y = lazyCupPaths.pTop + lazyCupPaths.cH * (1 - ratioVal);
+                    const valLabel = Math.round(lazyCupPaths.maxVal * ratioVal);
+                    return (
+                      <g key={i}>
+                        <line
+                          x1={lazyCupPaths.pLeft}
+                          y1={y}
+                          x2={lazyCupPaths.svgW - lazyCupPaths.pRight}
+                          y2={y}
+                          stroke="#e7e5e4"
+                          strokeDasharray="3 3"
                         />
-                      )}
-                      <line
-                        x1={x}
-                        y1={padding.top}
-                        x2={x}
-                        y2={padding.top + chartH}
-                        stroke={isSelected ? '#64748b' : '#f5f5f4'}
-                        strokeWidth={isSelected ? 1.5 : 1}
-                        strokeDasharray={isSelected ? '3 3' : undefined}
-                      />
-                      <text
-                        x={x}
-                        y={padding.top + chartH + 16}
-                        fontSize="10"
-                        fontWeight={isSelected ? 'bold' : 'normal'}
-                        fill={isSelected ? '#334155' : '#78716c'}
-                        textAnchor="middle"
-                      >
-                        #{d.steepNumber} ({d.timeSec}с)
-                      </text>
-                      {d.isCustomUserTime && (
+                        <text
+                          x={lazyCupPaths.pLeft - 6}
+                          y={y + 3}
+                          fontSize="9"
+                          fill="#78716c"
+                          textAnchor="end"
+                          fontFamily="monospace"
+                        >
+                          {valLabel}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  {/* Minute Markers */}
+                  {Array.from({ length: Math.floor(lazyCupPaths.totalMins) + 1 }).map((_, m) => {
+                    const x = lazyCupPaths.getLx(m);
+                    return (
+                      <g key={m}>
+                        <line
+                          x1={x}
+                          y1={lazyCupPaths.pTop}
+                          x2={x}
+                          y2={lazyCupPaths.pTop + lazyCupPaths.cH}
+                          stroke="#f0f0f0"
+                          strokeWidth={1}
+                        />
                         <text
                           x={x}
-                          y={padding.top + chartH + 27}
-                          fontSize="8.5"
-                          fontWeight="bold"
-                          fill="#92400e"
+                          y={lazyCupPaths.pTop + lazyCupPaths.cH + 16}
+                          fontSize="9.5"
+                          fill="#78716c"
                           textAnchor="middle"
+                          fontFamily="monospace"
                         >
-                          факт
+                          {m} мин
                         </text>
-                      )}
-                      {d.isAdaptedReference && (
-                        <text
-                          x={x}
-                          y={padding.top + chartH + 27}
-                          fontSize="8.5"
-                          fontWeight="bold"
-                          fill="#d97706"
-                          textAnchor="middle"
-                        >
-                          адапт
-                        </text>
-                      )}
-                    </g>
-                  );
-                })}
+                      </g>
+                    );
+                  })}
 
-                {/* Smooth Continuous Spline Data curves */}
-                <path
-                  d={theaninePath}
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d={caffeinePath}
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d={catechinsPath}
-                  fill="none"
-                  stroke="#e11d48"
-                  strokeWidth="3.0"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d={polysaccharidesPath}
-                  fill="none"
-                  stroke="#9333ea"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+                  {/* Refill event vertical lines */}
+                  {lazyCupTimeline.filter(pt => pt.isRefill || pt.minute === 2.0).map((pt, i) => {
+                    const x = lazyCupPaths.getLx(pt.minute);
+                    const isSip = pt.minute === 2.0;
+                    return (
+                      <g key={i}>
+                        <line
+                          x1={x}
+                          y1={lazyCupPaths.pTop}
+                          x2={x}
+                          y2={lazyCupPaths.pTop + lazyCupPaths.cH}
+                          stroke={isSip ? '#10b981' : '#d97706'}
+                          strokeWidth={isSip ? 1.5 : 2}
+                          strokeDasharray={isSip ? '2 2' : '4 3'}
+                        />
+                        {pt.label && (
+                          <text
+                            x={x}
+                            y={lazyCupPaths.pTop - 4}
+                            fontSize="8.5"
+                            fontWeight="bold"
+                            fill={isSip ? '#047857' : '#92400e'}
+                            textAnchor="middle"
+                          >
+                            {pt.label}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
 
-                {/* Data points for current selected steep */}
-                {simulationResults.map((d, i) => {
-                  const x = getX(i);
-                  const isSelected = i === selectedSteepIndex;
-                  return (
-                    <g key={i} className="cursor-pointer" onClick={() => setSelectedSteepIndex(i)}>
-                      {/* Invisible wider target for clicking */}
-                      <rect
-                        x={x - 18}
-                        y={padding.top}
-                        width="36"
-                        height={chartH}
-                        fill="transparent"
-                      />
-                      <circle
-                        cx={x}
-                        cy={getY(d.theanineConcentration)}
-                        r={isSelected ? 5.5 : 3.5}
-                        fill="#10b981"
-                        stroke="#fff"
-                        strokeWidth="1.5"
-                      />
-                      <circle
-                        cx={x}
-                        cy={getY(d.caffeineConcentration)}
-                        r={isSelected ? 5.5 : 3.5}
-                        fill="#2563eb"
-                        stroke="#fff"
-                        strokeWidth="1.5"
-                      />
-                      <circle
-                        cx={x}
-                        cy={getY(d.catechinsConcentration)}
-                        r={isSelected ? 6 : 4}
-                        fill="#e11d48"
-                        stroke="#fff"
-                        strokeWidth="1.5"
-                      />
-                      <circle
-                        cx={x}
-                        cy={getY(d.polysaccharidesConcentration)}
-                        r={isSelected ? 5.5 : 3.5}
-                        fill="#9333ea"
-                        stroke="#fff"
-                        strokeWidth="1.5"
-                      />
-                    </g>
-                  );
-                })}
-              </svg>
+                  {/* Compound Curves */}
+                  <path d={lazyCupPaths.thPath} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d={lazyCupPaths.cafPath} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d={lazyCupPaths.catPath} fill="none" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d={lazyCupPaths.polyPath} fill="none" stroke="#9333ea" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d={lazyCupPaths.tempPath} fill="none" stroke="#d97706" strokeWidth="2" strokeDasharray="4 3" />
+                </svg>
+              </div>
+
+              {/* ACTIONABLE TIMELINE RECOMMENDATION GUIDE FOR LAZY METHOD */}
+              <div className="pt-2 border-t border-stone-100 space-y-3">
+                <div className="flex items-center space-x-2 text-xs font-bold text-stone-900">
+                  <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>Рекомендации к какому времени допить и добавить воды (Бэй Пао Фа):</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  {/* Step 1 */}
+                  <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1">
+                    <div className="font-bold text-emerald-950 flex justify-between items-center">
+                      <span>✨ 01:30 – 03:00 мин: Золотое окно первого глотка</span>
+                      <span className="text-[10px] bg-emerald-200/80 px-1.5 py-0.5 rounded font-mono">~58–62°C</span>
+                    </div>
+                    <p className="text-[11px] text-stone-700 leading-relaxed">
+                      Чашка остыла до идеальной температуры. L-теанин достиг максимума ({simulationResults[0]?.theanineConcentration || 12} мг/100мл). <strong>Сделайте первый глоток прямо сейчас!</strong> Настой сочный, сладковатый и без терпкости.
+                    </p>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
+                    <div className="font-bold text-amber-950 flex justify-between items-center">
+                      <span>🍵 03:00 – 04:30 мин: Оставить корень (留根, Лю Гэнь)</span>
+                      <span className="text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded font-mono">Остаток 1/3 ({Math.round(waterVolume * 0.33)} мл)</span>
+                    </div>
+                    <p className="text-[11px] text-stone-700 leading-relaxed">
+                      Выпейте ~2/3 объёма чашки ({Math.round(waterVolume * 0.67)} мл). <strong>Не выпивайте до самого дна!</strong> Оставьте около 1/3 настоя на дне — это «корень», который сохранится как вкусовой буфер.
+                    </p>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1">
+                    <div className="font-bold text-blue-950 flex justify-between items-center">
+                      <span>🫖 04:30 – 05:00 мин: Долив #1 — Добавить горячую воду!</span>
+                      <span className="text-[10px] bg-blue-200/80 px-1.5 py-0.5 rounded font-mono">+{Math.round(waterVolume * 0.67)} мл ({waterTemp}°C)</span>
+                    </div>
+                    <p className="text-[11px] text-stone-700 leading-relaxed">
+                      Залейте свежую горячую воду поверх оставшейся 1/3 «корня». Остаток маточного раствора мгновенно сбалансирует настой без перепада вкуса.
+                    </p>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="p-3 bg-purple-50/80 border border-purple-200 rounded-xl space-y-1">
+                    <div className="font-bold text-purple-950 flex justify-between items-center">
+                      <span>🍯 08:00 – 09:00 мин: Долив #2 — Раскрытие сахаров (TPS)</span>
+                      <span className="text-[10px] bg-purple-200/80 px-1.5 py-0.5 rounded font-mono">+{Math.round(waterVolume * 0.67)} мл</span>
+                    </div>
+                    <p className="text-[11px] text-stone-700 leading-relaxed">
+                      Чай отдает чайные полисахариды ({simulationResults[1]?.polysaccharidesConcentration || 15} мг/100мл), создавая мягкое обволакивающее послевкусие. При остатке 1/3 долейте воду снова.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-[11px] text-stone-500 italic">
-              * Кликните по точке любого пролива на графике или по кнопке пролива выше, чтобы увидеть детальный профиль чашки.
-            </p>
-          </div>
+          ) : (
+            <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h4 className="font-bold text-stone-900 text-base flex items-center space-x-2 font-serif">
+                    <TrendingUp className="w-4 h-4 text-amber-700" />
+                    <span>Кинетические кривые экстракции ({steepsCount} {steepsCount === 1 ? 'пролив' : (steepsCount < 5 ? 'пролива' : 'проливов')})</span>
+                  </h4>
+                  <p className="text-xs text-stone-500">
+                    Динамика концентрации соединений в каждом отдельном проливе (мг / 100 мл)
+                  </p>
+                </div>
+
+                {/* Legend */}
+                <div className="flex flex-wrap items-center gap-3 text-[11px]">
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                    <span className="text-stone-700 font-medium">L-Теанин</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                    <span className="text-stone-700 font-medium">Кофеин</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+                    <span className="text-stone-700 font-medium">Катехины (EGCG)</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                    <span className="text-stone-700 font-medium">Полисахариды (TPS)</span>
+                  </div>
+                  {adaptiveCustomBrewing && adaptiveCustomBrewing.userSteepsCount > 0 && (
+                    <>
+                      <div className="w-px h-3.5 bg-stone-300 mx-0.5"></div>
+                      <div className="flex items-center space-x-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-800"></span>
+                        <span className="text-amber-950 font-bold">Ваш факт</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span className="text-amber-800 font-bold">Адаптировано</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* SVG Multi-curve Chart with horizontal scroll when many steeps */}
+              <div className="w-full overflow-x-auto pb-2 border border-stone-100 rounded-xl p-1 bg-stone-50/50">
+                <svg 
+                  viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
+                  style={{ width: `${svgWidth}px`, minWidth: '100%', height: `${svgHeight}px` }} 
+                  className="select-none"
+                >
+                  {/* Grid lines */}
+                  {[0, 0.25, 0.5, 0.75, 1].map((ratioVal, i) => {
+                    const y = padding.top + chartH * (1 - ratioVal);
+                    const valLabel = Math.round(maxConcentration * ratioVal);
+                    return (
+                      <g key={i}>
+                        <line
+                          x1={padding.left}
+                          y1={y}
+                          x2={svgWidth - padding.right}
+                          y2={y}
+                          stroke="#e7e5e4"
+                          strokeDasharray="3 3"
+                        />
+                        <text
+                          x={padding.left - 6}
+                          y={y + 3}
+                          fontSize="9"
+                          fill="#78716c"
+                          textAnchor="end"
+                          fontFamily="monospace"
+                        >
+                          {valLabel}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  {/* X Axis Steeps & Vertical Grid Lines with Selected Steep Stripe */}
+                  {simulationResults.map((d, i) => {
+                    const x = getX(i);
+                    const isSelected = i === selectedSteepIndex;
+                    const stripeWidth = Math.min(9, Math.max(5, Math.round((chartW / Math.max(1, simulationResults.length - 1)) * 0.125)));
+                    return (
+                      <g key={i} className="cursor-pointer" onClick={() => setSelectedSteepIndex(i)}>
+                        {/* Vertical highlight stripe for the selected steep (slender 2x narrower gray column) */}
+                        {isSelected && (
+                          <rect
+                            x={x - stripeWidth / 2}
+                            y={padding.top}
+                            width={stripeWidth}
+                            height={chartH}
+                            fill="rgba(148, 163, 184, 0.2)"
+                            stroke="rgba(100, 116, 139, 0.35)"
+                            strokeWidth={1}
+                            rx={2}
+                          />
+                        )}
+                        <line
+                          x1={x}
+                          y1={padding.top}
+                          x2={x}
+                          y2={padding.top + chartH}
+                          stroke={isSelected ? '#64748b' : '#f5f5f4'}
+                          strokeWidth={isSelected ? 1.5 : 1}
+                          strokeDasharray={isSelected ? '3 3' : undefined}
+                        />
+                        <text
+                          x={x}
+                          y={padding.top + chartH + 16}
+                          fontSize="10"
+                          fontWeight={isSelected ? 'bold' : 'normal'}
+                          fill={isSelected ? '#334155' : '#78716c'}
+                          textAnchor="middle"
+                        >
+                          #{d.steepNumber} ({d.timeSec}с)
+                        </text>
+                        {d.isCustomUserTime && (
+                          <text
+                            x={x}
+                            y={padding.top + chartH + 27}
+                            fontSize="8.5"
+                            fontWeight="bold"
+                            fill="#92400e"
+                            textAnchor="middle"
+                          >
+                            факт
+                          </text>
+                        )}
+                        {d.isAdaptedReference && (
+                          <text
+                            x={x}
+                            y={padding.top + chartH + 27}
+                            fontSize="8.5"
+                            fontWeight="bold"
+                            fill="#d97706"
+                            textAnchor="middle"
+                          >
+                            адапт
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+
+                  {/* Smooth Continuous Spline Data curves */}
+                  <path
+                    d={theaninePath}
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d={caffeinePath}
+                    fill="none"
+                    stroke="#2563eb"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d={catechinsPath}
+                    fill="none"
+                    stroke="#e11d48"
+                    strokeWidth="3.0"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d={polysaccharidesPath}
+                    fill="none"
+                    stroke="#9333ea"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  {/* Data points for current selected steep */}
+                  {simulationResults.map((d, i) => {
+                    const x = getX(i);
+                    const isSelected = i === selectedSteepIndex;
+                    return (
+                      <g key={i} className="cursor-pointer" onClick={() => setSelectedSteepIndex(i)}>
+                        {/* Invisible wider target for clicking */}
+                        <rect
+                          x={x - 18}
+                          y={padding.top}
+                          width="36"
+                          height={chartH}
+                          fill="transparent"
+                        />
+                        <circle
+                          cx={x}
+                          cy={getY(d.theanineConcentration)}
+                          r={isSelected ? 5.5 : 3.5}
+                          fill="#10b981"
+                          stroke="#fff"
+                          strokeWidth="1.5"
+                        />
+                        <circle
+                          cx={x}
+                          cy={getY(d.caffeineConcentration)}
+                          r={isSelected ? 5.5 : 3.5}
+                          fill="#2563eb"
+                          stroke="#fff"
+                          strokeWidth="1.5"
+                        />
+                        <circle
+                          cx={x}
+                          cy={getY(d.catechinsConcentration)}
+                          r={isSelected ? 6 : 4}
+                          fill="#e11d48"
+                          stroke="#fff"
+                          strokeWidth="1.5"
+                        />
+                        <circle
+                          cx={x}
+                          cy={getY(d.polysaccharidesConcentration)}
+                          r={isSelected ? 5.5 : 3.5}
+                          fill="#9333ea"
+                          stroke="#fff"
+                          strokeWidth="1.5"
+                        />
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+              <p className="text-[11px] text-stone-500 italic">
+                * Кликните по точке любого пролива на графике или по кнопке пролива выше, чтобы увидеть детальный профиль чашки.
+              </p>
+            </div>
+          )}
         </div>
       </div>
+        </>
+      )}
+
+      {/* Cheat Sheet Modal for Print / Quick Reference */}
+      {isCheatSheetOpen && (
+        <TeaCheatSheetModal
+          tea={selectedTea}
+          waterTemp={waterTemp}
+          teaMass={leafMass}
+          waterVolume={waterVolume}
+          steepsCount={steepsCount}
+          steepSchedule={effectiveDurations}
+          onClose={() => setIsCheatSheetOpen(false)}
+        />
+      )}
     </div>
   );
 };

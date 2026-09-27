@@ -14,7 +14,7 @@ import {
 
 export const BrewingProtocolsView: React.FC = () => {
   const [selectedGuideCategory, setSelectedGuideCategory] = useState<string>(GENERIC_TEA_ARCHETYPES[0].id);
-  const [subSection, setSubSection] = useState<'all' | 'comparison' | 'universal' | 'archetypes'>('all');
+  const [subSection, setSubSection] = useState<'all' | 'comparison' | 'universal' | 'archetypes' | 'blending'>('all');
 
   const activeCategoryGuide = GENERIC_TEA_ARCHETYPES.find(a => a.id === selectedGuideCategory) || GENERIC_TEA_ARCHETYPES[0];
 
@@ -44,9 +44,10 @@ export const BrewingProtocolsView: React.FC = () => {
         <div className="flex flex-wrap gap-2 min-w-0">
           {[
             { id: 'all', label: 'Все разделы' },
-            { id: 'comparison', label: 'Гунфу Ча vs Запад' },
+            { id: 'comparison', label: 'Сравнение 4 методов (Гунфу, Лю Гэнь, Чашка, Запад)' },
             { id: 'universal', label: 'Универсальный алгоритм' },
             { id: 'archetypes', label: `${GENERIC_TEA_ARCHETYPES.length} категорий (архетипов)` },
+            { id: 'blending', label: 'Купажирование и синергия сортов' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -63,123 +64,241 @@ export const BrewingProtocolsView: React.FC = () => {
         </div>
       </div>
 
-      {/* 1. GONGFU VS WESTERN COMPARISON & FICK'S LAW */}
+      {/* 1. GONGFU VS LIU GEN VS CUP BREWING VS WESTERN COMPARISON & FICK'S LAW */}
       {(subSection === 'all' || subSection === 'comparison') && (
         <div className="space-y-4 min-w-0 max-w-full">
           <div className="flex items-center space-x-2 border-l-4 border-amber-700 pl-3 min-w-0">
             <h3 className="text-lg font-bold text-stone-900 font-serif break-words">
-              1. Сравнительный анализ: Метод проливов против Европейского настаивания
+              1. Сравнительный анализ: Гунфу Ча vs Оставление корня vs Заваривание в чашке vs Запад
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 min-w-0 max-w-full overflow-hidden">
             {/* Gongfu Card */}
-            <div className="bg-white border-2 border-amber-700/40 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 relative min-w-0 max-w-full overflow-hidden">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5 min-w-0">
-                <div className="min-w-0">
-                  <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block truncate">
-                    Китайская методика
-                  </span>
-                  <h4 className="text-lg font-bold text-stone-900 font-serif break-words">
-                    Гунфу Ча (Пин Ча, проливы)
-                  </h4>
+            <div className="bg-white border-2 border-amber-700/40 rounded-2xl p-5 shadow-xs space-y-4 relative min-w-0 max-w-full overflow-hidden flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2.5 min-w-0">
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block truncate">
+                      Классика Китая
+                    </span>
+                    <h4 className="text-base font-bold text-stone-900 font-serif break-words">
+                      Гунфу Ча (100% слив)
+                    </h4>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
+                    功夫
+                  </div>
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
-                  功夫
+
+                <div className="space-y-2 text-xs min-w-0">
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Слив: </strong>
+                      <span className="text-stone-600">Полный слив до последней капли (100%).</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Время контакта: </strong>
+                      <span className="text-stone-600">Короткое (5–25 секунд) с кинетическим ростом.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Режим диффузии: </strong>
+                      <span className="text-stone-600">Сброс C_bulk в ноль на каждом шаге. Максимальный градиент ΔC.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Сенсорный профиль: </strong>
+                      <span className="text-stone-600">Максимальная контрастность и динамика от пролива к проливу.</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2.5 text-xs min-w-0">
-                <div className="flex items-start space-x-2 min-w-0">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div className="break-words min-w-0">
-                    <strong className="text-stone-900">Гидромодуль: </strong>
-                    <span className="text-stone-600">Высокая масса листа на малый объем (1:12 – 1:18, т.е. 5–8 г на 100 мл).</span>
+              <div className="p-2.5 bg-amber-50 rounded-xl text-[11px] text-amber-900 font-medium border border-amber-200/80 break-words min-w-0 mt-2">
+                <strong>Идеально для:</strong> Улунов, Пуэров, Хэй Ча, плотных красных сортов.
+              </div>
+            </div>
+
+            {/* Liu Gen Card */}
+            <div className="bg-white border-2 border-emerald-700/40 rounded-2xl p-5 shadow-xs space-y-4 relative min-w-0 max-w-full overflow-hidden flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2.5 min-w-0">
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block truncate">
+                      Традиция Ханчжоу и Сычуани
+                    </span>
+                    <h4 className="text-base font-bold text-stone-900 font-serif break-words">
+                      Лю Гэнь (Оставление корня)
+                    </h4>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
+                    留根
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-2 min-w-0">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div className="break-words min-w-0">
-                    <strong className="text-stone-900">Время контакта: </strong>
-                    <span className="text-stone-600">Короткое (5–25 секунд) с постепенным кинетическим удлинением.</span>
+                <div className="space-y-2 text-xs min-w-0">
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Слив: </strong>
+                      <span className="text-stone-600">Сливается 60–75%, а 25–40% («корень») остаётся в посуде.</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-start space-x-2 min-w-0">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div className="break-words min-w-0">
-                    <strong className="text-stone-900">Режим диффузии: </strong>
-                    <span className="text-stone-600">Неравновесная фракционная экстракция с максимальным начальным градиентом концентраций ΔC.</span>
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Время контакта: </strong>
+                      <span className="text-stone-600">Умеренное (1-й пролив 40–60с, долив 15–30с).</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-start space-x-2 min-w-0">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div className="break-words min-w-0">
-                    <strong className="text-stone-900">Сенсорный результат: </strong>
-                    <span className="text-stone-600">Поэтапное раскрытие: сначала нежные цветочные эфиры и L-теанин, затем тело чая, в конце — полисахаридная сладость.</span>
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Режим диффузии: </strong>
+                      <span className="text-stone-600">Буферизованная экстракция. Остаток удерживает C_bulk &gt; 0, сглаживая пик катехинов.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Сенсорный профиль: </strong>
+                      <span className="text-stone-600">Шелковистая бархатистость без термошока и вкусовых провалов.</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="p-3 bg-amber-50 rounded-xl text-xs text-amber-900 font-medium border border-amber-200/80 break-words min-w-0">
-                💡 <strong>Вывод хроматографии:</strong> Позволяет изолированно раскрыть тонкие эфирные ноты, которые иначе заглушаются общим таниновым фоном.
+              <div className="p-2.5 bg-emerald-50 rounded-xl text-[11px] text-emerald-900 font-medium border border-emerald-200/80 break-words min-w-0 mt-2">
+                <strong>Идеально для:</strong> Зеленых чаев (Лунцзин, Билочунь), Белых почек (Иньчжэнь), нежных желтых чаев.
+              </div>
+            </div>
+
+            {/* Lazy Cup Brewing Card */}
+            <div className="bg-white border-2 border-amber-600/40 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5 relative min-w-0 max-w-full overflow-hidden flex flex-col justify-between">
+              <div className="space-y-3 min-w-0">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2.5 min-w-0 gap-2">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block truncate">
+                      «Ленивый» метод (Бэй Пао Фа)
+                    </span>
+                    <h4 className="text-sm sm:text-base font-bold text-stone-900 font-serif break-words">
+                      Заваривание в кружке (杯泡法)
+                    </h4>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-xs shrink-0">
+                    杯泡
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-xs min-w-0">
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Посуда: </strong>
+                      <span className="text-stone-600">Кружка или стакан (200–350 мл), чай прямо на дне.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Авто-корень (留根): </strong>
+                      <span className="text-stone-600">Если не выпивать всё до дна (~1/3 остаётся) и долить — «корень» сгладит вкус.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Термодинамика: </strong>
+                      <span className="text-stone-600">Закон Ньютона: открытое стекло остывает до 58°C, сдерживая вымывание катехинов.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Сенсорный профиль: </strong>
+                      <span className="text-stone-600">Мягкий, постоянный, уютный настой без хлопот.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-amber-50 rounded-xl text-[11px] text-amber-900 font-medium border border-amber-200/80 break-words min-w-0 mt-2">
+                <strong>Идеально для:</strong> Зеленых чаев, Белых листьев, повседневного чаепития за работой.
               </div>
             </div>
 
             {/* Western Card */}
-            <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 relative min-w-0 max-w-full overflow-hidden">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5 min-w-0">
-                <div className="min-w-0">
-                  <span className="text-xs font-bold text-stone-500 uppercase tracking-wider block truncate">
-                    Западная методика
-                  </span>
-                  <h4 className="text-lg font-bold text-stone-900 font-serif break-words">
-                    Европейское настаивание
-                  </h4>
+            <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-xs space-y-4 relative min-w-0 max-w-full overflow-hidden flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2.5 min-w-0">
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-stone-500 uppercase tracking-wider block truncate">
+                      Западная методика
+                    </span>
+                    <h4 className="text-base font-bold text-stone-900 font-serif break-words">
+                      Европейское настаивание
+                    </h4>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
+                    Запад
+                  </div>
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
-                  Запад
+
+                <div className="space-y-2 text-xs min-w-0">
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <XCircle className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Гидромодуль: </strong>
+                      <span className="text-stone-600">1:50 – 1:100 (2–3 г на 250–300 мл кружку).</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <XCircle className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Время контакта: </strong>
+                      <span className="text-stone-600">Длительное (3–5 минут непрерывного контакта).</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <XCircle className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Режим диффузии: </strong>
+                      <span className="text-stone-600">Термодинамическое равновесие полного растворения.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <XCircle className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
+                    <div className="break-words min-w-0">
+                      <strong className="text-stone-900">Сенсорный профиль: </strong>
+                      <span className="text-stone-600">Монолитная крепость, горечь и вяжущие ноты катехинов.</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2.5 text-xs min-w-0">
-                <div className="flex items-start space-x-2 min-w-0">
-                  <XCircle className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
-                  <div className="break-words min-w-0">
-                    <strong className="text-stone-900">Гидромодуль: </strong>
-                    <span className="text-stone-600">Малая масса листа на большой объем (1:50 – 1:100, т.е. 2–3 г на 250–300 мл).</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-2 min-w-0">
-                  <XCircle className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
-                  <div className="break-words min-w-0">
-                    <strong className="text-stone-900">Время контакта: </strong>
-                    <span className="text-stone-600">Длительное (3–5 минут непрерывного контакта).</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-2 min-w-0">
-                  <XCircle className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
-                  <div className="break-words min-w-0">
-                    <strong className="text-stone-900">Режим диффузии: </strong>
-                    <span className="text-stone-600">Термодинамическое равновесие полного растворения всех водорастворимых фракций.</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-2 min-w-0">
-                  <XCircle className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
-                  <div className="break-words min-w-0">
-                    <strong className="text-stone-900">Сенсорный результат: </strong>
-                    <span className="text-stone-600">Усредненный монолитный профиль: выраженная горечь и терпкость из-за глубокого выщелачивания тяжелых катехинов.</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-stone-100 rounded-xl text-xs text-stone-700 font-medium border border-stone-200 break-words min-w-0">
-                ⚠️ <strong>Ограничение:</strong> Тонкие чаи (высокогорные улуны, шэн-пуэры, белые чаи) становятся плоскими и теряют многослойность букета.
+              <div className="p-2.5 bg-stone-100 rounded-xl text-[11px] text-stone-700 font-medium border border-stone-200 break-words min-w-0 mt-2">
+                <strong>Ограничение:</strong> Теряются тонкие эфирные ноты и динамика вкусовых слоев.
               </div>
             </div>
           </div>
@@ -258,7 +377,7 @@ export const BrewingProtocolsView: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-xs text-stone-900 font-medium bg-white p-2 rounded-lg border border-stone-200 break-words min-w-0">
-                    👉 {rule.actionRu}
+                    {rule.actionRu}
                   </div>
                 </div>
               ))}
@@ -389,6 +508,136 @@ export const BrewingProtocolsView: React.FC = () => {
                       </span>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. TEA BLENDING & SYNERGISTIC EXTRACTION PROTOCOL */}
+      {(subSection === 'all' || subSection === 'blending') && (
+        <div className="space-y-4 min-w-0 max-w-full">
+          <div className="flex items-center space-x-2 border-l-4 border-amber-800 pl-3 min-w-0">
+            <h3 className="text-lg font-bold text-stone-900 font-serif break-words">
+              5. Купажирование и смешивание сортов (Tea Blending & Synergy Extraction)
+            </h3>
+          </div>
+
+          <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-6">
+            {/* Introduction Card */}
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block">
+                Научный фундамент блендинга
+              </span>
+              <h4 className="text-base sm:text-lg font-bold text-stone-900 font-serif">
+                Физико-химическая синергия фракций чайного листа в технике Гунфу Ча
+              </h4>
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                Купажирование в традиции Гунфу Ча — это не просто механическое соединение разных видов чая, а создание управляемой биохимической системы, в которой растворимые полисахариды выдержанных фракций связывают избыточную терпкость полифенолов, а эфирные терпены слабоферментированных сортов выстраивают сложную полифонию верхних летучих нот.
+              </p>
+            </div>
+
+            {/* 3 Main Principles Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Principle 1 */}
+              <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-2">
+                <div className="flex items-center space-x-2 text-amber-900 font-bold text-xs">
+                  <Sparkles className="w-4 h-4 text-amber-700" />
+                  <span>1. Буферизация танинов</span>
+                </div>
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Полисахариды (60–90 мг/г в Шу Пуэрах и Хэйча) образуют водородные мостики с вяжущими катехинами (EGCG), формируя коллоидные микромицеллы. Настой становится бархатным, плотным и лишённым сушащей агрессии.
+                </p>
+              </div>
+
+              {/* Principle 2 */}
+              <div className="p-4 rounded-xl bg-sky-50/70 border border-sky-200/80 space-y-2">
+                <div className="flex items-center space-x-2 text-sky-900 font-bold text-xs">
+                  <Activity className="w-4 h-4 text-sky-700" />
+                  <span>2. Температурный компромисс</span>
+                </div>
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Температура заваривания купажа вычисляется по формуле взвешенной термодинамической защиты: <span className="font-mono font-bold text-stone-900 text-[11px]">T = min(T_i) + ΔT</span>. Это предотвращает температурный гидролиз L-теанина нежных сортов.
+                </p>
+              </div>
+
+              {/* Principle 3 */}
+              <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/80 space-y-2">
+                <div className="flex items-center space-x-2 text-emerald-900 font-bold text-xs">
+                  <Layers className="w-4 h-4 text-emerald-700" />
+                  <span>3. Послойный вкусовой аккорд</span>
+                </div>
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Разделение букета на 3 регистра: <strong>Верхние ноты</strong> (монотерпены линалоол, гераниол), <strong>Сердце букета</strong> (фенилэтиловый спирт, лактоны) и <strong>Хуэйгань / Послевкусие</strong> (теанин и пектины).
+                </p>
+              </div>
+            </div>
+
+            {/* 5 Master Rules */}
+            <div className="space-y-3 pt-2 border-t border-stone-100">
+              <h5 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+                5 правил создания идеального купажа
+              </h5>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="flex items-start space-x-2 p-3 rounded-xl bg-stone-50 border border-stone-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-stone-900">Пропорция База/Акцент: </strong>
+                    <span className="text-stone-600">60–75% плотного базового листа (Шу, Красный, Тёмный улун) и 25–40% яркого ароматического акцента (Белый, ГАБА, Жасмин).</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-2 p-3 rounded-xl bg-stone-50 border border-stone-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-stone-900">Правильная укладка в посуду: </strong>
+                    <span className="text-stone-600">Тяжёлый плотный прессованный лист укладывается на дно гайвани/чайника, а лёгкий рассыпной лист — наверх.</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-2 p-3 rounded-xl bg-stone-50 border border-stone-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-stone-900">Выбор посуды: </strong>
+                    <span className="text-stone-600">Для пуэрных и выдержанных блендов — пористая глина (Исин / Цзяньшуй). Для цветочно-улунных композиций — тонкостенный фарфор.</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-2 p-3 rounded-xl bg-stone-50 border border-stone-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-stone-900">Стартовый пролив 5–8 сек: </strong>
+                    <span className="text-stone-600">Первые 2 пролива выполняются быстро (flash steep), чтобы не перегрузить настой танинами перед раскрытием глубоких фракций.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Classical Benchmark Recipes */}
+            <div className="space-y-3 pt-2 border-t border-stone-100">
+              <h5 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+                Канонические сочетания (Бенчмарки)
+              </h5>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl border border-stone-200 bg-stone-50/70 space-y-1.5">
+                  <span className="font-bold text-stone-900 block text-xs">«Императорский бархат»</span>
+                  <div className="text-[11px] text-amber-800 font-medium">Шу Пуэр 60% + Выдержанный Шоу Мэй 40%</div>
+                  <p className="text-[11px] text-stone-600">Шоколадно-ореховая основа с медово-сухофруктовой сладостью и полным подавлением вяжущей горечи.</p>
+                </div>
+
+                <div className="p-3.5 rounded-xl border border-stone-200 bg-stone-50/70 space-y-1.5">
+                  <span className="font-bold text-stone-900 block text-xs">«Огненный Феникс»</span>
+                  <div className="text-[11px] text-amber-800 font-medium">Да Хун Пао 65% + Чжэн Шань Сяо Чжун 35%</div>
+                  <p className="text-[11px] text-stone-600">Минерально-утёсный каркас с глубокими нотами копчёного чернослива, пряностей и карамельного солода.</p>
+                </div>
+
+                <div className="p-3.5 rounded-xl border border-stone-200 bg-stone-50/70 space-y-1.5">
+                  <span className="font-bold text-stone-900 block text-xs">«Дзен и Ноотропная ясность»</span>
+                  <div className="text-[11px] text-amber-800 font-medium">ГАБА Улун 55% + Дянь Хун 45%</div>
+                  <p className="text-[11px] text-stone-600">Высокая концентрация ГАМК и L-теанина для мягкого расслабления тела при абсолютной ментальной концентрации.</p>
                 </div>
               </div>
             </div>

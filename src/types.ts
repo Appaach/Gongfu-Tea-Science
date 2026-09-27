@@ -12,7 +12,61 @@ export type TeaType =
   | 'gaba_red'
   | 'custom';
 
-export type TeaCategoryGroup = 'specific' | 'generic';
+export type TeaCategoryGroup = 'generic' | 'specific' | 'favorites' | 'blend';
+
+export interface BlendComponentItem {
+  teaId: string;
+  weightG: number;
+}
+
+export interface BlendPresetRecipe {
+  id: string;
+  titleRu: string;
+  subtitleRu?: string;
+  descriptionRu: string;
+  targetEffectRu?: string;
+  components: { teaId: string; ratioPercent: number }[];
+}
+
+export type MasterBlendPreset = BlendPresetRecipe;
+
+export interface TeaBlendCalculationResult {
+  totalMassG: number;
+  recommendedWaterVolumeMl: number;
+  recommendedRatio: number;
+  optimalTempC: number;
+  tempRationaleRu: string;
+  recommendedVesselRu: string;
+  recommendedSteeps: number;
+  steepScheduleSec: number[];
+  
+  // Composite chemical concentrations (mg/g)
+  theanineMgPerG: number;
+  caffeineMgPerG: number;
+  catechinsMgPerG: number;
+  polysaccharidesMgPerG: number;
+  
+  // Synergy and Sensory indices
+  theanineToCaffeineRatio: number;
+  theanineToCatechinsRatio: number;
+  tanninBufferingScorePercent: number;
+  aromaHarmonyScorePercent: number;
+  energyRelaxScorePercent: number; // 0 = deeply relaxing/sedative, 100 = intense stimulating energy
+  dominantFlavorNotes: string[];
+  secondaryFlavorNotes: string[];
+  finishNotes: string[];
+  
+  synergySummaryRu: string;
+  brewingAdviceRu: string;
+  compositeTeaVariety: TeaVariety;
+}
+
+export type TeaEffectCategory = 
+  | 'focus_zen' 
+  | 'energy_power' 
+  | 'calm_gaba' 
+  | 'warmth_comfort' 
+  | 'digest_detox';
 
 export interface TeaVariety {
   id: string;
@@ -36,6 +90,12 @@ export interface TeaVariety {
   recommendedSteeps: number;
   categoryGroup?: TeaCategoryGroup;
   generalExamplesRu?: string[]; // Examples of teas matching this general archetype
+  effectCategory?: TeaEffectCategory;
+  effectNameRu?: string;
+  effectDescriptionRu?: string;
+  rinseRecommended?: boolean;
+  rinseSeconds?: number;
+  rinseNoteRu?: string;
 }
 
 export interface ChemicalCompoundInfo {
@@ -73,6 +133,23 @@ export interface SteepKineticData {
   scientificReferenceRu: string;
   isCustomUserTime?: boolean; // Duration was entered manually by the user
   isAdaptedReference?: boolean; // Duration was dynamically adapted by algorithm based on user's actual past steeps
+  brewingMethod?: BrewingMethod;
+  retainedRootVolumeMl?: number; // Volume of root liquor left from previous steep
+  freshWaterAddedMl?: number; // Volume of fresh water poured
+  rootCarryoverSolutesMg?: number; // Solutes carried over from previous steep root
+}
+
+export type BrewingMethod = 'gongfu' | 'liu_gen' | 'grandpa_cup';
+
+export interface BrewingMethodInfo {
+  id: BrewingMethod;
+  nameRu: string;
+  nameZh: string;
+  namePinyin: string;
+  shortDescRu: string;
+  fullDescRu: string;
+  drainModeRu: string;
+  idealForRu: string;
 }
 
 export interface ResearchPaper {
@@ -119,15 +196,16 @@ export interface VesselMaterialInfo {
   scientificImpactRu: string;
 }
 
-export type OptimizationGoal = 'balanced' | 'umami_sweetness' | 'body_density' | 'aroma_peak' | 'max_longevity';
+export type OptimizationGoal = 'balanced' | 'umami_sweetness' | 'body_density' | 'aroma_peak' | 'max_longevity' | 'oil_tar';
 
 export interface OptimizationPreset {
   id: OptimizationGoal;
   nameRu: string;
-  targetRatio: number; // e.g. 15 for 1:15
+  targetRatio: number; // e.g. 15 for 1:15, or 9 for 1:9 in oil_tar
   tempOffsetC: number; // e.g. -3 for cooler (theanine) or +2 for hotter (body)
   timeFactor: number; // multiplier on base durations
   descriptionRu: string;
+  allowedTeaTypes?: TeaType[]; // When specified, only available for these types (e.g. puerh, heicha)
 }
 
 export interface FormulaVariable {
@@ -164,3 +242,44 @@ export interface ChemicalKineticProperty {
   temperatureSensitivityRu: string;
   colorClass: string;
 }
+
+export interface TastingJournalEntry {
+  id: string;
+  teaId: string;
+  teaNameRu: string;
+  teaNameZh?: string;
+  teaTypeNameRu: string;
+  dateIso: string;
+  rating: number; // 1 to 5
+  vesselUsed: string; // Гайвань, Исинский чайник, Типод, etc.
+  waterTempC: number;
+  teaMassG: number;
+  waterVolumeMl: number;
+  steepsCount: number;
+  steepScheduleSec?: number[]; // Актуальные секунды каждого пролива из симулятора
+  isBlend?: boolean;
+  blendComponents?: string[];
+  sensoryNotes: string[];
+  sweetnessScore: number; // 1 to 10
+  astringencyScore: number; // 1 to 10
+  bodyScore: number; // 1 to 10
+  huiGanScore: number; // 1 to 10 (сладость в горле / послевкусие)
+  effectNote: string; // Ноотропный, Согревающий, Релакс, Тонус, etc.
+  userNotes: string; // Личные впечатления мастера
+  tags: string[];
+}
+
+export interface InitialTastingSessionData {
+  tea: TeaVariety;
+  waterTempC?: number;
+  teaMassG?: number;
+  waterVolumeMl?: number;
+  steepsCount?: number;
+  steepScheduleSec?: number[];
+  vesselUsed?: string;
+  effectNote?: string;
+  userNotes?: string;
+  tags?: string[];
+}
+
+

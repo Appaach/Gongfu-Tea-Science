@@ -52,7 +52,10 @@ export function matchTeaSearch(tea: TeaVariety, query: string): boolean {
   const qTokens = normQ.split(/[\s,./\\_\-+;:()«»"'\\[\]]+/).filter(t => t.length > 0);
   if (qTokens.length === 0) return true;
 
-  // Searchable text sources
+  // Searchable text sources: strictly tea identifiers, names, cultivars, regions, and recipe numbers.
+  // NOTE: Sensory flavor notes (`keySensoryNotes`) are intentionally separated to `matchTeaBySensory`
+  // so that searching for tea names does not accidentally return unrelated teas that happen to have
+  // a descriptor (e.g. searching "мед" will not bring up green teas with honey tasting notes).
   const searchFields: string[] = [
     tea.nameRu,
     tea.transcriptionRu || '',
@@ -61,7 +64,6 @@ export function matchTeaSearch(tea: TeaVariety, query: string): boolean {
     tea.typeNameRu,
     tea.origin,
     tea.cultivar,
-    ...(tea.keySensoryNotes || []),
     ...(tea.generalExamplesRu || []),
     tea.id
   ];
@@ -114,4 +116,105 @@ export function matchTeaSearch(tea: TeaVariety, query: string): boolean {
 
     return false;
   });
+}
+
+export interface SensoryCategoryGroup {
+  id: string;
+  nameRu: string;
+  icon: string;
+  popularTags: string[];
+}
+
+export const POPULAR_SENSORY_GROUPS: SensoryCategoryGroup[] = [
+  {
+    id: 'honey_sweet',
+    nameRu: 'Медовые & Сладкие',
+    icon: '🍯',
+    popularTags: ['мёд', 'карамель', 'патока', 'тростниковый сахар', 'кленовый сироп', 'финик', 'изюм']
+  },
+  {
+    id: 'floral',
+    nameRu: 'Цветочные & Орхидейные',
+    icon: '🌸',
+    popularTags: ['орхидея', 'жасмин', 'гардения', 'сирень', 'белые цветы', 'лилия', 'пион', 'роза', 'османтус']
+  },
+  {
+    id: 'fruity',
+    nameRu: 'Фруктовые & Ягодные',
+    icon: '🍑',
+    popularTags: ['персик', 'абрикос', 'слива', 'яблоко', 'виноград', 'манго', 'вишня', 'инжир', 'земляника', 'чернослив', 'цитрус']
+  },
+  {
+    id: 'chocolate_nutty',
+    nameRu: 'Шоколадно-Ореховые',
+    icon: '🍫',
+    popularTags: ['тёмный шоколад', 'какао', 'грецкий орех', 'миндаль', 'фундук', 'жареный каштан', 'арахис']
+  },
+  {
+    id: 'woody_pine',
+    nameRu: 'Древесно-Смолистые & Хвойные',
+    icon: '🌲',
+    popularTags: ['хвоя', 'камфора', 'сосновая смола', 'древесный мох', 'кора дуба', 'ладан', 'кедр', 'бальзам']
+  },
+  {
+    id: 'roasted_smoke',
+    nameRu: 'Печёные & Копчёные',
+    icon: '🔥',
+    popularTags: ['дым костра', 'печёный хлеб', 'жареный рис', 'ржаная корочка', 'солод', 'древесный уголь']
+  },
+  {
+    id: 'creamy_umami',
+    nameRu: 'Сливочные & Умами',
+    icon: '🥛',
+    popularTags: ['сливки', 'молоко', 'сливочный пломбир', 'умами', 'водоросли нори', 'варёная кукуруза', 'бульон']
+  },
+  {
+    id: 'herbal_fresh',
+    nameRu: 'Свежие & Травянистые',
+    icon: '🌿',
+    popularTags: ['свежескошенная трава', 'шпинат', 'молодой бамбук', 'эвкалипт', 'мята', 'клевер', 'огурец']
+  }
+];
+
+/**
+ * Matches a tea specifically by its sensory / flavor notes
+ */
+export function matchTeaBySensory(
+  tea: TeaVariety, 
+  sensoryQuery: string
+): { matches: boolean; matchedNotes: string[] } {
+  if (!sensoryQuery || !sensoryQuery.trim()) {
+    return { matches: true, matchedNotes: [] };
+  }
+
+  const normQ = normalizeTeaText(sensoryQuery.trim());
+  const qTokens = normQ.split(/[\s,./\\_\-+;:()«»"'\\[\]]+/).filter(t => t.length > 0);
+  if (qTokens.length === 0) return { matches: true, matchedNotes: [] };
+
+  const notes = tea.keySensoryNotes || [];
+  const matchedNotes: string[] = [];
+
+  // Every query token should match at least one note of the tea (or check if note contains token)
+  const allTokensMatch = qTokens.every(tok => {
+    const cleanTok = cleanTeaChars(tok);
+    if (!cleanTok) return true;
+
+    let foundForTok = false;
+    for (const note of notes) {
+      const normNote = normalizeTeaText(note);
+      const cleanNote = cleanTeaChars(normNote);
+      if (cleanNote.includes(cleanTok) || normNote.includes(tok)) {
+        foundForTok = true;
+        if (!matchedNotes.includes(note)) {
+          matchedNotes.push(note);
+        }
+      }
+    }
+    return foundForTok;
+  });
+
+  return {
+    matches: allTokensMatch && matchedNotes.length > 0,
+    matchedNotes
+  };
 }

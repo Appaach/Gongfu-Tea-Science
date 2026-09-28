@@ -5,7 +5,6 @@ import { PEER_REVIEWED_FORMULAS } from '../utils/extractionKinetics';
 import { BrewingProtocolsView } from './BrewingProtocolsView';
 import { 
   BookOpen, 
-  FlaskConical, 
   Filter, 
   Lightbulb, 
   Microchip, 
@@ -19,8 +18,7 @@ import {
   HeartHandshake,
   Droplet,
   Coffee,
-  ShieldAlert,
-  Layers
+  ShieldAlert
 } from 'lucide-react';
 
 export interface ChemicalKineticProperty {

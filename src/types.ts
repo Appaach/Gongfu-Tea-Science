@@ -17,6 +17,15 @@ export type TeaCategoryGroup = 'generic' | 'specific' | 'favorites' | 'blend';
 export interface BlendComponentItem {
   teaId: string;
   weightG: number;
+  vintageYear?: number;
+}
+
+export interface TeaBlendComponentDetail {
+  teaId: string;
+  teaNameRu: string;
+  baseWeightG: number;
+  ratioFraction: number;
+  vintageYear?: number;
 }
 
 export interface BlendPresetRecipe {
@@ -89,6 +98,7 @@ export interface TeaVariety {
   scientificDescription: string;
   recommendedSteeps: number;
   categoryGroup?: TeaCategoryGroup;
+  isArchetype?: boolean;
   generalExamplesRu?: string[]; // Examples of teas matching this general archetype
   effectCategory?: TeaEffectCategory;
   effectNameRu?: string;
@@ -96,6 +106,8 @@ export interface TeaVariety {
   rinseRecommended?: boolean;
   rinseSeconds?: number;
   rinseNoteRu?: string;
+  vintageYear?: number;
+  blendComponents?: TeaBlendComponentDetail[];
 }
 
 export interface ChemicalCompoundInfo {

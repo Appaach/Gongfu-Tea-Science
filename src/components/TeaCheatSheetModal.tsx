@@ -23,6 +23,8 @@ interface TeaCheatSheetModalProps {
   waterVolume: number;
   steepsCount: number;
   steepSchedule?: number[];
+  rinseSeconds?: number;
+  isRinseEnabled?: boolean;
   onClose: () => void;
 }
 
@@ -33,6 +35,8 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
   waterVolume,
   steepsCount,
   steepSchedule: providedSchedule,
+  rinseSeconds = 5,
+  isRinseEnabled = true,
   onClose
 }) => {
   const [copied, setCopied] = useState(false);
@@ -65,6 +69,7 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
   };
 
   const handleCopyText = () => {
+    const rinseLine = isRinseEnabled ? `• Пролив #0 (Промывка/Прогрев): ${rinseSeconds} сек (Слить не пробуя!)\n` : '';
     const text = `🍵 ШПАРГАЛКА ДЛЯ ЧАБАНИ: ${tea.nameRu} ${tea.nameZh ? `(${tea.nameZh})` : ''}
 📍 Регион: ${tea.origin}
 📊 Параметры заваривания:
@@ -74,7 +79,7 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
 • Количество проливов: ${steepsCount}
 
 ⏱️ ТАЙМИНГ ПРОЛИВОВ:
-${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} сек`).join('\n')}
+${rinseLine}${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} сек`).join('\n')}
 
 ✨ Вкусовой профиль: ${(tea.keySensoryNotes || []).join(', ')}
 🌿 Эффект: ${effect.nameRu} (${effect.badgeRu})
@@ -247,6 +252,19 @@ ${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} сек`).joi
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {isRinseEnabled && (
+                <div className="p-2.5 rounded-xl border border-amber-300 bg-amber-50/90 text-center space-y-1 shadow-2xs">
+                  <div className="text-[10px] font-bold text-amber-800 font-mono flex items-center justify-center gap-0.5">
+                    <span>Пролив #0</span>
+                  </div>
+                  <div className="text-xl sm:text-2xl font-mono font-black text-amber-950">
+                    {rinseSeconds} <span className="text-xs font-bold text-amber-800/80">сек</span>
+                  </div>
+                  <div className="text-[9px] font-bold text-amber-900 leading-tight line-clamp-2">
+                    Промывка / Слить!
+                  </div>
+                </div>
+              )}
               {steepSchedule.map((sec, idx) => {
                 let focusNote = 'Раскрытие L-теанина и эфиров';
                 if (idx === 0) focusNote = 'Быстрый пролив (Flash steep)';
@@ -263,8 +281,8 @@ ${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} сек`).joi
                     <div className="text-[10px] font-bold text-stone-500 font-mono">
                       Чашка #{idx + 1}
                     </div>
-                    <div className="text-base font-mono font-black text-amber-900">
-                      {sec} сек
+                    <div className="text-xl sm:text-2xl font-mono font-black text-amber-900">
+                      {sec} <span className="text-xs font-bold text-amber-700/80">сек</span>
                     </div>
                     <div className="text-[9px] text-stone-500 leading-tight line-clamp-2">
                       {focusNote}

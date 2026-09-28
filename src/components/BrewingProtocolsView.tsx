@@ -7,8 +7,6 @@ import {
   CheckCircle2, 
   XCircle, 
   Activity,
-  Waves,
-  HelpCircle,
   Coffee
 } from 'lucide-react';
 
@@ -17,6 +15,14 @@ export const BrewingProtocolsView: React.FC = () => {
   const [subSection, setSubSection] = useState<'all' | 'comparison' | 'universal' | 'archetypes' | 'blending'>('all');
 
   const activeCategoryGuide = GENERIC_TEA_ARCHETYPES.find(a => a.id === selectedGuideCategory) || GENERIC_TEA_ARCHETYPES[0];
+
+  const subSections: { id: 'all' | 'comparison' | 'universal' | 'archetypes' | 'blending'; label: string }[] = [
+    { id: 'all', label: 'Все разделы' },
+    { id: 'comparison', label: 'Сравнение методов' },
+    { id: 'universal', label: 'Универсальный алгоритм' },
+    { id: 'archetypes', label: `${GENERIC_TEA_ARCHETYPES.length} категорий (архетипов)` },
+    { id: 'blending', label: 'Купажирование и синергия сортов' },
+  ];
 
   return (
     <div className="space-y-6 max-w-full">
@@ -42,16 +48,10 @@ export const BrewingProtocolsView: React.FC = () => {
 
         {/* Sub-navigation Filter */}
         <div className="flex flex-wrap gap-2 min-w-0">
-          {[
-            { id: 'all', label: 'Все разделы' },
-            { id: 'comparison', label: 'Сравнение методов' },
-            { id: 'universal', label: 'Универсальный алгоритм' },
-            { id: 'archetypes', label: `${GENERIC_TEA_ARCHETYPES.length} категорий (архетипов)` },
-            { id: 'blending', label: 'Купажирование и синергия сортов' },
-          ].map((tab) => (
+          {subSections.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setSubSection(tab.id as any)}
+              onClick={() => setSubSection(tab.id)}
               className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
                 subSection === tab.id
                   ? 'bg-amber-800 text-white shadow-xs'

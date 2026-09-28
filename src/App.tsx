@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Header, ActiveTab } from './components/Header';
 import { TeaVariety, InitialTastingSessionData } from './types';
-import { Beaker } from 'lucide-react';
+import { Beaker, ArrowUp } from 'lucide-react';
 
 const ExtractionSimulator = lazy(() => import('./components/ExtractionSimulator').then(m => ({ default: m.ExtractionSimulator })));
 const ResearchArticlesView = lazy(() => import('./components/ResearchArticlesView').then(m => ({ default: m.ResearchArticlesView })));
-const BrewingProtocolsView = lazy(() => import('./components/BrewingProtocolsView').then(m => ({ default: m.BrewingProtocolsView })));
 const TeaComparisonView = lazy(() => import('./components/TeaComparisonView').then(m => ({ default: m.TeaComparisonView })));
 const TeaTastingJournalView = lazy(() => import('./components/TeaTastingJournalView').then(m => ({ default: m.TeaTastingJournalView })));
 
@@ -23,6 +22,19 @@ const ComponentLoader = () => (
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('simulator');
+  const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Inter-tab transition states
   const [selectedTeaForSimulator, setSelectedTeaForSimulator] = useState<TeaVariety | null>(null);
@@ -100,6 +112,19 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Scroll-to-Top Button */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 p-3.5 bg-amber-900/90 hover:bg-amber-950 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 focus:outline-hidden focus:ring-2 focus:ring-amber-500/50 flex items-center justify-center cursor-pointer border border-amber-700/30 backdrop-blur-xs group"
+          title="Наверх"
+          aria-label="Перейти наверх страницы"
+        >
+          <ArrowUp className="w-5 h-5 group-hover:animate-pulse" />
+        </button>
+      )}
     </div>
   );
 }

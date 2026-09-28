@@ -54,9 +54,9 @@ export function calculateTeaBlend(
     .map((c) => {
       const tea = allTeaMap.get(c.teaId);
       if (!tea || c.weightG <= 0) return null;
-      return { tea, weightG: c.weightG };
+      return { tea, weightG: c.weightG, vintageYear: c.vintageYear };
     })
-    .filter((item): item is { tea: TeaVariety; weightG: number } => item !== null);
+    .filter((item): item is NonNullable<typeof item> => item !== null);
 
   if (validItems.length === 0) return null;
 
@@ -69,7 +69,8 @@ export function calculateTeaBlend(
     fraction: item.weightG / totalMassG
   }));
 
-  // 1. BIOCHEMICAL CONCENTRATIONS (Weighted averages)
+  // 1. BIOCHEMICAL CONCENTRATIONS (Weighted averages with component aging)
+  const currentYear = new Date().getFullYear();
   let compTheanine = 0;
   let compCaffeine = 0;
   let compCatechins = 0;
@@ -81,10 +82,24 @@ export function calculateTeaBlend(
 
   for (const item of itemsWithFractions) {
     const biochem = TYPE_BIOCHEM_TABLE[item.tea.type] || TYPE_BIOCHEM_TABLE.custom;
-    compTheanine += item.fraction * biochem.theanineMgPerG;
-    compCaffeine += item.fraction * biochem.caffeineMgPerG;
-    compCatechins += item.fraction * biochem.catechinsMgPerG;
-    compPolysaccharides += item.fraction * biochem.polysaccharidesMgPerG;
+    const activeYear = item.vintageYear || item.tea.vintageYear;
+    
+    let theanine = biochem.theanineMgPerG;
+    let caffeine = biochem.caffeineMgPerG;
+    let catechins = biochem.catechinsMgPerG;
+    let polysaccharides = biochem.polysaccharidesMgPerG;
+
+    if (activeYear && activeYear < currentYear) {
+      const ageYears = Math.max(0, currentYear - activeYear);
+      catechins *= Math.max(0.18, 1 - ageYears * 0.038);
+      polysaccharides *= (1 + Math.min(1.5, ageYears * 0.045));
+      theanine *= Math.max(0.4, 1 - ageYears * 0.012);
+    }
+
+    compTheanine += item.fraction * theanine;
+    compCaffeine += item.fraction * caffeine;
+    compCatechins += item.fraction * catechins;
+    compPolysaccharides += item.fraction * polysaccharides;
     compTanninAst += item.fraction * biochem.tanninAstScore;
     compSweetness += item.fraction * biochem.sweetnessScore;
 
@@ -134,29 +149,41 @@ export function calculateTeaBlend(
     recommendedVesselRu = `Тонкостенная фарфоровая гайвань ${recommendedWaterVolumeMl} мл (быстрый слив, сохранение тонких летучих эфиров без перегрева)`;
   }
 
-  // 4. SYNERGY AND SENSORY SCORES
+  // 4. SYNERGY AND SENSORY SCORES (Accounting for exact gram masses & fractions)
   const theanineToCaffeineRatio = Math.round((compTheanine / Math.max(0.1, compCaffeine)) * 100) / 100;
   const theanineToCatechinsRatio = Math.round((compTheanine / Math.max(0.1, compCatechins)) * 100) / 100;
 
-  // Enhanced Tannin Buffering Score (0 - 100%): Micellar polysaccharide-polyphenol binding
-  const bufferingNumerator = (compPolysaccharides * 1.6 + compTheanine * 1.2);
-  const bufferingDenominator = Math.max(10, compCatechins * 0.38 + 5);
-  const tanninBufferingScorePercent = Math.min(99, Math.max(25, Math.round((bufferingNumerator / bufferingDenominator) * 78)));
+  // Enhanced Tannin Buffering Score (0 - 100%): Polysaccharide & L-Theanine micellar binding
+  // Considers exact component masses (m_i) and percentages
+  const bufferingNumerator = (compPolysaccharides * 1.8 + compTheanine * 1.4);
+  const bufferingDenominator = Math.max(5, compCatechins * 0.35 + compCaffeine * 0.15 + 4);
+  const rawBuffering = (bufferingNumerator / bufferingDenominator) * 82;
+  const tanninBufferingScorePercent = Math.min(99, Math.max(20, Math.round(rawBuffering)));
 
-  // Aroma Harmony Score (0 - 100%): Checks compatibility of tea types
-  let aromaHarmonyScorePercent = 92;
+  // Aroma Harmony Score (0 - 100%): Considers tea category compatibility AND component fraction balance
+  const numComps = itemsWithFractions.length;
+  const maxEntropy = Math.log(numComps);
+  const actualEntropy = itemsWithFractions.reduce((acc, item) => {
+    if (item.fraction <= 0) return acc;
+    return acc - item.fraction * Math.log(item.fraction);
+  }, 0);
+  const balanceFactor = numComps > 1 ? Math.min(1, 0.75 + 0.25 * (actualEntropy / maxEntropy)) : 1.0;
+
+  let baseTypeHarmony = 92;
   const types = itemsWithFractions.map((i) => i.tea.type);
   if (types.includes('shou_puerh') && types.includes('green')) {
-    aromaHarmonyScorePercent = 78; // Experimental contrast
+    baseTypeHarmony = 78; // Experimental contrast
   } else if ((types.includes('shou_puerh') || types.includes('heicha')) && types.includes('white')) {
-    aromaHarmonyScorePercent = 98; // Classic master pairing
+    baseTypeHarmony = 98; // Classic master pairing
   } else if (types.some((t) => t.includes('oolong')) && types.includes('red')) {
-    aromaHarmonyScorePercent = 96; // Excellent synergy
+    baseTypeHarmony = 96; // Excellent synergy
   } else if (types.includes('gaba_oolong') && types.includes('red')) {
-    aromaHarmonyScorePercent = 97;
+    baseTypeHarmony = 97;
   } else if (types.includes('sheng_puerh') && types.includes('shou_puerh')) {
-    aromaHarmonyScorePercent = 95; // Classic Hong Kong Yin-Yang pairing
+    baseTypeHarmony = 95; // Classic Hong Kong Yin-Yang pairing
   }
+
+  const aromaHarmonyScorePercent = Math.min(99, Math.max(30, Math.round(baseTypeHarmony * balanceFactor)));
 
   // Energy vs Relax score (0 = ultra calm / GABA, 100 = intense stim energy)
   const energyRaw = (compCaffeine * 2.5) / Math.max(1, compTheanine * 2.0 + compPolysaccharides * 0.5);
@@ -231,13 +258,17 @@ export function calculateTeaBlend(
   }
 
   // 7. SUMMARY AND ADVICE STRINGS
-  let synergySummaryRu = '';
+  const massBreakdownText = itemsWithFractions
+    .map((i) => `${i.weightG}г (${Math.round(i.fraction * 100)}%) ${i.tea.nameRu.split('(')[0].trim()}`)
+    .join(' + ');
+
+  let synergySummaryRu = `Разделение массы: ${massBreakdownText}. `;
   if (theanineToCaffeineRatio > 0.85) {
-    synergySummaryRu = `Ноотропный антистресс: высокая пропорция L-теанина (${Math.round(compTheanine)} мг/г) к кофеину (${Math.round(compCaffeine)} мг/г) модулирует альфа-ритмы мозга. Плавная ментальная ясность без нервозности.`;
-  } else if (tanninBufferingScorePercent > 80) {
-    synergySummaryRu = `Бархатная полисахаридная буферизация: растворимые полисахариды (${Math.round(compPolysaccharides)} мг/г) связывают танины, формируя округлое, мягкое тело без агрессивной сушащей терпкости.`;
+    synergySummaryRu += `Ноотропный антистресс: пропорция L-теанина (${Math.round(compTheanine)} мг/г) к кофеину (${Math.round(compCaffeine)} мг/г). Буферизация терпкости: ${tanninBufferingScorePercent}%.`;
+  } else if (tanninBufferingScorePercent > 70) {
+    synergySummaryRu += `Бархатная полисахаридная буферизация (${tanninBufferingScorePercent}%): растворимые полисахариды (${Math.round(compPolysaccharides)} мг/г) эффективно связывают танины, снижая резкую терпкость.`;
   } else {
-    synergySummaryRu = `Сбалансированный полифенольный профиль: катехины (${Math.round(compCatechins)} мг/г) создают отчётливую структуру и тонус, сменяющийся глубокой сладостью в послевкусии.`;
+    synergySummaryRu += `Структурированный полифенольный профиль: катехины (${Math.round(compCatechins)} мг/г), буферизация ${tanninBufferingScorePercent}%.`;
   }
 
   // 8. SYNTHESIZE COMPOSITE TEA VARIETY OBJECT (FOR BREWING SIMULATOR)
@@ -264,7 +295,14 @@ export function calculateTeaBlend(
     scientificDescription: `Индивидуальный купаж с полисахаридной буферизацией (${tanninBufferingScorePercent}%). L-Теанин: ${Math.round(compTheanine)} мг/г, Кофеин: ${Math.round(compCaffeine)} мг/г, Катехины: ${Math.round(compCatechins)} мг/г. Рекомендуемый гидромодуль 1:${recommendedRatio} (${recommendedWaterVolumeMl} мл воды).`,
     generalExamplesRu: itemsWithFractions.map((i) => `${i.tea.nameRu.split('(')[0].trim()} (${i.weightG}г)`),
     keySensoryNotes: [...dominantFlavorNotes, ...secondaryFlavorNotes, ...finishNotes].slice(0, 7),
-    recommendedVesselRu
+    recommendedVesselRu,
+    blendComponents: itemsWithFractions.map((i) => ({
+      teaId: i.tea.id,
+      teaNameRu: i.tea.nameRu.split('(')[0].trim(),
+      baseWeightG: i.weightG,
+      ratioFraction: i.fraction,
+      vintageYear: i.vintageYear || i.tea.vintageYear
+    }))
   };
 
   const brewingAdviceRu = `Рекомендуется соотношение 1:${recommendedRatio} (${recommendedWaterVolumeMl} мл) при ${optimalTempC}°C в ${recommendedVesselRu.split('(')[0].trim().toLowerCase()}. Первые 2 пролива выполняйте быстрыми сливами (6–10с) для сохранения летучих эфиров.`;

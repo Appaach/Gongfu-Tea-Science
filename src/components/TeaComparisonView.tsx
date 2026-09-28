@@ -1,20 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { TeaVariety, TeaType } from '../types';
-import { TEA_VARIETIES, GENERIC_TEA_ARCHETYPES, getTeaEffect } from '../data/teaData';
+import { TeaVariety } from '../types';
+import { TEA_VARIETIES, GENERIC_TEA_ARCHETYPES, ALL_TEA_MAP, getTeaEffect, isTeaArchetype } from '../data/teaData';
 import { 
   Scale, 
-  Flame, 
-  Droplet, 
   Sparkles, 
-  Coffee, 
-  Layers, 
   Search, 
   X, 
   ArrowRight,
-  ShieldCheck,
-  Zap,
-  Activity,
-  Award
+  Zap
 } from 'lucide-react';
 import { matchTeaSearch } from '../utils/teaSearch';
 
@@ -32,21 +25,61 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
   const allTeas = useMemo(() => [...GENERIC_TEA_ARCHETYPES, ...TEA_VARIETIES], []);
   const teaMap = useMemo(() => new Map(allTeas.map((t) => [t.id, t])), [allTeas]);
 
-  // Default initial pair: Longjing vs Da Hong Pao (or Dahongpao vs Rougui)
+  // Default initial pair: Longjing vs Da Hong Pao
   const [teaAId, setTeaAId] = useState<string>(initialTeaAId || 'longjing');
   const [teaBId, setTeaBId] = useState<string>(initialTeaBId || 'dahongpao');
 
-  // Tea picker modal state
+  // Sub-modal state for selecting tea slot
   const [pickerSlot, setPickerSlot] = useState<'A' | 'B' | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   const teaA = teaMap.get(teaAId) || allTeas[0];
   const teaB = teaMap.get(teaBId) || allTeas[1];
 
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+
+  const getDefaultYear = (tea: TeaVariety): number => {
+    if (tea.vintageYear) return tea.vintageYear;
+    const text = `${tea.nameRu} ${tea.scientificDescription}`;
+    const match = text.match(/\b(19[7-9]\d|20[0-2]\d)\b/);
+    if (match) {
+      const yr = Number(match[1]);
+      if (yr >= 1970 && yr <= currentYear) return yr;
+    }
+    if (['sheng_puerh', 'shou_puerh', 'heicha', 'white'].includes(tea.type)) {
+      return currentYear - 2;
+    }
+    return currentYear;
+  };
+
+  const [vintageYearA, setVintageYearA] = useState<number>(() => getDefaultYear(teaA));
+  const [vintageYearB, setVintageYearB] = useState<number>(() => getDefaultYear(teaB));
+
+  React.useEffect(() => {
+    setVintageYearA(getDefaultYear(teaA));
+  }, [teaAId]);
+
+  React.useEffect(() => {
+    setVintageYearB(getDefaultYear(teaB));
+  }, [teaBId]);
+
+  const favoriteIds = useMemo(() => {
+    try {
+      const saved = localStorage.getItem('gongfu_tea_favorite_ids_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.filter((id: string) => ALL_TEA_MAP.has(id));
+      }
+    } catch {}
+    return [];
+  }, []);
+
   const filteredPickerTeas = useMemo(() => {
     return allTeas.filter((tea) => {
-      if (typeFilter !== 'all') {
+      if (typeFilter === 'favorites') {
+        if (!favoriteIds.includes(tea.id)) return false;
+      } else if (typeFilter !== 'all') {
         if (typeFilter === 'generic' && tea.categoryGroup !== 'generic') return false;
         if (typeFilter === 'oolong' && !tea.type.includes('oolong')) return false;
         if (typeFilter === 'gaba' && !tea.type.startsWith('gaba')) return false;
@@ -57,7 +90,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
       }
       return matchTeaSearch(tea, searchQuery);
     });
-  }, [allTeas, searchQuery, typeFilter]);
+  }, [allTeas, searchQuery, typeFilter, favoriteIds]);
 
   const handleSelectPickerTea = (tea: TeaVariety) => {
     if (pickerSlot === 'A') setTeaAId(tea.id);
@@ -65,8 +98,8 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
     setPickerSlot(null);
   };
 
-  // Approximate bio-chemical estimation for radar
-  const getBiochemValues = (tea: TeaVariety) => {
+  // Approximate bio-chemical estimation for radar with vintage year aging
+  const getBiochemValues = (tea: TeaVariety, vintageYear?: number) => {
     let theanine = 20;
     let caffeine = 30;
     let catechins = 120;
@@ -121,11 +154,20 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
         break;
     }
 
+    if (vintageYear && vintageYear < currentYear) {
+      const ageYears = Math.max(0, currentYear - vintageYear);
+      catechins = Math.round(catechins * Math.max(0.18, 1 - ageYears * 0.038));
+      polysaccharides = Math.round(polysaccharides * (1 + Math.min(1.5, ageYears * 0.045)));
+      astringency = Math.max(2, Math.round(astringency - ageYears * 0.25));
+      sweetness = Math.min(10, Math.round(sweetness + ageYears * 0.2));
+      huigan = Math.min(10, Math.round(huigan + ageYears * 0.15));
+    }
+
     return { theanine, caffeine, catechins, polysaccharides, aroma, sweetness, body, astringency, huigan };
   };
 
-  const bioA = getBiochemValues(teaA);
-  const bioB = getBiochemValues(teaB);
+  const bioA = getBiochemValues(teaA, vintageYearA);
+  const bioB = getBiochemValues(teaB, vintageYearB);
 
   const effectA = getTeaEffect(teaA);
   const effectB = getTeaEffect(teaB);
@@ -187,7 +229,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex flex-wrap gap-1.5 pt-1 items-center">
             <span className="text-[11px] px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 font-medium">
               {teaA.origin.split(',')[0]}
             </span>
@@ -198,6 +240,26 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
               {effectA.nameRu}
             </span>
           </div>
+
+          {!isTeaArchetype(teaA) && (
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+              <span className="font-semibold text-stone-700 shrink-0">Год сбора:</span>
+              <select
+                value={vintageYearA}
+                onChange={(e) => setVintageYearA(Number(e.target.value))}
+                className="bg-white border border-stone-300 text-stone-900 font-mono font-bold text-xs rounded-lg px-2 py-0.5 focus:ring-2 focus:ring-amber-500 focus:outline-none max-w-full truncate"
+              >
+                {Array.from({ length: 51 }, (_, i) => currentYear - i).map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr} {yr === currentYear ? '(Свежий)' : 'г.'}
+                  </option>
+                ))}
+              </select>
+              <span className="text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shrink-0">
+                {currentYear - vintageYearA === 0 ? 'Свежий' : `${currentYear - vintageYearA} л. выдержки`}
+              </span>
+            </div>
+          )}
 
           <div className="pt-2">
             <button
@@ -226,7 +288,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex flex-wrap gap-1.5 pt-1 items-center">
             <span className="text-[11px] px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 font-medium">
               {teaB.origin.split(',')[0]}
             </span>
@@ -237,6 +299,26 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
               {effectB.nameRu}
             </span>
           </div>
+
+          {!isTeaArchetype(teaB) && (
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+              <span className="font-semibold text-stone-700 shrink-0">Год сбора:</span>
+              <select
+                value={vintageYearB}
+                onChange={(e) => setVintageYearB(Number(e.target.value))}
+                className="bg-white border border-stone-300 text-stone-900 font-mono font-bold text-xs rounded-lg px-2 py-0.5 focus:ring-2 focus:ring-sky-500 focus:outline-none max-w-full truncate"
+              >
+                {Array.from({ length: 51 }, (_, i) => currentYear - i).map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr} {yr === currentYear ? '(Свежий)' : 'г.'}
+                  </option>
+                ))}
+              </select>
+              <span className="text-[10px] font-bold text-sky-900 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">
+                {currentYear - vintageYearB === 0 ? 'Свежий' : `${currentYear - vintageYearB} л. выдержки`}
+              </span>
+            </div>
+          )}
 
           <div className="pt-2">
             <button
@@ -522,6 +604,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
                 {[
                   { id: 'all', label: 'Все' },
+                  { id: 'favorites', label: '⭐ Избранные' },
                   { id: 'generic', label: 'Архетипы' },
                   { id: 'green', label: 'Зелёный' },
                   { id: 'white', label: 'Белый' },

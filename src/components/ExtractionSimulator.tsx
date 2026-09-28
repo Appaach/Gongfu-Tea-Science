@@ -2,17 +2,14 @@ import { useState, useMemo, useCallback, useEffect, memo } from 'react';
 import { 
   TEA_VARIETIES, 
   GENERIC_TEA_ARCHETYPES, 
-  ALL_TEA_OPTIONS,
+  ALL_TEA_OPTIONS, 
   ALL_TEA_MAP, 
   WATER_HARDNESS_PRESETS,
   VESSEL_MATERIALS,
   OPTIMIZATION_PRESETS,
-  BREWING_METHODS_DATA,
-  TEA_EFFECT_DEFINITIONS,
   getTeaEffect,
   getTeaRinseInfo,
-  TeaEffectDefinition,
-  TeaRinseInfo
+  isTeaArchetype
 } from '../data/teaData';
 import { 
   simulateGongfuExtraction, 
@@ -117,9 +114,9 @@ const SteepBubbleCard = memo(function SteepBubbleCard({
               }
               onCancelEdit();
             }}
-            className="w-12 text-center font-mono font-bold text-sm py-0.5 px-1 bg-white border border-amber-500 rounded-md text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-800 shadow-xs"
+            className="w-14 text-center font-mono font-extrabold text-base sm:text-lg py-0.5 px-1 bg-white border border-amber-500 rounded-md text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-800 shadow-xs"
           />
-          <span className="text-xs font-mono font-bold text-amber-900/60">
+          <span className="text-xs sm:text-sm font-mono font-bold text-amber-900/70">
             с
           </span>
         </div>
@@ -189,12 +186,12 @@ const SteepBubbleCard = memo(function SteepBubbleCard({
 
       {/* Center: Exposure time */}
       <div className="my-1 flex items-center justify-center space-x-1 w-full">
-        <span className={`text-sm font-mono font-bold ${
+        <span className={`text-base sm:text-lg font-mono font-extrabold tracking-tight ${
           isSelected ? 'text-amber-950 font-black' : isCustom ? 'text-amber-950' : isAdapted ? 'text-amber-900' : 'text-stone-800'
         }`}>
           {effectiveSec}
         </span>
-        <span className="text-xs font-mono font-bold text-amber-900/60">
+        <span className="text-xs sm:text-sm font-mono font-bold text-amber-900/70">
           с
         </span>
       </div>
@@ -269,7 +266,6 @@ import {
   Coffee,
   Feather,
   ChevronDown,
-  ChevronUp,
   Check,
   Search,
   X,
@@ -281,6 +277,7 @@ import {
   FlaskConical,
   Printer,
   Bookmark,
+  Calendar,
   Scale as ScaleIcon
 } from 'lucide-react';
 import { TeaBlendStudio } from './TeaBlendStudio';
@@ -303,17 +300,33 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   );
   const [selectedTeaId, setSelectedTeaId] = useState<string>(initialSelectedTea?.id || 'generic_green');
 
+  // Custom synthesized tea blend state (from TeaBlendStudio)
+  const [customBlendTea, setCustomBlendTea] = useState<TeaVariety | null>(null);
+
   // Cheat Sheet Modal state
   const [isCheatSheetOpen, setIsCheatSheetOpen] = useState<boolean>(false);
 
-  // Favorites state with localStorage persistence
-  const FAVORITES_STORAGE_KEY = 'gongfu_tea_favorite_ids_v2';
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
+  // Favorites state with localStorage persistence (storing id and vintageYear)
+  const FAVORITES_STORAGE_KEY_V3 = 'gongfu_tea_favorites_v3';
+  const FAVORITES_STORAGE_KEY_V2 = 'gongfu_tea_favorite_ids_v2';
+
+  const [favoriteEntries, setFavoriteEntries] = useState<{ id: string; vintageYear?: number }[]>(() => {
     try {
-      const saved = localStorage.getItem(FAVORITES_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+      const savedV3 = localStorage.getItem(FAVORITES_STORAGE_KEY_V3);
+      if (savedV3) {
+        const parsed = JSON.parse(savedV3);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) =>
+            typeof item === 'string' ? { id: item } : { id: item.id, vintageYear: item.vintageYear }
+          );
+        }
+      }
+      const savedV2 = localStorage.getItem(FAVORITES_STORAGE_KEY_V2);
+      if (savedV2) {
+        const parsed = JSON.parse(savedV2);
+        if (Array.isArray(parsed)) {
+          return parsed.map((id: string) => ({ id }));
+        }
       }
     } catch {
       // fallback
@@ -321,14 +334,56 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
     return [];
   });
 
-  const toggleFavorite = (teaId: string, e?: React.MouseEvent) => {
+  // Filter out any stale or non-existent tea IDs from favorite entries
+  const validFavoriteEntries = useMemo(() => {
+    return favoriteEntries.filter((f) => ALL_TEA_MAP.has(f.id) || (customBlendTea && f.id === customBlendTea.id));
+  }, [favoriteEntries, customBlendTea]);
+
+  const favoriteIds = useMemo(() => validFavoriteEntries.map((f) => f.id), [validFavoriteEntries]);
+
+  // Sync back sanitized favorites if invalid IDs were found in local storage
+  useEffect(() => {
+    if (favoriteEntries.length !== validFavoriteEntries.length) {
+      setFavoriteEntries(validFavoriteEntries);
+      try {
+        localStorage.setItem(FAVORITES_STORAGE_KEY_V3, JSON.stringify(validFavoriteEntries));
+        localStorage.setItem(FAVORITES_STORAGE_KEY_V2, JSON.stringify(validFavoriteEntries.map((f) => f.id)));
+      } catch {
+        // ignore
+      }
+    }
+  }, [favoriteEntries.length, validFavoriteEntries]);
+
+  const clearAllFavorites = () => {
+    setFavoriteEntries([]);
+    try {
+      localStorage.setItem(FAVORITES_STORAGE_KEY_V3, JSON.stringify([]));
+      localStorage.setItem(FAVORITES_STORAGE_KEY_V2, JSON.stringify([]));
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleFavorite = (teaId: string, vintageYear?: number, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
-    setFavoriteIds((prev) => {
-      const next = prev.includes(teaId) ? prev.filter((id) => id !== teaId) : [...prev, teaId];
+    setFavoriteEntries((prev) => {
+      const exists = prev.some((f) => f.id === teaId);
+      let next: { id: string; vintageYear?: number }[];
+      if (exists) {
+        const existing = prev.find((f) => f.id === teaId);
+        if (vintageYear && existing?.vintageYear !== vintageYear) {
+          next = prev.map((f) => (f.id === teaId ? { ...f, vintageYear } : f));
+        } else {
+          next = prev.filter((f) => f.id !== teaId);
+        }
+      } else {
+        next = [...prev, { id: teaId, vintageYear }];
+      }
       try {
-        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next));
+        localStorage.setItem(FAVORITES_STORAGE_KEY_V3, JSON.stringify(next));
+        localStorage.setItem(FAVORITES_STORAGE_KEY_V2, JSON.stringify(next.map((f) => f.id)));
       } catch {
         // ignore
       }
@@ -338,9 +393,6 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
 
   const [favoritesSearchQuery, setFavoritesSearchQuery] = useState<string>('');
   const [favoritesTypeFilter, setFavoritesTypeFilter] = useState<string>('all');
-
-  // Custom synthesized tea blend state (from TeaBlendStudio)
-  const [customBlendTea, setCustomBlendTea] = useState<TeaVariety | null>(null);
 
   // Search and Filter State: strictly isolated by tab
   // 1. Popular Teas search & category filter + integrated sensory flavor search
@@ -372,8 +424,37 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   const [vesselMaterial, setVesselMaterial] = useState<VesselMaterialType>('porcelain');
   const [isVesselDropdownOpen, setIsVesselDropdownOpen] = useState(false);
   const [isGoalDropdownOpen, setIsGoalDropdownOpen] = useState(false);
-  const [isEffectDropdownOpen, setIsEffectDropdownOpen] = useState(false);
   const [customRinseTime, setCustomRinseTime] = useState<number | null>(null);
+
+  // Dynamic current year (e.g. 2026, 2027) for vintage aging calculations
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+
+  const getDefaultTeaVintageYear = useCallback((tea: TeaVariety): number => {
+    if (tea.vintageYear) return tea.vintageYear;
+    const text = `${tea.nameRu} ${tea.scientificDescription}`;
+    const yearMatch = text.match(/\b(19[7-9]\d|20[0-2]\d)\b/);
+    if (yearMatch) {
+      const yr = Number(yearMatch[1]);
+      if (yr >= 1970 && yr <= currentYear) return yr;
+    }
+    if (['sheng_puerh', 'shou_puerh', 'heicha', 'white'].includes(tea.type)) {
+      return currentYear - 2;
+    }
+    return currentYear;
+  }, [currentYear]);
+
+  const [selectedVintageYear, setSelectedVintageYear] = useState<number>(() => getDefaultTeaVintageYear(selectedTea));
+
+  useEffect(() => {
+    setSelectedVintageYear(getDefaultTeaVintageYear(selectedTea));
+  }, [selectedTea, getDefaultTeaVintageYear]);
+
+  // Chart compound visibility toggles
+  const [showChartTheanine, setShowChartTheanine] = useState<boolean>(true);
+  const [showChartCaffeine, setShowChartCaffeine] = useState<boolean>(true);
+  const [showChartCatechins, setShowChartCatechins] = useState<boolean>(true);
+  const [showChartPolysaccharides, setShowChartPolysaccharides] = useState<boolean>(true);
+  const [showChartTemperature, setShowChartTemperature] = useState<boolean>(true);
 
   // Filtered generic archetypes:
   // Strictly isolated: NOT affected by popular teas' name search or type filters!
@@ -502,6 +583,14 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
     setSelectedSteepIndex(0);
     setCustomRinseTime(null);
 
+    // Restore saved vintage year if tea is in favorites, else default
+    const favEntry = favoriteEntries.find((f) => f.id === tea.id);
+    if (favEntry?.vintageYear) {
+      setSelectedVintageYear(favEntry.vintageYear);
+    } else {
+      setSelectedVintageYear(getDefaultTeaVintageYear(tea));
+    }
+
     setRawVolumeStr(null);
     setRawMassStr(null);
     setRawTempStr(null);
@@ -625,7 +714,6 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   const waterTemp = activeOptimization.recommendedWaterTemp;
   const steepsCount = activeOptimization.recommendedSteepCount;
   const ratio = activeOptimization.recommendedRatio;
-  const isGongfuRatio = ratio >= 10 && ratio <= 25;
   const fixedCount = (fixVolume ? 1 : 0) + (fixMass ? 1 : 0) + (fixTemp ? 1 : 0) + (fixSteeps ? 1 : 0);
 
   // Dynamic adaptive steep durations computed in real-time by kinetics model (always active)
@@ -635,8 +723,6 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   const [isManualTimeEditMode, setIsManualTimeEditMode] = useState<boolean>(false);
   const [editingSteepIndex, setEditingSteepIndex] = useState<number | null>(null);
   const [customSteepTimes, setCustomSteepTimes] = useState<(number | null)[]>([]);
-  // Local keyboard typing drafts for direct in-bubble editing
-  const [steepDrafts, setSteepDrafts] = useState<{ [steepIndex: number]: string }>({});
 
   // Adaptive Recalculation Engine for User-defined Steeps
   const adaptiveCustomBrewing = useMemo(() => {
@@ -651,7 +737,8 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
       customSteepTimes,
       brewingMethod,
       rootFraction,
-      customRinseTime
+      customRinseTime,
+      selectedVintageYear
     );
   }, [
     selectedTea,
@@ -664,7 +751,8 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
     customSteepTimes,
     brewingMethod,
     rootFraction,
-    customRinseTime
+    customRinseTime,
+    selectedVintageYear
   ]);
 
   // Effective durations and flags feeding into the chemical simulation
@@ -695,7 +783,6 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
 
   const handleResetAllCustomTimes = useCallback(() => {
     setCustomSteepTimes(new Array(steepsCount).fill(null));
-    setSteepDrafts({});
   }, [steepsCount]);
 
   // Run dynamic simulation based on Noyes-Whitney, Arrhenius & environmental factors
@@ -713,7 +800,8 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
       optimizationGoal,
       brewingMethod,
       rootFraction,
-      customRinseTime
+      customRinseTime,
+      selectedVintageYear
     );
   }, [
     selectedTea, 
@@ -728,7 +816,8 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
     optimizationGoal,
     brewingMethod,
     rootFraction,
-    customRinseTime
+    customRinseTime,
+    selectedVintageYear
   ]);
 
   // Scientific rinse parameters based on leaf morphology and cultivar
@@ -858,20 +947,17 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   const chartW = svgWidth - padding.left - padding.right;
   const chartH = svgHeight - padding.top - padding.bottom;
 
-  // Find max concentration across all compounds
+  // Find max concentration across visible/enabled compounds to scale graph dynamically
   const maxConcentration = useMemo(() => {
-    let max = 10;
+    let max = 1;
     simulationResults.forEach((d) => {
-      max = Math.max(
-        max, 
-        d.theanineConcentration, 
-        d.caffeineConcentration, 
-        d.catechinsConcentration, 
-        d.polysaccharidesConcentration
-      );
+      if (showChartTheanine) max = Math.max(max, d.theanineConcentration);
+      if (showChartCaffeine) max = Math.max(max, d.caffeineConcentration);
+      if (showChartCatechins) max = Math.max(max, d.catechinsConcentration);
+      if (showChartPolysaccharides) max = Math.max(max, d.polysaccharidesConcentration);
     });
-    return Math.ceil(max * 1.15);
-  }, [simulationResults]);
+    return Math.max(1, Math.ceil(max * 1.15));
+  }, [simulationResults, showChartTheanine, showChartCaffeine, showChartCatechins, showChartPolysaccharides]);
 
   const getX = (index: number) => {
     if (simulationResults.length <= 1) return padding.left + chartW / 2;
@@ -947,6 +1033,12 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
       tdsPpm: 350
     };
 
+    let startTh = 0;
+    let startCaf = 0;
+    let startCat = 0;
+    let startPoly = 0;
+
+    let prevCycleIndex = -1;
     let curTh = 0;
     let curCaf = 0;
     let curCat = 0;
@@ -965,20 +1057,34 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
 
       const isRefill = sec > 0 && timeInCycle === 0;
 
-      if (isRefill) {
-        curTh = curTh * 0.33;
-        curCaf = curCaf * 0.33;
-        curCat = curCat * 0.33;
-        curPoly = curPoly * 0.33;
+      // Handle cycle transition (refill event)
+      if (currentCycle !== prevCycleIndex) {
+        if (prevCycleIndex >= 0) {
+          // At refill moment: root liquor (1/3) remains diluted with fresh hot water (2/3)
+          startTh = curTh * 0.33;
+          startCaf = curCaf * 0.33;
+          startCat = curCat * 0.33;
+          startPoly = curPoly * 0.33;
+        } else {
+          startTh = 0;
+          startCaf = 0;
+          startCat = 0;
+          startPoly = 0;
+        }
+        prevCycleIndex = currentCycle;
       }
 
       const curTemp = Math.round(22 + (waterTemp - 22) * Math.exp(-0.0028 * timeInCycle));
 
-      const progress = 1 - Math.exp(-0.016 * timeInCycle);
-      curTh = Math.max(curTh, targetTh * progress);
-      curCaf = Math.max(curCaf, targetCaf * progress);
-      curCat = Math.max(curCat, targetCat * progress);
-      curPoly = Math.max(curPoly, targetPoly * progress);
+      // Continuous extraction progress: carryover concentration decays while fresh extraction from leaf pool develops
+      const kExt = 0.016;
+      const progress = 1 - Math.exp(-kExt * timeInCycle);
+      const decay = Math.exp(-kExt * timeInCycle);
+
+      curTh = startTh * decay + targetTh * progress;
+      curCaf = startCaf * decay + targetCaf * progress;
+      curCat = startCat * decay + targetCat * progress;
+      curPoly = startPoly * decay + targetPoly * progress;
 
       const tds = Math.round((curTh + curCaf + curCat + curPoly) * 12.5);
 
@@ -1015,9 +1121,15 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
     const cW = svgW - pLeft - pRight;
     const cH = svgH - pTop - pBottom;
 
+    const activeValues: number[] = [];
+    if (showChartTheanine) activeValues.push(...lazyCupTimeline.map(pt => pt.theanine));
+    if (showChartCaffeine) activeValues.push(...lazyCupTimeline.map(pt => pt.caffeine));
+    if (showChartCatechins) activeValues.push(...lazyCupTimeline.map(pt => pt.catechins));
+    if (showChartPolysaccharides) activeValues.push(...lazyCupTimeline.map(pt => pt.polysaccharides));
+
     const maxVal = Math.max(
       15,
-      ...lazyCupTimeline.map(pt => Math.max(pt.theanine, pt.caffeine, pt.catechins, pt.polysaccharides))
+      activeValues.length > 0 ? Math.max(...activeValues) : 15
     ) * 1.15;
 
     const totalMins = lazyCupTimeline[lazyCupTimeline.length - 1]?.minute || 12;
@@ -1052,7 +1164,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
       polyPath: generateSmoothPath(polyPts),
       tempPath: generateSmoothPath(tempPts)
     };
-  }, [lazyCupTimeline]);
+  }, [lazyCupTimeline, showChartTheanine, showChartCaffeine, showChartCatechins, showChartPolysaccharides]);
 
   return (
     <div className="space-y-6">
@@ -1498,7 +1610,6 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-2.5">
                 {visiblePopularTeas.map(({ tea, matchedNotes }) => {
                   const isSelected = tea.id === selectedTeaId;
-                  const teaEff = getTeaEffect(tea);
                   const isFav = favoriteIds.includes(tea.id);
                   const activeSearchNote = (flavorSearchQuery || selectedFlavorTag || popularSearchQuery).toLowerCase().trim();
 
@@ -1532,7 +1643,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                             </span>
                             <button
                               type="button"
-                              onClick={(e) => toggleFavorite(tea.id, e)}
+                              onClick={(e) => toggleFavorite(tea.id, selectedVintageYear, e)}
                               className={`p-1 -mr-1 rounded-md transition-colors cursor-pointer ${
                                 isFav
                                   ? 'text-amber-400 hover:text-amber-500'
@@ -1593,7 +1704,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                             }`}
                             title="Перейти к настройке параметров заваривания"
                           >
-                            <span>Вниз</span>
+                            <span>Перейти к чаю</span>
                             <ArrowDown className="w-3.5 h-3.5 shrink-0" />
                           </button>
                         </div>
@@ -1670,8 +1781,19 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
-              {filteredFavoriteTeas.map((tea) => {
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>Сохранено сортов: {filteredFavoriteTeas.length} из {favoriteIds.length}</span>
+                <button
+                  type="button"
+                  onClick={clearAllFavorites}
+                  className="text-stone-400 hover:text-red-600 underline font-medium transition-colors cursor-pointer text-[11px]"
+                >
+                  Очистить список избранного
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                {filteredFavoriteTeas.map((tea) => {
                 const isSelected = tea.id === selectedTeaId;
                 const teaEff = getTeaEffect(tea);
                 return (
@@ -1704,7 +1826,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                           </span>
                           <button
                             type="button"
-                            onClick={(e) => toggleFavorite(tea.id, e)}
+                            onClick={(e) => toggleFavorite(tea.id, undefined, e)}
                             className="p-1 -mr-1 rounded-md text-amber-400 hover:text-amber-500 transition-colors cursor-pointer"
                             title="Удалить из избранного"
                           >
@@ -1746,6 +1868,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                   </div>
                 );
               })}
+              </div>
             </div>
           )
         ) : (
@@ -1774,19 +1897,23 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
             </h3>
 
             {/* Favorite toggle button for selected tea (only non-generic) */}
-            {selectedTea.categoryGroup !== 'generic' && (
+            {!isTeaArchetype(selectedTea) && (
               <button
                 type="button"
-                onClick={() => toggleFavorite(selectedTea.id)}
+                onClick={() => toggleFavorite(selectedTea.id, selectedVintageYear)}
                 className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold border transition-all cursor-pointer ${
                   favoriteIds.includes(selectedTea.id)
                     ? 'bg-amber-100 text-amber-950 border-amber-300 shadow-2xs'
                     : 'bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200'
                 }`}
-                title={favoriteIds.includes(selectedTea.id) ? 'Удалить сорт из избранного' : 'Добавить сорт в избранное'}
+                title={favoriteIds.includes(selectedTea.id) ? 'Удалить сорт из избранного' : 'Добавить сорт в избранное с выбранным годом'}
               >
                 <Star className={`w-3.5 h-3.5 ${favoriteIds.includes(selectedTea.id) ? 'text-amber-500 fill-amber-400' : 'text-stone-400'}`} />
-                <span>{favoriteIds.includes(selectedTea.id) ? 'В избранном' : 'В избранное'}</span>
+                <span>
+                  {favoriteIds.includes(selectedTea.id)
+                    ? `В избранном ${favoriteEntries.find((f) => f.id === selectedTea.id)?.vintageYear ? `(${favoriteEntries.find((f) => f.id === selectedTea.id)?.vintageYear}г)` : ''}`
+                    : 'В избранное'}
+                </span>
               </button>
             )}
 
@@ -1832,9 +1959,67 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
             </span>
           </div>
 
+          {/* Interactive Vintage Year Selector (Hidden for generic archetypes) */}
+          {!isTeaArchetype(selectedTea) && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 p-3 bg-stone-50/90 rounded-xl border border-stone-200/90 text-xs shadow-2xs w-full max-w-full overflow-hidden">
+              <div className="flex items-center gap-2 max-w-full flex-wrap">
+                <Calendar className="w-4 h-4 text-amber-800 shrink-0" />
+                <label htmlFor="vintage-year-select" className="font-bold text-stone-900 shrink-0">
+                  Год сбора:
+                </label>
+                <select
+                  id="vintage-year-select"
+                  value={selectedVintageYear}
+                  onChange={(e) => setSelectedVintageYear(Number(e.target.value))}
+                  className="bg-white border border-stone-300 text-stone-900 font-mono font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer shadow-2xs hover:border-amber-500 transition-colors max-w-full truncate"
+                >
+                  {Array.from({ length: 51 }, (_, i) => currentYear - i).map((yr) => (
+                    <option key={yr} value={yr}>
+                      {yr} {yr === currentYear ? 'г. (Свежий)' : 'г.'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] font-bold text-amber-950 bg-amber-100/90 px-2.5 py-1 rounded-lg border border-amber-300/90 shadow-2xs">
+                  {currentYear - selectedVintageYear === 0 ? (
+                    '🌱 Свежий урожай (0 лет)'
+                  ) : (
+                    `🏮 Выдержка: ${currentYear - selectedVintageYear} ${
+                      (currentYear - selectedVintageYear) === 1
+                        ? 'год'
+                        : (currentYear - selectedVintageYear) < 5
+                        ? 'года'
+                        : 'лет'
+                    }`
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Selected Tea Main Description */}
+
           <p className="text-sm text-stone-600 leading-relaxed break-words">
             {selectedTea.scientificDescription}
           </p>
+
+          {selectedTea.keySensoryNotes && selectedTea.keySensoryNotes.length > 0 && (
+            <div className="text-xs text-amber-950 bg-amber-50/80 p-3 rounded-xl border border-amber-200/90 space-y-1.5">
+              <span className="font-bold text-amber-900 block flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                <span>Вкусовые ноты и ароматический букет:</span>
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedTea.keySensoryNotes.map((note, nIdx) => (
+                  <span key={nIdx} className="bg-white px-2.5 py-1 rounded-md border border-amber-300 text-amber-950 font-medium text-xs shadow-2xs">
+                    {note}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {selectedTea.generalExamplesRu && (
             <div className="text-xs text-stone-700 bg-stone-50 p-2.5 rounded-xl border border-stone-200 flex flex-wrap items-center gap-1.5 min-w-0">
@@ -1851,11 +2036,11 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
             <button
               type="button"
               onClick={() => setIsCheatSheetOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs transition-all shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 font-semibold text-xs transition-all shadow-2xs cursor-pointer"
               title="Открыть готовую шпаргалку проливов для печати или копирования"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Шпаргалка для чабани</span>
+              <Printer className="w-3.5 h-3.5 text-amber-800" />
+              <span>Скачать шпаргалку</span>
             </button>
 
             {onOpenJournal && (
@@ -2454,6 +2639,29 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* Dynamic Blend Component Mass Breakdown */}
+              {selectedTea.blendComponents && selectedTea.blendComponents.length > 0 && (
+                <div className="mt-2.5 bg-purple-50/90 border border-purple-200/90 rounded-xl p-2.5 text-xs space-y-2 shadow-2xs w-full overflow-hidden">
+                  <div className="font-bold text-purple-950 flex items-center gap-1.5">
+                    <FlaskConical className="w-4 h-4 text-purple-700 shrink-0" />
+                    <span>состав купажа (всего {leafMass} г):</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedTea.blendComponents.map((comp, cIdx) => {
+                      const scaledMass = Math.round(leafMass * comp.ratioFraction * 10) / 10;
+                      const percent = Math.round(comp.ratioFraction * 100);
+                      return (
+                        <div key={cIdx} className="bg-white border border-purple-200 px-2.5 py-1.5 rounded-lg text-purple-950 font-medium text-xs shadow-2xs flex items-center gap-1.5">
+                          <span className="font-bold text-stone-900">{comp.teaNameRu}:</span>
+                          <span className="font-mono font-black text-purple-900 bg-purple-100/70 px-1.5 py-0.5 rounded">{scaledMass} г</span>
+                          <span className="text-[11px] text-stone-500 font-mono">({percent}%)</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 3. Water Temperature */}
@@ -3246,12 +3454,12 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                         </div>
 
                         <div className="my-1 flex items-center justify-center space-x-1">
-                          <span className={`font-mono text-sm font-bold ${
+                          <span className={`font-mono text-base sm:text-lg font-extrabold tracking-tight ${
                             selectedSteepIndex === -1 ? 'text-amber-950 font-black' : customRinseTime !== null ? 'text-amber-950' : 'text-stone-800'
                           }`}>
                             {teaRinseInfo.seconds}
                           </span>
-                          <span className="text-xs font-mono font-bold text-amber-900/60">
+                          <span className="text-xs sm:text-sm font-mono font-bold text-amber-900/70">
                             с
                           </span>
                         </div>
@@ -3431,8 +3639,8 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
 
                 <div>
                   <div className="text-[11px] text-stone-500">Время экспозиции</div>
-                  <div className="text-base font-bold font-mono text-stone-800 mt-0.5">
-                    {currentSteepData.timeSec} сек
+                  <div className="text-xl sm:text-2xl font-black font-mono text-amber-900 mt-0.5">
+                    {currentSteepData.timeSec} <span className="text-xs font-bold text-stone-500">сек</span>
                   </div>
                 </div>
               </div>
@@ -3602,28 +3810,67 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                   </p>
                 </div>
 
-                {/* Legend */}
-                <div className="flex flex-wrap items-center gap-3 text-[11px]">
-                  <div className="flex items-center space-x-1">
+                {/* Interactive Legend & Compound Line Visibility Toggles */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setShowChartTheanine(!showChartTheanine)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartTheanine ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую L-Теанина"
+                  >
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                    <span className="text-stone-700 font-medium">L-Теанин</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
+                    <span>L-Теанин</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowChartCaffeine(!showChartCaffeine)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartCaffeine ? 'bg-blue-50 border-blue-300 text-blue-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую Кофеина"
+                  >
                     <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                    <span className="text-stone-700 font-medium">Кофеин</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
+                    <span>Кофеин</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowChartCatechins(!showChartCatechins)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartCatechins ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую Катехинов"
+                  >
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                    <span className="text-stone-700 font-medium">Катехины</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
+                    <span>Катехины</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowChartPolysaccharides(!showChartPolysaccharides)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartPolysaccharides ? 'bg-purple-50 border-purple-300 text-purple-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую Полисахаридов"
+                  >
                     <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-                    <span className="text-stone-700 font-medium">Полисахариды</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
+                    <span>Полисахариды</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowChartTemperature(!showChartTemperature)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartTemperature ? 'bg-amber-50 border-amber-300 text-amber-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую Температуры остывания"
+                  >
                     <span className="w-2.5 h-0.5 bg-amber-600 font-bold"></span>
-                    <span className="text-amber-900 font-medium">Температура °C</span>
-                  </div>
+                    <span>Температура °C</span>
+                  </button>
                 </div>
               </div>
 
@@ -3720,12 +3967,22 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                     );
                   })}
 
-                  {/* Compound Curves */}
-                  <path d={lazyCupPaths.thPath} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d={lazyCupPaths.cafPath} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d={lazyCupPaths.catPath} fill="none" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d={lazyCupPaths.polyPath} fill="none" stroke="#9333ea" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d={lazyCupPaths.tempPath} fill="none" stroke="#d97706" strokeWidth="2" strokeDasharray="4 3" />
+                  {/* Compound Curves with Line Visibility Control */}
+                  {showChartTheanine && (
+                    <path d={lazyCupPaths.thPath} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
+                  )}
+                  {showChartCaffeine && (
+                    <path d={lazyCupPaths.cafPath} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
+                  )}
+                  {showChartCatechins && (
+                    <path d={lazyCupPaths.catPath} fill="none" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" />
+                  )}
+                  {showChartPolysaccharides && (
+                    <path d={lazyCupPaths.polyPath} fill="none" stroke="#9333ea" strokeWidth="2.5" strokeLinecap="round" />
+                  )}
+                  {showChartTemperature && (
+                    <path d={lazyCupPaths.tempPath} fill="none" stroke="#d97706" strokeWidth="2" strokeDasharray="4 3" />
+                  )}
                 </svg>
               </div>
 
@@ -3797,23 +4054,54 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                 </div>
 
                 {/* Legend */}
-                <div className="flex flex-wrap items-center gap-3 text-[11px]">
-                  <div className="flex items-center space-x-1">
+                <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setShowChartTheanine(!showChartTheanine)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartTheanine ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую L-Теанина"
+                  >
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                    <span className="text-stone-700 font-medium">L-Теанин</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
+                    <span>L-Теанин</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowChartCaffeine(!showChartCaffeine)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartCaffeine ? 'bg-blue-50 border-blue-300 text-blue-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую Кофеина"
+                  >
                     <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                    <span className="text-stone-700 font-medium">Кофеин</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
+                    <span>Кофеин</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowChartCatechins(!showChartCatechins)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartCatechins ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую Катехинов"
+                  >
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                    <span className="text-stone-700 font-medium">Катехины (EGCG)</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
+                    <span>Катехины</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowChartPolysaccharides(!showChartPolysaccharides)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                      showChartPolysaccharides ? 'bg-purple-50 border-purple-300 text-purple-950 font-bold' : 'bg-stone-100 border-stone-200 text-stone-400 line-through'
+                    }`}
+                    title="Скрыть/показать кривую Полисахаридов"
+                  >
                     <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-                    <span className="text-stone-700 font-medium">Полисахариды (TPS)</span>
-                  </div>
+                    <span>Полисахариды</span>
+                  </button>
                   {adaptiveCustomBrewing && adaptiveCustomBrewing.userSteepsCount > 0 && (
                     <>
                       <div className="w-px h-3.5 bg-stone-300 mx-0.5"></div>
@@ -3933,38 +4221,46 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                   })}
 
                   {/* Smooth Continuous Spline Data curves */}
-                  <path
-                    d={theaninePath}
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d={caffeinePath}
-                    fill="none"
-                    stroke="#2563eb"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d={catechinsPath}
-                    fill="none"
-                    stroke="#e11d48"
-                    strokeWidth="3.0"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d={polysaccharidesPath}
-                    fill="none"
-                    stroke="#9333ea"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                  {showChartTheanine && (
+                    <path
+                      d={theaninePath}
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                  {showChartCaffeine && (
+                    <path
+                      d={caffeinePath}
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                  {showChartCatechins && (
+                    <path
+                      d={catechinsPath}
+                      fill="none"
+                      stroke="#e11d48"
+                      strokeWidth="3.0"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                  {showChartPolysaccharides && (
+                    <path
+                      d={polysaccharidesPath}
+                      fill="none"
+                      stroke="#9333ea"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
 
                   {/* Data points for current selected steep */}
                   {simulationResults.map((d, i) => {
@@ -3980,38 +4276,46 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                           height={chartH}
                           fill="transparent"
                         />
-                        <circle
-                          cx={x}
-                          cy={getY(d.theanineConcentration)}
-                          r={isSelected ? 5.5 : 3.5}
-                          fill="#10b981"
-                          stroke="#fff"
-                          strokeWidth="1.5"
-                        />
-                        <circle
-                          cx={x}
-                          cy={getY(d.caffeineConcentration)}
-                          r={isSelected ? 5.5 : 3.5}
-                          fill="#2563eb"
-                          stroke="#fff"
-                          strokeWidth="1.5"
-                        />
-                        <circle
-                          cx={x}
-                          cy={getY(d.catechinsConcentration)}
-                          r={isSelected ? 6 : 4}
-                          fill="#e11d48"
-                          stroke="#fff"
-                          strokeWidth="1.5"
-                        />
-                        <circle
-                          cx={x}
-                          cy={getY(d.polysaccharidesConcentration)}
-                          r={isSelected ? 5.5 : 3.5}
-                          fill="#9333ea"
-                          stroke="#fff"
-                          strokeWidth="1.5"
-                        />
+                        {showChartTheanine && (
+                          <circle
+                            cx={x}
+                            cy={getY(d.theanineConcentration)}
+                            r={isSelected ? 5.5 : 3.5}
+                            fill="#10b981"
+                            stroke="#fff"
+                            strokeWidth="1.5"
+                          />
+                        )}
+                        {showChartCaffeine && (
+                          <circle
+                            cx={x}
+                            cy={getY(d.caffeineConcentration)}
+                            r={isSelected ? 5.5 : 3.5}
+                            fill="#2563eb"
+                            stroke="#fff"
+                            strokeWidth="1.5"
+                          />
+                        )}
+                        {showChartCatechins && (
+                          <circle
+                            cx={x}
+                            cy={getY(d.catechinsConcentration)}
+                            r={isSelected ? 6 : 4}
+                            fill="#e11d48"
+                            stroke="#fff"
+                            strokeWidth="1.5"
+                          />
+                        )}
+                        {showChartPolysaccharides && (
+                          <circle
+                            cx={x}
+                            cy={getY(d.polysaccharidesConcentration)}
+                            r={isSelected ? 5.5 : 3.5}
+                            fill="#9333ea"
+                            stroke="#fff"
+                            strokeWidth="1.5"
+                          />
+                        )}
                       </g>
                     );
                   })}
@@ -4036,6 +4340,8 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
           waterVolume={waterVolume}
           steepsCount={steepsCount}
           steepSchedule={effectiveDurations}
+          rinseSeconds={teaRinseInfo.seconds}
+          isRinseEnabled={teaRinseInfo.required}
           onClose={() => setIsCheatSheetOpen(false)}
         />
       )}

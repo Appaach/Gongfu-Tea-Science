@@ -4,7 +4,6 @@ import {
   WaterHardnessLevel, 
   VesselMaterialType, 
   OptimizationGoal,
-  FormulaVariable,
   ScientificModelExplanation,
   BrewingMethod
 } from '../types';
@@ -909,7 +908,8 @@ export function simulateGongfuExtraction(
   optimizationGoal?: OptimizationGoal,
   brewingMethod: BrewingMethod = 'gongfu',
   rootFraction: number = 0.33,
-  customRinseSec?: number | null
+  customRinseSec?: number | null,
+  vintageYear?: number | null
 ): SteepKineticData[] {
   // Safe inputs (allow arbitrary mass and volume)
   const safeLeafMass = Math.max(0.1, leafMassGrams);
@@ -1032,6 +1032,25 @@ export function simulateGongfuExtraction(
       catechinsPool = 105 * safeLeafMass;
       polysaccharidesPool = 40 * safeLeafMass;
       break;
+  }
+
+  // Biochemical aging factors relative to current year (currentYear = new Date().getFullYear())
+  const currentYear = new Date().getFullYear();
+  const activeYear = vintageYear || tea.vintageYear;
+  if (activeYear && activeYear <= currentYear) {
+    const ageYears = Math.max(0, currentYear - activeYear);
+    if (ageYears > 0) {
+      // Harsh catechins (EGCG) transform into teabrownins & complex sweet polysaccharides
+      const catechinsAgingFactor = Math.max(0.18, 1 - ageYears * 0.038);
+      const tpsAgingFactor = 1 + Math.min(1.5, ageYears * 0.045);
+      const theanineAgingFactor = Math.max(0.4, 1 - ageYears * 0.012);
+      const caffeineAgingFactor = Math.max(0.75, 1 - ageYears * 0.004);
+
+      catechinsPool *= catechinsAgingFactor;
+      polysaccharidesPool *= tpsAgingFactor;
+      theaninePool *= theanineAgingFactor;
+      caffeinePool *= caffeineAgingFactor;
+    }
   }
 
   // Total soluble mass theoretical pool for yield calculation (~38-42% dry leaf)
@@ -1375,7 +1394,8 @@ export function calculateAdaptiveCustomBrewing(
   userCustomTimes: (number | null)[],
   brewingMethod: BrewingMethod = 'gongfu',
   rootFraction: number = 0.33,
-  customRinseSec?: number | null
+  customRinseSec?: number | null,
+  _vintageYear?: number | null
 ): AdaptiveCustomBrewingResult {
   const actualRatio = leafMassGrams > 0 ? (waterVolumeMl / leafMassGrams) : 15;
   const baseDurations = calculateAdaptiveSteepDurations(

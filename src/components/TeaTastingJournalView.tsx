@@ -9,21 +9,13 @@ import {
   Search, 
   X, 
   Sparkles, 
-  Flame, 
-  Scale, 
-  Droplet, 
-  Coffee, 
   Clock, 
   Download, 
-  ArrowRight,
-  ChevronRight,
-  Layers,
-  Sliders,
-  Edit3,
-  Printer,
-  FileText,
-  Check,
-  Tag,
+  ChevronRight, 
+  Sliders, 
+  Edit3, 
+  Printer, 
+  FileText, 
   Upload
 } from 'lucide-react';
 import { matchTeaSearch } from '../utils/teaSearch';
@@ -631,9 +623,9 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
                         {entry.steepScheduleSec.map((sec, sIdx) => (
                           <span
                             key={sIdx}
-                            className="px-1.5 py-0.5 rounded bg-white border border-stone-200 text-stone-800 font-bold"
+                            className="px-2 py-0.5 rounded bg-white border border-stone-200 text-stone-800 text-[11px]"
                           >
-                            #{sIdx + 1}: {sec}с
+                            #{sIdx + 1}: <strong className="text-amber-900 font-black text-xs">{sec}с</strong>
                           </span>
                         ))}
                       </div>
@@ -813,8 +805,8 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-1 font-mono text-xs">
                   {steepScheduleSec.map((sec, idx) => (
-                    <span key={idx} className="bg-white px-2 py-0.5 rounded-md border border-amber-300 text-amber-950 font-bold">
-                      #{idx + 1}: {sec}с
+                    <span key={idx} className="bg-white px-2.5 py-1 rounded-md border border-amber-300 text-stone-700">
+                      #{idx + 1}: <strong className="text-amber-950 font-black text-sm">{sec}с</strong>
                     </span>
                   ))}
                 </div>

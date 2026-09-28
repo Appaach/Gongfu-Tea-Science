@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "cap:assets": "capacitor-assets generate --android",
+    "cap:sync": "cap sync android",
+    "build:android": "npm run build && capacitor-assets generate --android && cap sync android"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -23,9 +26,10 @@
     "motion": "^12.23.24"
   },
   "devDependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.0.0",
     "@capacitor/core": "^7.0.0",
-    "@capacitor/android": "^7.0.0",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",

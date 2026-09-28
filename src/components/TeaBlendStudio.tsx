@@ -1,16 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { TeaVariety, BlendComponentItem, InitialTastingSessionData } from '../types';
 import { calculateTeaBlend, BLEND_PRESET_RECIPES } from '../utils/teaBlendCalculator';
+import { isTeaArchetype } from '../data/teaData';
 import { 
   FlaskConical, 
   Plus, 
   Trash2, 
   Sparkles, 
   Flame, 
-  Scale, 
   Droplet, 
   Coffee, 
-  CheckCircle, 
   Search, 
   X,
   Layers,
@@ -163,6 +162,17 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
     setActivePresetId(null);
   };
 
+  // Modify vintage year of a component
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const handleVintageYearChange = (index: number, year: number) => {
+    setComponents((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], vintageYear: year };
+      return next;
+    });
+    setActivePresetId(null);
+  };
+
   // Remove a component (min 2 slots kept)
   const handleRemoveComponent = (index: number) => {
     if (components.length <= 2) {
@@ -204,6 +214,17 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
     setPickerIndex(null);
   };
 
+  const favoriteIds = useMemo(() => {
+    try {
+      const saved = localStorage.getItem('gongfu_tea_favorite_ids_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.filter((id: string) => allTeaMap.has(id));
+      }
+    } catch {}
+    return [];
+  }, [allTeaMap]);
+
   // Filtered teas for picker
   const allTeasArray = useMemo(() => Array.from(allTeaMap.values()), [allTeaMap]);
   const pickerTeas = useMemo(() => {
@@ -211,7 +232,9 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
       // Only specific teas or custom blends (no generic archetypes in custom blending)
       if (tea.categoryGroup === 'generic') return false;
 
-      if (pickerTypeFilter !== 'all') {
+      if (pickerTypeFilter === 'favorites') {
+        if (!favoriteIds.includes(tea.id)) return false;
+      } else if (pickerTypeFilter !== 'all') {
         if (pickerTypeFilter === 'oolong' && !tea.type.includes('oolong')) return false;
         else if (pickerTypeFilter === 'gaba' && !tea.type.startsWith('gaba')) return false;
         else if (pickerTypeFilter === 'puerh' && !tea.type.includes('puerh') && tea.type !== 'heicha') return false;
@@ -221,7 +244,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
       }
       return matchTeaSearch(tea, pickerSearchQuery);
     });
-  }, [allTeasArray, pickerSearchQuery, pickerTypeFilter]);
+  }, [allTeasArray, pickerSearchQuery, pickerTypeFilter, favoriteIds]);
 
   // Color mapping by tea type for the visual composition bar
   const getTeaTypeColor = (type: string) => {
@@ -321,17 +344,6 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
             >
               <Bookmark className="w-3 h-3 text-amber-700" />
               <span>Записать в дневник</span>
-            </button>
-          )}
-
-          {blendResult && (
-            <button
-              type="button"
-              onClick={() => onApplyBlend(blendResult.compositeTeaVariety)}
-              className="inline-flex items-center space-x-1.5 bg-amber-800 hover:bg-amber-900 text-white px-3.5 py-1.5 rounded-lg font-bold text-xs shadow-2xs transition-all cursor-pointer"
-            >
-              <Flame className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-              <span>Заварить в симуляторе</span>
             </button>
           )}
         </div>
@@ -515,15 +527,34 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
                       </div>
                     </div>
 
-                    {/* Weight Controls & Replace */}
-                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-stone-200/80">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenPicker(idx)}
-                        className="text-[11px] font-semibold text-amber-800 hover:text-amber-950 underline underline-offset-2 cursor-pointer"
-                      >
-                        Заменить чай...
-                      </button>
+                    {/* Weight Controls & Vintage Year & Replace */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200/80">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPicker(idx)}
+                          className="text-[11px] font-semibold text-amber-800 hover:text-amber-950 underline underline-offset-2 cursor-pointer"
+                        >
+                          Заменить чай...
+                        </button>
+
+                        {!isTeaArchetype(tea) && (
+                          <div className="flex items-center gap-1 text-[11px]">
+                            <span className="text-stone-500 font-semibold">Год:</span>
+                            <select
+                              value={comp.vintageYear || tea.vintageYear || currentYear}
+                              onChange={(e) => handleVintageYearChange(idx, Number(e.target.value))}
+                              className="bg-white border border-stone-300 text-stone-900 font-mono font-bold text-[11px] rounded px-1 py-0.5 focus:ring-1 focus:ring-amber-500 focus:outline-none cursor-pointer max-w-full truncate"
+                            >
+                              {Array.from({ length: 51 }, (_, i) => currentYear - i).map((yr) => (
+                                <option key={yr} value={yr}>
+                                  {yr} {yr === currentYear ? '(Свежий)' : 'г.'}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
 
                       <div className="flex items-center space-x-2">
                         <button
@@ -778,11 +809,9 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
                 <button
                   type="button"
                   onClick={() => onApplyBlend(blendResult.compositeTeaVariety)}
-                  className="w-full py-3 rounded-xl bg-amber-800 hover:bg-amber-900 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]"
+                  className="w-full py-2.5 rounded-xl bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-950 font-bold text-xs shadow-2xs transition-all flex items-center justify-center cursor-pointer"
                 >
-                  <Flame className="w-4 h-4 text-amber-200 fill-amber-200" />
-                  <span>Заварить этот купаж в симуляторе Гунфу Ча</span>
-                  <ArrowRight className="w-4 h-4 ml-1" />
+                  <span>Заварить купаж в симуляторе</span>
                 </button>
               </div>
             </div>
@@ -960,6 +989,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
                 {[
                   { id: 'all', label: 'Все' },
+                  { id: 'favorites', label: '⭐ Избранные' },
                   { id: 'green', label: 'Зелёный' },
                   { id: 'white', label: 'Белый' },
                   { id: 'oolong', label: 'Улун' },

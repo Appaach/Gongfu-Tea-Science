@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { TeaVariety } from '../types';
+import { TeaVariety, canTeaAge, cleanTeaTitleForDisplay } from '../types';
 import { TEA_VARIETIES, GENERIC_TEA_ARCHETYPES, ALL_TEA_MAP, getTeaEffect, isTeaArchetype } from '../data/teaData';
 import { 
   Scale, 
@@ -222,7 +222,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
           <div className="space-y-1">
             <div className="text-[11px] font-semibold text-amber-900">{teaA.typeNameRu}</div>
             <h3 className="text-base sm:text-lg font-bold text-stone-950 font-serif leading-tight">
-              {teaA.nameRu}
+              {cleanTeaTitleForDisplay(teaA.nameRu, canTeaAge(teaA))}
             </h3>
             {teaA.nameZh && (
               <div className="text-xs text-stone-500 font-serif italic">{teaA.nameZh}</div>
@@ -241,7 +241,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
             </span>
           </div>
 
-          {!isTeaArchetype(teaA) && (
+          {!isTeaArchetype(teaA) && canTeaAge(teaA) && (
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
               <span className="font-semibold text-stone-700 shrink-0">Год сбора:</span>
               <select
@@ -281,7 +281,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
           <div className="space-y-1">
             <div className="text-[11px] font-semibold text-sky-900">{teaB.typeNameRu}</div>
             <h3 className="text-base sm:text-lg font-bold text-stone-950 font-serif leading-tight">
-              {teaB.nameRu}
+              {cleanTeaTitleForDisplay(teaB.nameRu, canTeaAge(teaB))}
             </h3>
             {teaB.nameZh && (
               <div className="text-xs text-stone-500 font-serif italic">{teaB.nameZh}</div>
@@ -300,7 +300,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
             </span>
           </div>
 
-          {!isTeaArchetype(teaB) && (
+          {!isTeaArchetype(teaB) && canTeaAge(teaB) && (
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
               <span className="font-semibold text-stone-700 shrink-0">Год сбора:</span>
               <select

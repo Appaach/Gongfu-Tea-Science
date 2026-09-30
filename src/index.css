@@ -8,27 +8,41 @@
     display: none !important;
   }
 
+  /* Reset modal overlays so they don't darken or obscure print pages */
+  .fixed.inset-0 {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
   body {
     background: #ffffff !important;
     color: #000000 !important;
-    font-size: 12pt !important;
+    font-size: 11pt !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
   /* Printable containers */
   #printable-cheat-sheet,
-  #journal-printable-area {
+  #journal-printable-area,
+  #printable-tasting-sheet {
     display: block !important;
     position: static !important;
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 !important;
-    padding: 10px !important;
+    margin: 0 auto !important;
+    padding: 8px !important;
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
     color: #000000 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* Ensure card backgrounds and borders print clearly */

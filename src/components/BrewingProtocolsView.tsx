@@ -112,7 +112,7 @@ export const BrewingProtocolsView: React.FC = () => {
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <div className="break-words min-w-0">
                       <strong className="text-stone-900">Режим диффузии: </strong>
-                      <span className="text-stone-600">Сброс C_bulk в ноль на каждом шаге. Максимальный градиент ΔC.</span>
+                      <span className="text-stone-600">Сброс концентрации в чаше в ноль на каждом шаге. Максимальный градиент диффузии ΔC.</span>
                     </div>
                   </div>
 
@@ -169,7 +169,7 @@ export const BrewingProtocolsView: React.FC = () => {
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <div className="break-words min-w-0">
                       <strong className="text-stone-900">Режим диффузии: </strong>
-                      <span className="text-stone-600">Буферизованная экстракция. Остаток удерживает C_bulk &gt; 0, сглаживая пик катехинов.</span>
+                      <span className="text-stone-600">Буферизованная экстракция. Остаток удерживает концентрацию раствора в сосуде, сглаживая пик катехинов.</span>
                     </div>
                   </div>
 

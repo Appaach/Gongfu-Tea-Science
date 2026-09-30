@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TeaVariety } from '../types';
 import { 
   X, 
-  Printer, 
   Copy, 
   Check, 
   Flame, 
@@ -12,9 +11,12 @@ import {
   Sparkles, 
   Clock, 
   ShieldCheck, 
-  Layers
+  Layers,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { getTeaEffect } from '../data/teaData';
+import { exportElementToPdf } from '../utils/pdfExport';
 
 interface TeaCheatSheetModalProps {
   tea: TeaVariety;
@@ -40,6 +42,8 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
   onClose
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const ratio = Math.round((waterVolume / Math.max(0.1, teaMass)) * 10) / 10;
   const effect = getTeaEffect(tea);
 
@@ -64,8 +68,18 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
         return 8 + Math.round(Math.pow(idx - 2, 1.35) * 5);
       });
 
-  const handlePrint = () => {
-    window.print();
+  const handleExportPdf = async () => {
+    if (!sheetRef.current || isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      const filename = `шпаргалка_${tea.nameRu.replace(/[^\w\u0400-\u04FF]/gi, '_')}`;
+      await exportElementToPdf(sheetRef.current, filename);
+    } catch (err) {
+      console.warn('PDF export failed, using window.print() fallback', err);
+      window.print();
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const handleCopyText = () => {
@@ -130,12 +144,22 @@ ${rinseLine}${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} 
 
             <button
               type="button"
-              onClick={handlePrint}
-              className="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
-              title="Сохранить в PDF или распечатать памятку"
+              onClick={handleExportPdf}
+              disabled={isExportingPdf}
+              className="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 disabled:bg-amber-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:cursor-wait"
+              title="Сохранить шпаргалку в файл PDF"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>PDF</span>
+              {isExportingPdf ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>PDF</span>
+                </>
+              )}
             </button>
 
             <button
@@ -150,7 +174,11 @@ ${rinseLine}${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} 
         </div>
 
         {/* Printable Cheat-Sheet Card */}
-        <div id="printable-cheat-sheet" className="p-6 overflow-y-auto space-y-5 bg-white text-stone-900">
+        <div 
+          ref={sheetRef}
+          id="printable-cheat-sheet" 
+          className="p-6 overflow-y-auto space-y-5 bg-white text-stone-900"
+        >
           {/* Top Title Banner */}
           <div className="border-b-2 border-stone-900 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
             <div>

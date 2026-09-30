@@ -17,17 +17,20 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <header className="border-b border-stone-200 bg-stone-50/95 backdrop-blur-md relative z-10 shadow-xs">
+    <header className="border-b border-stone-200 bg-stone-50 relative z-20 w-full shadow-2xs pt-[env(safe-area-inset-top,0px)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 sm:py-3 gap-2.5 sm:gap-3">
-          <div className="flex items-center">
-            <span className="font-serif font-bold text-stone-900 tracking-tight text-base sm:text-lg">
+          <div className="flex items-center justify-between">
+            <span className="font-serif font-bold text-stone-900 tracking-tight text-sm sm:text-base lg:text-lg">
               Расчет кинетики экстракции чая
             </span>
           </div>
 
           {/* Unified 2x2 Table Navigation Window */}
-          <nav className="inline-grid grid-cols-2 gap-0.5 rounded-lg bg-stone-100 p-1 border border-stone-200 print:hidden">
+          <nav 
+            aria-label="Разделы приложения"
+            className="grid grid-cols-2 sm:flex sm:flex-row gap-1 rounded-xl bg-stone-100 p-1 border border-stone-200 print:hidden shrink-0 shadow-2xs"
+          >
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -35,14 +38,15 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
                 <button
                   key={tab.id}
                   id={`tab-${tab.id}`}
+                  type="button"
                   onClick={() => setActiveTab(tab.id as ActiveTab)}
-                  className={`px-3.5 py-1.5 rounded-md text-xs sm:text-[13px] font-semibold transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5 select-none ${
                     isActive
-                      ? 'bg-amber-800 text-white shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                      ? 'bg-amber-800 text-white shadow-xs font-bold'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
                   <span>{tab.label}</span>
                 </button>
               );

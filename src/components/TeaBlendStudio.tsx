@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { TeaVariety, BlendComponentItem, InitialTastingSessionData } from '../types';
+import { TeaVariety, BlendComponentItem, InitialTastingSessionData, canTeaAge } from '../types';
 import { calculateTeaBlend, BLEND_PRESET_RECIPES } from '../utils/teaBlendCalculator';
 import { isTeaArchetype } from '../data/teaData';
 import { 
@@ -538,7 +538,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
                           Заменить чай...
                         </button>
 
-                        {!isTeaArchetype(tea) && (
+                        {!isTeaArchetype(tea) && canTeaAge(tea) && (
                           <div className="flex items-center gap-1 text-[11px]">
                             <span className="text-stone-500 font-semibold">Год:</span>
                             <select

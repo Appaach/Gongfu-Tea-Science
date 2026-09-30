@@ -306,7 +306,13 @@ export function diagnoseBrewQuality(
   // 1. Ratio Diagnostic
   let targetRatioMin = 13;
   let targetRatioMax = 18;
-  if (tea.type === 'green' || tea.type === 'yellow') {
+  if (tea.categoryGroup === 'blend' || tea.type === 'custom') {
+    const blendCanonicalRatio = (tea.defaultVolume > 0 && tea.defaultMass > 0)
+      ? Math.round((tea.defaultVolume / tea.defaultMass) * 10) / 10
+      : 15;
+    targetRatioMin = Math.max(7, Math.round(blendCanonicalRatio * 0.8 * 10) / 10);
+    targetRatioMax = Math.min(35, Math.round(blendCanonicalRatio * 1.25 * 10) / 10);
+  } else if (tea.type === 'green' || tea.type === 'yellow') {
     targetRatioMin = 18;
     targetRatioMax = 25;
   } else if (tea.type === 'white') {
@@ -414,8 +420,8 @@ export function diagnoseBrewQuality(
   }
 
   // 3. Vessel Compatibility Diagnostic
-  const isDelicateTea = tea.type === 'green' || tea.type === 'yellow' || tea.type === 'white';
-  const isHeavyFermented = tea.type === 'shou_puerh' || tea.type === 'sheng_puerh' || tea.id.includes('lao') || tea.id.includes('fuzhuan');
+  const isDelicateTea = (tea.type === 'green' || tea.type === 'yellow' || tea.type === 'white') && tea.categoryGroup !== 'blend';
+  const isHeavyFermented = (tea.type === 'shou_puerh' || tea.type === 'sheng_puerh' || tea.id.includes('lao') || tea.id.includes('fuzhuan')) && tea.categoryGroup !== 'blend';
 
   if (isDelicateTea && (vesselMaterial === 'cast_iron' || vesselMaterial === 'thermos' || vesselMaterial === 'ceramic_thick')) {
     scorePenalties += 12;

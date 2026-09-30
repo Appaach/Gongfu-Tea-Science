@@ -5,7 +5,7 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Header, ActiveTab } from './components/Header';
-import { TeaVariety, InitialTastingSessionData } from './types';
+import { TeaVariety, InitialTastingSessionData, InitialBrewParams } from './types';
 import { Beaker, ArrowUp } from 'lucide-react';
 
 const ExtractionSimulator = lazy(() => import('./components/ExtractionSimulator').then(m => ({ default: m.ExtractionSimulator })));
@@ -38,6 +38,7 @@ export default function App() {
 
   // Inter-tab transition states
   const [selectedTeaForSimulator, setSelectedTeaForSimulator] = useState<TeaVariety | null>(null);
+  const [selectedBrewParamsForSimulator, setSelectedBrewParamsForSimulator] = useState<InitialBrewParams | null>(null);
   const [comparisonTeaAId, setComparisonTeaAId] = useState<string | undefined>(undefined);
   const [journalInitialSession, setJournalInitialSession] = useState<InitialTastingSessionData | null>(null);
 
@@ -61,40 +62,53 @@ export default function App() {
     setActiveTab('journal');
   };
 
-  const handleSelectTeaToBrew = (tea: TeaVariety) => {
+  const handleSelectTeaToBrew = (tea: TeaVariety, brewParams?: InitialBrewParams) => {
     setSelectedTeaForSimulator(tea);
+    if (brewParams) {
+      setSelectedBrewParamsForSimulator(brewParams);
+    } else {
+      setSelectedBrewParamsForSimulator({
+        tea,
+        waterTempC: tea.optimalTemp,
+        teaMassG: tea.defaultMass,
+        waterVolumeMl: tea.defaultVolume,
+        steepsCount: tea.recommendedSteeps
+      });
+    }
     setActiveTab('simulator');
   };
 
   return (
     <div className="min-h-screen bg-stone-100/70 text-stone-900 flex flex-col font-sans selection:bg-amber-200 selection:text-amber-950">
-      {/* Top Header & Navigation */}
+      {/* Top Header & Navigation - Sticky and always accessible */}
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Suspense fallback={<ComponentLoader />}>
-          {activeTab === 'simulator' && (
+          <div className={activeTab === 'simulator' ? 'block' : 'hidden'}>
             <ExtractionSimulator 
-              key={selectedTeaForSimulator?.id || 'sim_default'}
               initialSelectedTea={selectedTeaForSimulator}
+              initialBrewParams={selectedBrewParamsForSimulator}
               onOpenComparison={handleOpenComparison}
               onOpenJournal={handleOpenJournal}
             />
-          )}
-          {activeTab === 'compare' && (
+          </div>
+          <div className={activeTab === 'compare' ? 'block' : 'hidden'}>
             <TeaComparisonView 
               initialTeaAId={comparisonTeaAId}
               onSelectTeaToBrew={handleSelectTeaToBrew}
             />
-          )}
-          {activeTab === 'journal' && (
+          </div>
+          <div className={activeTab === 'journal' ? 'block' : 'hidden'}>
             <TeaTastingJournalView 
               initialSessionData={journalInitialSession}
               onSelectTeaToBrew={handleSelectTeaToBrew}
             />
-          )}
-          {activeTab === 'research' && <ResearchArticlesView />}
+          </div>
+          <div className={activeTab === 'research' ? 'block' : 'hidden'}>
+            <ResearchArticlesView />
+          </div>
         </Suspense>
       </main>
 

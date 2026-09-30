@@ -3,7 +3,9 @@ import {
   BlendComponentItem, 
   TeaBlendCalculationResult, 
   TeaType, 
-  MasterBlendPreset 
+  MasterBlendPreset,
+  canTeaAge,
+  cleanTeaTitleForDisplay
 } from '../types';
 
 /**
@@ -158,7 +160,7 @@ export function calculateTeaBlend(
   const bufferingNumerator = (compPolysaccharides * 1.8 + compTheanine * 1.4);
   const bufferingDenominator = Math.max(5, compCatechins * 0.35 + compCaffeine * 0.15 + 4);
   const rawBuffering = (bufferingNumerator / bufferingDenominator) * 82;
-  const tanninBufferingScorePercent = Math.min(99, Math.max(20, Math.round(rawBuffering)));
+  const tanninBufferingScorePercent = Math.min(100, Math.max(20, Math.round(rawBuffering)));
 
   // Aroma Harmony Score (0 - 100%): Considers tea category compatibility AND component fraction balance
   const numComps = itemsWithFractions.length;
@@ -169,21 +171,27 @@ export function calculateTeaBlend(
   }, 0);
   const balanceFactor = numComps > 1 ? Math.min(1, 0.75 + 0.25 * (actualEntropy / maxEntropy)) : 1.0;
 
-  let baseTypeHarmony = 92;
+  let baseTypeHarmony = 100;
   const types = itemsWithFractions.map((i) => i.tea.type);
-  if (types.includes('shou_puerh') && types.includes('green')) {
-    baseTypeHarmony = 78; // Experimental contrast
+  if (numComps === 1) {
+    baseTypeHarmony = 100; // Single tea inherently possesses 100% harmonious varietal bouquet
+  } else if (types.includes('shou_puerh') && types.includes('green')) {
+    baseTypeHarmony = 82; // Experimental contrast
   } else if ((types.includes('shou_puerh') || types.includes('heicha')) && types.includes('white')) {
-    baseTypeHarmony = 98; // Classic master pairing
+    baseTypeHarmony = 100; // Classic master pairing
   } else if (types.some((t) => t.includes('oolong')) && types.includes('red')) {
-    baseTypeHarmony = 96; // Excellent synergy
+    baseTypeHarmony = 100; // Excellent synergy
   } else if (types.includes('gaba_oolong') && types.includes('red')) {
-    baseTypeHarmony = 97;
+    baseTypeHarmony = 100;
   } else if (types.includes('sheng_puerh') && types.includes('shou_puerh')) {
-    baseTypeHarmony = 95; // Classic Hong Kong Yin-Yang pairing
+    baseTypeHarmony = 98; // Classic Hong Kong Yin-Yang pairing
+  } else {
+    // If all components are within the same or harmonizing category family
+    const allSameType = types.every((t) => t === types[0]);
+    baseTypeHarmony = allSameType ? 100 : 98;
   }
 
-  const aromaHarmonyScorePercent = Math.min(99, Math.max(30, Math.round(baseTypeHarmony * balanceFactor)));
+  const aromaHarmonyScorePercent = Math.min(100, Math.max(30, Math.round(baseTypeHarmony * (numComps === 1 ? 1.0 : balanceFactor))));
 
   // Energy vs Relax score (0 = ultra calm / GABA, 100 = intense stim energy)
   const energyRaw = (compCaffeine * 2.5) / Math.max(1, compTheanine * 2.0 + compPolysaccharides * 0.5);
@@ -272,7 +280,12 @@ export function calculateTeaBlend(
   }
 
   // 8. SYNTHESIZE COMPOSITE TEA VARIETY OBJECT (FOR BREWING SIMULATOR)
-  const compositeName = `Купаж: ${itemsWithFractions.map((i) => `${i.tea.nameRu.split('(')[0].trim()} (${Math.round(i.fraction * 100)}%)`).join(' + ')}`;
+  const compositeName = `Купаж: ${itemsWithFractions.map((i) => {
+    const activeYear = i.vintageYear || i.tea.vintageYear;
+    const yearStr = (activeYear && canTeaAge(i.tea)) ? ` ${activeYear}г.` : '';
+    const cleanName = cleanTeaTitleForDisplay(i.tea.nameRu.split('(')[0].trim(), canTeaAge(i.tea));
+    return `${cleanName}${yearStr} (${Math.round(i.fraction * 100)}%)`;
+  }).join(' + ')}`;
   const compositeNameZh = itemsWithFractions.map((i) => i.tea.nameZh).filter(Boolean).join(' · ');
 
   const compositeTeaVariety: TeaVariety = {

@@ -1,5 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { TastingJournalEntry, TeaVariety, InitialTastingSessionData } from '../types';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { 
+  TastingJournalEntry, 
+  TeaVariety, 
+  InitialTastingSessionData, 
+  InitialBrewParams,
+  VesselMaterialType,
+  BrewingMethod,
+  OptimizationGoal,
+  WaterHardnessLevel,
+  canTeaAge,
+  cleanTeaTitleForDisplay
+} from '../types';
 import { TEA_VARIETIES, GENERIC_TEA_ARCHETYPES, getTeaEffect } from '../data/teaData';
 import { 
   BookOpen, 
@@ -16,14 +27,16 @@ import {
   Edit3, 
   Printer, 
   FileText, 
-  Upload
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { matchTeaSearch } from '../utils/teaSearch';
+import { exportElementToPdf, exportJournalEntriesToPdf } from '../utils/pdfExport';
 
 const JOURNAL_STORAGE_KEY = 'gongfu_tasting_journal_v1';
 
 interface TeaTastingJournalViewProps {
-  onSelectTeaToBrew?: (tea: TeaVariety) => void;
+  onSelectTeaToBrew?: (tea: TeaVariety, brewParams?: InitialBrewParams) => void;
   initialSessionData?: InitialTastingSessionData | null;
   initialNewTea?: TeaVariety | null;
 }
@@ -55,6 +68,9 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
   const [isNewModalOpen, setIsNewModalOpen] = useState(Boolean(initialSessionData || initialNewTea));
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [printingEntry, setPrintingEntry] = useState<TastingJournalEntry | null>(null);
+  const [isExportingAllPdf, setIsExportingAllPdf] = useState(false);
+  const [isExportingCardPdf, setIsExportingCardPdf] = useState(false);
+  const tastingSheetRef = useRef<HTMLDivElement>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [ratingFilter, setRatingFilter] = useState<number>(0);
@@ -101,6 +117,15 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
     initialSessionData?.tags || (initialTea.categoryGroup === 'blend' ? ['Авторский купаж', 'Гунфу Ча'] : ['Гунфу Ча'])
   );
 
+  // Extended brewing parameters (vintage, method, vessel material, water hardness, goal, rinse, root fraction)
+  const [vintageYear, setVintageYear] = useState<number | undefined>(initialSessionData?.vintageYear || initialTea.vintageYear);
+  const [brewingMethod, setBrewingMethod] = useState<BrewingMethod>(initialSessionData?.brewingMethod || 'gongfu');
+  const [vesselMaterial, setVesselMaterial] = useState<VesselMaterialType | undefined>(initialSessionData?.vesselMaterial);
+  const [optimizationGoal, setOptimizationGoal] = useState<OptimizationGoal | undefined>(initialSessionData?.optimizationGoal);
+  const [waterHardness, setWaterHardness] = useState<WaterHardnessLevel | undefined>(initialSessionData?.waterHardness);
+  const [customRinseTime, setCustomRinseTime] = useState<number | null | undefined>(initialSessionData?.customRinseTime);
+  const [rootFraction, setRootFraction] = useState<number | undefined>(initialSessionData?.rootFraction);
+
   // Sync if new initialSessionData passed
   useEffect(() => {
     if (initialSessionData) {
@@ -116,6 +141,13 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
       setSteepsCount(initialSessionData.steepsCount || t.recommendedSteeps || 7);
       setSteepScheduleSec(initialSessionData.steepScheduleSec || []);
       setVesselUsed(initialSessionData.vesselUsed || t.recommendedVesselRu?.split('(')[0]?.trim() || 'Фарфоровая гайвань 120 мл');
+      setVintageYear(initialSessionData.vintageYear || t.vintageYear);
+      setBrewingMethod(initialSessionData.brewingMethod || 'gongfu');
+      setVesselMaterial(initialSessionData.vesselMaterial);
+      setOptimizationGoal(initialSessionData.optimizationGoal);
+      setWaterHardness(initialSessionData.waterHardness);
+      setCustomRinseTime(initialSessionData.customRinseTime);
+      setRootFraction(initialSessionData.rootFraction);
       setEffectNote(initialSessionData.effectNote || getTeaEffect(t).nameRu);
       setUserNotes(initialSessionData.userNotes || '');
       setTags(initialSessionData.tags || (t.categoryGroup === 'blend' ? ['Авторский купаж', 'Гунфу Ча'] : ['Гунфу Ча']));
@@ -200,6 +232,13 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
     setSelectedTea(existingTea);
     setRating(entry.rating);
     setVesselUsed(entry.vesselUsed);
+    setVintageYear(entry.vintageYear);
+    setBrewingMethod(entry.brewingMethod || 'gongfu');
+    setVesselMaterial(entry.vesselMaterial);
+    setOptimizationGoal(entry.optimizationGoal);
+    setWaterHardness(entry.waterHardness);
+    setCustomRinseTime(entry.customRinseTime);
+    setRootFraction(entry.rootFraction);
     setWaterTempC(entry.waterTempC);
     setTeaMassG(entry.teaMassG);
     setWaterVolumeMl(entry.waterVolumeMl);
@@ -226,6 +265,13 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
       dateIso: editingEntryId ? (entries.find(e => e.id === editingEntryId)?.dateIso || new Date().toISOString()) : new Date().toISOString(),
       rating,
       vesselUsed,
+      vesselMaterial,
+      vintageYear,
+      brewingMethod,
+      optimizationGoal,
+      waterHardness,
+      customRinseTime,
+      rootFraction,
       waterTempC,
       teaMassG,
       waterVolumeMl,
@@ -350,8 +396,32 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
     e.target.value = '';
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleExportPdfAll = async () => {
+    if (entries.length === 0 || isExportingAllPdf) return;
+    setIsExportingAllPdf(true);
+    try {
+      const listToExport = filteredEntries.length > 0 ? filteredEntries : entries;
+      await exportJournalEntriesToPdf(listToExport);
+    } catch (err) {
+      console.warn('PDF export failed, falling back to window.print()', err);
+      window.print();
+    } finally {
+      setIsExportingAllPdf(false);
+    }
+  };
+
+  const handleExportCardPdf = async () => {
+    if (!tastingSheetRef.current || !printingEntry || isExportingCardPdf) return;
+    setIsExportingCardPdf(true);
+    try {
+      const safeName = printingEntry.teaNameRu.replace(/[^\w\u0400-\u04FF]/gi, '_');
+      await exportElementToPdf(tastingSheetRef.current, `дегустационный_лист_${safeName}`);
+    } catch (err) {
+      console.warn('PDF card export failed, falling back to print', err);
+      window.print();
+    } finally {
+      setIsExportingCardPdf(false);
+    }
   };
 
   const filteredEntries = useMemo(() => {
@@ -433,12 +503,22 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
 
               <button
                 type="button"
-                onClick={handlePrint}
-                className="px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-950 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Сохранить дневник в PDF файл или отправить на печать"
+                onClick={handleExportPdfAll}
+                disabled={isExportingAllPdf}
+                className="px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 disabled:bg-amber-100 text-amber-950 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:cursor-wait"
+                title="Экспортировать весь дневник в структурированный PDF файл"
               >
-                <Download className="w-3.5 h-3.5 text-amber-800" />
-                <span>PDF</span>
+                {isExportingAllPdf ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 text-amber-800 animate-spin" />
+                    <span>PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5 text-amber-800" />
+                    <span>PDF</span>
+                  </>
+                )}
               </button>
             </>
           )}
@@ -690,33 +770,47 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        if (teaObj) {
-                          onSelectTeaToBrew(teaObj);
-                        } else {
-                          const dummyVariety: TeaVariety = {
-                            id: entry.teaId,
-                            nameRu: entry.teaNameRu,
-                            nameZh: entry.teaNameZh || '拼配茶',
-                            namePinyin: 'Pīnpèi',
-                            type: 'custom',
-                            typeNameRu: entry.teaTypeNameRu,
-                            categoryGroup: entry.isBlend ? 'blend' : 'specific',
-                            origin: 'Из личного дневника',
-                            cultivar: 'Мультисортовой сбор',
-                            optimalTemp: entry.waterTempC,
-                            tempRange: [entry.waterTempC - 5, entry.waterTempC + 5],
-                            defaultMass: entry.teaMassG,
-                            defaultVolume: entry.waterVolumeMl,
-                            recommendedSteeps: entry.steepsCount,
-                            oxidationLevel: 'Кастомный уровень',
-                            leafMorphology: 'twisted_strip',
-                            scientificDescription: entry.userNotes || 'Сорт сохранён из личного дневника дегустаций.',
-                            generalExamplesRu: entry.blendComponents,
-                            recommendedVesselRu: entry.vesselUsed || 'Гайвань 120 мл',
-                            keySensoryNotes: entry.sensoryNotes || ['Сбалансированное тело', 'Послевкусие']
-                          };
-                          onSelectTeaToBrew(dummyVariety);
-                        }
+                        const targetTea: TeaVariety = teaObj || {
+                          id: entry.teaId,
+                          nameRu: entry.teaNameRu,
+                          nameZh: entry.teaNameZh || '拼配茶',
+                          namePinyin: 'Pīnpèi',
+                          type: 'custom',
+                          typeNameRu: entry.teaTypeNameRu,
+                          categoryGroup: entry.isBlend ? 'blend' : 'specific',
+                          origin: 'Из личного дневника',
+                          cultivar: 'Мультисортовой сбор',
+                          optimalTemp: entry.waterTempC,
+                          tempRange: [entry.waterTempC - 5, entry.waterTempC + 5],
+                          defaultMass: entry.teaMassG,
+                          defaultVolume: entry.waterVolumeMl,
+                          recommendedSteeps: entry.steepsCount,
+                          oxidationLevel: 'Кастомный уровень',
+                          leafMorphology: 'twisted_strip',
+                          scientificDescription: entry.userNotes || 'Сорт сохранён из личного дневника дегустаций.',
+                          generalExamplesRu: entry.blendComponents,
+                          recommendedVesselRu: entry.vesselUsed || 'Гайвань 120 мл',
+                          keySensoryNotes: entry.sensoryNotes || ['Сбалансированное тело', 'Послевкусие']
+                        };
+
+                        const brewParams: InitialBrewParams = {
+                          tea: targetTea,
+                          vintageYear: entry.vintageYear,
+                          brewingMethod: entry.brewingMethod,
+                          vesselMaterial: entry.vesselMaterial,
+                          optimizationGoal: entry.optimizationGoal,
+                          waterHardness: entry.waterHardness,
+                          customRinseTime: entry.customRinseTime,
+                          waterTempC: entry.waterTempC,
+                          teaMassG: entry.teaMassG,
+                          waterVolumeMl: entry.waterVolumeMl,
+                          steepsCount: entry.steepsCount,
+                          steepScheduleSec: entry.steepScheduleSec && entry.steepScheduleSec.length > 0 ? entry.steepScheduleSec : undefined,
+                          vesselUsed: entry.vesselUsed,
+                          rootFraction: entry.rootFraction
+                        };
+
+                        onSelectTeaToBrew(targetTea, brewParams);
                       }}
                       className="text-xs font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1 cursor-pointer"
                     >
@@ -875,6 +969,107 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
               </div>
             </div>
 
+            {/* Extended Parameters: Vintage Year, Method, Vessel & Material, Hardness, Rinse, Optimization */}
+            <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2.5">
+              <span className="text-xs font-bold text-stone-800 block">
+                Параметры заваривания, посуда и метод:
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {/* Vintage Year */}
+                {canTeaAge(selectedTea) && (
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-stone-600 block">Год сбора / Выдержка:</label>
+                    <select
+                      value={vintageYear ?? ''}
+                      onChange={(e) => setVintageYear(e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-full px-2 py-1.5 rounded-lg border border-stone-300 font-mono text-xs font-bold text-stone-900 bg-white"
+                    >
+                      <option value="">Свежий сбор (текущий год)</option>
+                      {Array.from({ length: 45 }, (_, i) => new Date().getFullYear() - i).map((yr) => (
+                        <option key={yr} value={yr}>
+                          {yr} г.
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Brewing Method */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-stone-600 block">Метод заваривания:</label>
+                  <select
+                    value={brewingMethod}
+                    onChange={(e) => setBrewingMethod(e.target.value as BrewingMethod)}
+                    className="w-full px-2 py-1.5 rounded-lg border border-stone-300 font-medium text-xs text-stone-900 bg-white"
+                  >
+                    <option value="gongfu">Гунфу Ча (100% слив)</option>
+                    <option value="liu_gen">Оставление корня (Лю Гэнь)</option>
+                    <option value="grandpa_cup">«Ленивый» метод (Бэй Пао / чашка)</option>
+                  </select>
+                </div>
+
+                {/* Vessel Text Input */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-stone-600 block">Посуда (название):</label>
+                  <input
+                    type="text"
+                    value={vesselUsed}
+                    onChange={(e) => setVesselUsed(e.target.value)}
+                    placeholder="Фарфоровая гайвань 120 мл"
+                    className="w-full px-2 py-1.5 rounded-lg border border-stone-300 font-medium text-xs text-stone-900 bg-white"
+                  />
+                </div>
+
+                {/* Vessel Material */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-stone-600 block">Материал посуды:</label>
+                  <select
+                    value={vesselMaterial ?? 'porcelain'}
+                    onChange={(e) => setVesselMaterial(e.target.value as VesselMaterialType)}
+                    className="w-full px-2 py-1.5 rounded-lg border border-stone-300 font-medium text-xs text-stone-900 bg-white"
+                  >
+                    <option value="porcelain">Фарфор (нейтральный)</option>
+                    <option value="yixing_clay">Исинская глина (смягчает танины)</option>
+                    <option value="glass_regular">Стекло / Типод</option>
+                    <option value="ceramic_regular">Керамика стандартная</option>
+                    <option value="ceramic_thick">Керамика толстостенная</option>
+                    <option value="cast_iron">Чугун</option>
+                    <option value="metal_silver">Серебро</option>
+                    <option value="thermos">Термос</option>
+                  </select>
+                </div>
+
+                {/* Water Hardness */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-stone-600 block">Жесткость воды:</label>
+                  <select
+                    value={waterHardness ?? 'soft'}
+                    onChange={(e) => setWaterHardness(e.target.value as WaterHardnessLevel)}
+                    className="w-full px-2 py-1.5 rounded-lg border border-stone-300 font-medium text-xs text-stone-900 bg-white"
+                  >
+                    <option value="soft">Мягкая горная (&lt;60 ppm)</option>
+                    <option value="optimal">Оптимальная (80-120 ppm)</option>
+                    <option value="hard">Минеральная (&gt;150 ppm)</option>
+                  </select>
+                </div>
+
+                {/* Rinse Seconds */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-stone-600 block">Промыв листа (сек):</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="60"
+                    placeholder="0 — без промывки"
+                    value={customRinseTime ?? ''}
+                    onChange={(e) => setCustomRinseTime(e.target.value === '' ? null : Number(e.target.value))}
+                    className="w-full px-2 py-1.5 rounded-lg border border-stone-300 font-mono text-xs font-bold text-stone-900 bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Sensory Sliders */}
             <div className="space-y-2 p-3 bg-stone-50 rounded-xl border border-stone-200">
               <span className="text-xs font-bold text-stone-800 block">
@@ -1024,150 +1219,216 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
         </div>
       )}
 
-      {/* Printable Sheet Modal */}
+      {/* Printable Sheet Modal - Dynamic and responsive for all screen sizes */}
       {printingEntry && (
-        <div className="fixed inset-0 z-60 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl border border-stone-300 animate-in fade-in zoom-in-95 print:p-0 print:shadow-none print:border-none print:max-w-none">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3 print:hidden">
+        <div 
+          onClick={() => setPrintingEntry(null)}
+          className="fixed inset-0 z-60 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-4xl max-h-[94vh] flex flex-col shadow-2xl border border-stone-300 animate-in fade-in zoom-in-95 print:p-0 print:shadow-none print:border-none print:max-w-none overflow-hidden cursor-default"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-stone-200 p-3.5 sm:p-4 bg-stone-50 shrink-0 print:hidden">
               <div className="flex items-center space-x-2">
-                <Printer className="w-5 h-5 text-amber-800" />
-                <h3 className="text-sm font-bold text-stone-900">
-                  Дегустационный лист для печати
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-800" />
+                <h3 className="text-xs sm:text-sm font-bold text-stone-900 capitalize">
+                  дегустационный лист
                 </h3>
               </div>
               <div className="flex items-center space-x-2">
                 <button
                   type="button"
-                  onClick={() => window.print()}
-                  className="px-3 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  onClick={handleExportCardPdf}
+                  disabled={isExportingCardPdf}
+                  className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 disabled:bg-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer disabled:cursor-wait"
+                  title="Сохранить дегустационный лист в файл PDF"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Печать (Ctrl+P)</span>
+                  {isExportingCardPdf ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>PDF</span>
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => setPrintingEntry(null)}
                   className="p-1 rounded-lg text-stone-400 hover:text-stone-700 cursor-pointer"
+                  title="Закрыть"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Printable Content Sheet */}
-            <div className="p-6 border-2 border-stone-900 rounded-xl space-y-4 bg-amber-50/20 font-serif text-stone-900 print:border-stone-800">
-              <div className="flex justify-between items-start border-b-2 border-stone-900 pb-3">
-                <div>
-                  <span className="text-[10px] uppercase font-sans font-bold tracking-widest text-amber-900">
-                    Gongfu Cha Extraction Laboratory • Tasting Record
-                  </span>
-                  <h2 className="text-xl font-bold mt-0.5">
-                    {printingEntry.teaNameRu} {printingEntry.teaNameZh && `(${printingEntry.teaNameZh})`}
-                  </h2>
-                  <div className="text-xs font-sans text-stone-600">
-                    Категория: <strong>{printingEntry.teaTypeNameRu}</strong> {printingEntry.isBlend && '• Авторский купаж'}
+            {/* Scrollable Printable Content Sheet Body */}
+            <div className="overflow-y-auto p-2 sm:p-5 md:p-6 space-y-4 flex-1">
+              <div 
+                ref={tastingSheetRef}
+                id="printable-tasting-sheet"
+                className="p-3.5 sm:p-6 md:p-8 border-2 border-stone-900 rounded-xl space-y-3.5 sm:space-y-4 bg-amber-50/20 font-serif text-stone-900 print:border-stone-800 w-full min-w-0"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b-2 border-stone-900 pb-3">
+                  <div className="min-w-0">
+                    <span className="text-[9px] sm:text-[10px] uppercase font-sans font-bold tracking-widest text-amber-900 block truncate">
+                      Gongfu Cha Extraction Laboratory • Tasting Record
+                    </span>
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 break-words">
+                      {printingEntry.teaNameRu} {printingEntry.teaNameZh && `(${printingEntry.teaNameZh})`}
+                    </h2>
+                    <div className="text-xs font-sans text-stone-600 mt-0.5">
+                      Категория: <strong>{printingEntry.teaTypeNameRu}</strong> {printingEntry.isBlend && '• Авторский купаж'}
+                    </div>
+                  </div>
+                  <div className="text-left sm:text-right font-mono text-xs text-stone-600 shrink-0">
+                    <div>Дата: {new Date(printingEntry.dateIso).toLocaleDateString('ru-RU')}</div>
+                    <div className="text-amber-800 font-bold mt-0.5 text-sm">
+                      {'★'.repeat(printingEntry.rating)}{'☆'.repeat(5 - printingEntry.rating)}
+                    </div>
                   </div>
                 </div>
-                <div className="text-right font-mono text-xs text-stone-600">
-                  <div>Дата: {new Date(printingEntry.dateIso).toLocaleDateString('ru-RU')}</div>
-                  <div className="text-amber-800 font-bold mt-1">
-                    {'★'.repeat(printingEntry.rating)}{'☆'.repeat(5 - printingEntry.rating)}
+
+                {/* Dynamic Responsive Brewing Spec Table */}
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 font-sans text-xs border border-stone-300 p-2.5 sm:p-3 rounded-lg bg-white">
+                  <div>
+                    <span className="text-stone-500 text-[10px] block uppercase">Температура</span>
+                    <strong className="text-amber-900 font-mono text-sm">{printingEntry.waterTempC}°C</strong>
+                  </div>
+                  <div>
+                    <span className="text-stone-500 text-[10px] block uppercase">Заварка</span>
+                    <strong className="font-mono text-sm">{printingEntry.teaMassG} г</strong>
+                  </div>
+                  <div>
+                    <span className="text-stone-500 text-[10px] block uppercase">Вода</span>
+                    <strong className="font-mono text-sm">{printingEntry.waterVolumeMl} мл</strong>
+                  </div>
+                  <div>
+                    <span className="text-stone-500 text-[10px] block uppercase">Проливов</span>
+                    <strong className="font-mono text-sm">{printingEntry.steepsCount}</strong>
+                  </div>
+                  <div>
+                    <span className="text-stone-500 text-[10px] block uppercase">Год сбора</span>
+                    <strong className="font-mono text-sm">{printingEntry.vintageYear ? `${printingEntry.vintageYear}г` : 'Свежий'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-stone-500 text-[10px] block uppercase">Метод</span>
+                    <strong className="text-xs font-semibold">{printingEntry.brewingMethod === 'grandpa_cup' ? 'Грандпа' : printingEntry.brewingMethod === 'liu_gen' ? 'Лю Гэнь' : 'Гунфу Ча'}</strong>
                   </div>
                 </div>
-              </div>
 
-              {/* Brewing Spec Table */}
-              <div className="grid grid-cols-4 gap-2 font-sans text-xs border border-stone-300 p-3 rounded-lg bg-white">
-                <div>
-                  <span className="text-stone-500 text-[10px] block uppercase">Температура</span>
-                  <strong className="text-amber-900 font-mono text-sm">{printingEntry.waterTempC}°C</strong>
+                {/* Vessel, Material, Water Hardness & Rinse Badges */}
+                <div className="text-xs font-sans text-stone-700 flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span>Посуда: <strong>{printingEntry.vesselUsed}</strong></span>
+                    {printingEntry.vesselMaterial && (
+                      <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-700 text-[10px]">
+                        {printingEntry.vesselMaterial === 'yixing_clay' ? 'Исинская глина' :
+                         printingEntry.vesselMaterial === 'glass_regular' || printingEntry.vesselMaterial === 'glass' ? 'Стекло' :
+                         printingEntry.vesselMaterial === 'ceramic_thick' ? 'Толстая керамика' :
+                         printingEntry.vesselMaterial === 'ceramic_regular' ? 'Керамика' :
+                         printingEntry.vesselMaterial === 'cast_iron' ? 'Чугун' :
+                         printingEntry.vesselMaterial === 'metal_silver' ? 'Серебро' :
+                         printingEntry.vesselMaterial === 'thermos' ? 'Термос' : 'Фарфор'}
+                      </span>
+                    )}
+                    {printingEntry.customRinseTime ? (
+                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px]">
+                        Промывка: {printingEntry.customRinseTime}с
+                      </span>
+                    ) : null}
+                  </div>
+                  {printingEntry.waterHardness && (
+                    <span className="text-[10px] text-stone-500 font-mono">
+                      Вода: {printingEntry.waterHardness === 'soft' ? 'Мягкая горная (<60 ppm)' : printingEntry.waterHardness === 'optimal' ? 'Оптимальная (80-120 ppm)' : 'Минеральная (>150 ppm)'}
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <span className="text-stone-500 text-[10px] block uppercase">Заварка</span>
-                  <strong className="font-mono text-sm">{printingEntry.teaMassG} г</strong>
-                </div>
-                <div>
-                  <span className="text-stone-500 text-[10px] block uppercase">Вода</span>
-                  <strong className="font-mono text-sm">{printingEntry.waterVolumeMl} мл</strong>
-                </div>
-                <div>
-                  <span className="text-stone-500 text-[10px] block uppercase">Проливов</span>
-                  <strong className="font-mono text-sm">{printingEntry.steepsCount}</strong>
-                </div>
-              </div>
 
-              {/* Vessel */}
-              <div className="text-xs font-sans text-stone-700">
-                Посуда: <strong>{printingEntry.vesselUsed}</strong>
-              </div>
+                {/* Dynamic Responsive Steep Schedule Table */}
+                {(() => {
+                  const cardSteeps = (printingEntry.steepScheduleSec && printingEntry.steepScheduleSec.length > 0)
+                    ? printingEntry.steepScheduleSec
+                    : Array.from({ length: printingEntry.steepsCount || 7 }, (_, idx) => {
+                        if (idx === 0) return 8;
+                        if (idx === 1) return 6;
+                        if (idx === 2) return 8;
+                        return 8 + Math.round(Math.pow(idx - 2, 1.35) * 5);
+                      });
+                  return (
+                    <div className="space-y-1.5 font-sans">
+                      <span className="text-xs font-bold uppercase tracking-wider text-stone-800 block">
+                        Время проливов (секунды):
+                      </span>
+                      <div className="grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5 font-mono text-xs text-center">
+                        {cardSteeps.map((sec, idx) => (
+                          <div key={idx} className="p-1 sm:p-1.5 rounded border border-stone-300 bg-white shadow-2xs">
+                            <div className="text-[9px] text-stone-400">#{idx + 1}</div>
+                            <div className="font-bold text-amber-950 text-xs sm:text-sm">{sec}с</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
-              {/* Steep Schedule Table */}
-              {printingEntry.steepScheduleSec && printingEntry.steepScheduleSec.length > 0 && (
+                {/* Blend Components */}
+                {printingEntry.blendComponents && printingEntry.blendComponents.length > 0 && (
+                  <div className="space-y-1 font-sans text-xs">
+                    <span className="font-bold text-purple-900 uppercase">Компоненты купажа:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {printingEntry.blendComponents.map((c, i) => (
+                        <span key={i} className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-purple-950 text-[11px]">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sensory Evaluation */}
                 <div className="space-y-1.5 font-sans">
                   <span className="text-xs font-bold uppercase tracking-wider text-stone-800 block">
-                    Хронометр проливов (секунды):
+                    Сенсорная органолептика чашки:
                   </span>
-                  <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5 font-mono text-xs text-center">
-                    {printingEntry.steepScheduleSec.map((sec, idx) => (
-                      <div key={idx} className="p-1.5 rounded border border-stone-300 bg-white">
-                        <div className="text-[9px] text-stone-400">#{idx + 1}</div>
-                        <div className="font-bold text-amber-950">{sec}с</div>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-center">
+                    <div className="p-2 sm:p-2.5 border border-stone-200 rounded-lg bg-stone-50">
+                      <span className="text-[10px] text-stone-500 block">Сладость</span>
+                      <strong className="text-amber-900 font-mono text-sm">{printingEntry.sweetnessScore}/10</strong>
+                    </div>
+                    <div className="p-2 sm:p-2.5 border border-stone-200 rounded-lg bg-stone-50">
+                      <span className="text-[10px] text-stone-500 block">Плотность</span>
+                      <strong className="text-stone-900 font-mono text-sm">{printingEntry.bodyScore}/10</strong>
+                    </div>
+                    <div className="p-2 sm:p-2.5 border border-stone-200 rounded-lg bg-stone-50">
+                      <span className="text-[10px] text-stone-500 block">Хуэйгань</span>
+                      <strong className="text-emerald-900 font-mono text-sm">{printingEntry.huiGanScore}/10</strong>
+                    </div>
+                    <div className="p-2 sm:p-2.5 border border-stone-200 rounded-lg bg-stone-50">
+                      <span className="text-[10px] text-stone-500 block">Терпкость</span>
+                      <strong className="text-stone-800 font-mono text-sm">{printingEntry.astringencyScore}/10</strong>
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Blend Components */}
-              {printingEntry.blendComponents && printingEntry.blendComponents.length > 0 && (
-                <div className="space-y-1 font-sans text-xs">
-                  <span className="font-bold text-purple-900 uppercase">Компоненты купажа:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {printingEntry.blendComponents.map((c, i) => (
-                      <span key={i} className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-purple-950">
-                        {c}
-                      </span>
-                    ))}
+                {/* Master Notes */}
+                {printingEntry.userNotes && (
+                  <div className="p-3 rounded-lg bg-amber-50/40 border border-amber-200/60 text-xs text-stone-700 italic font-sans leading-relaxed">
+                    "{printingEntry.userNotes}"
                   </div>
+                )}
+
+                {/* Footer of Sheet */}
+                <div className="pt-2 border-t border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] text-stone-500 font-sans">
+                  <span>Эффект: <strong>{printingEntry.effectNote}</strong></span>
+                  <span>Gongfu Cha Lab • ISO 9768 / CAAS Extraction Standard</span>
                 </div>
-              )}
-
-              {/* Sensory Evaluation */}
-              <div className="space-y-1 font-sans">
-                <span className="text-xs font-bold uppercase tracking-wider text-stone-800 block">
-                  Сенсорная органолептика чашки:
-                </span>
-                <div className="grid grid-cols-4 gap-2 text-xs text-center">
-                  <div className="p-2 border border-stone-200 rounded bg-stone-50">
-                    <span className="text-[10px] text-stone-500 block">Сладость</span>
-                    <strong className="text-amber-900 font-mono text-sm">{printingEntry.sweetnessScore}/10</strong>
-                  </div>
-                  <div className="p-2 border border-stone-200 rounded bg-stone-50">
-                    <span className="text-[10px] text-stone-500 block">Плотность</span>
-                    <strong className="text-stone-900 font-mono text-sm">{printingEntry.bodyScore}/10</strong>
-                  </div>
-                  <div className="p-2 border border-stone-200 rounded bg-stone-50">
-                    <span className="text-[10px] text-stone-500 block">Хуэйгань</span>
-                    <strong className="text-emerald-900 font-mono text-sm">{printingEntry.huiGanScore}/10</strong>
-                  </div>
-                  <div className="p-2 border border-stone-200 rounded bg-stone-50">
-                    <span className="text-[10px] text-stone-500 block">Терпкость</span>
-                    <strong className="text-stone-800 font-mono text-sm">{printingEntry.astringencyScore}/10</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Master Notes */}
-              {printingEntry.userNotes && (
-                <div className="p-3 bg-amber-50/50 border border-amber-200/80 rounded-lg text-xs italic font-serif">
-                  "{printingEntry.userNotes}"
-                </div>
-              )}
-
-              {/* Footer Stamp */}
-              <div className="pt-2 border-t border-stone-300 text-[10px] font-sans text-stone-500 flex justify-between items-center">
-                <span>Подпись мастера: __________________</span>
-                <span>Эффект: {printingEntry.effectNote}</span>
               </div>
             </div>
           </div>

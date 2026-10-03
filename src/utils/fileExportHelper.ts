@@ -18,6 +18,39 @@ export interface SaveOrShareResult {
 }
 
 /**
+ * Transliterates Russian/Cyrillic characters to a clean, URL-safe ASCII slug.
+ * Crucial for Android Linux filesystems and FileProvider compatibility.
+ */
+export function toAsciiSlug(text: string): string {
+  const ruToEn: Record<string, string> = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+    'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+  };
+
+  const extMatch = text.match(/\.([a-zA-Z0-9]+)$/);
+  const ext = extMatch ? `.${extMatch[1].toLowerCase()}` : '';
+  const baseName = text.replace(/\.[a-zA-Z0-9]+$/, '');
+
+  const lower = baseName.toLowerCase();
+  let result = '';
+  for (let i = 0; i < lower.length; i++) {
+    const char = lower[i];
+    if (ruToEn[char] !== undefined) {
+      result += ruToEn[char];
+    } else if (/[a-z0-9]/.test(char)) {
+      result += char;
+    } else if (char === ' ' || char === '_' || char === '-') {
+      result += '_';
+    }
+  }
+  const cleanBase = result.replace(/_+/g, '_').replace(/^_|_$/g, '') || 'tea_document';
+  return `${cleanBase}${ext}`;
+}
+
+/**
  * Converts a Blob to a base64 string (without the data URL prefix).
  */
 export function blobToBase64(blob: Blob): Promise<string> {
@@ -73,8 +106,8 @@ export async function saveOrShareFile(options: SaveOrShareOptions): Promise<Save
 
   if (isNative && base64) {
     try {
-      // Clean path to prevent invalid character issues on Android
-      const safeFilename = filename.replace(/[/\\?%*:|"<>]/g, '_');
+      // Clean path to prevent invalid character issues on Android Linux filesystems and FileProvider
+      const safeFilename = toAsciiSlug(filename);
       
       // Write file to device Cache Directory
       const writeResult = await Filesystem.writeFile({

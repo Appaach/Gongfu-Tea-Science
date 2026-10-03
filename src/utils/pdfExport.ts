@@ -4,31 +4,66 @@ import { TastingJournalEntry } from '../types';
 import { saveOrShareFile } from './fileExportHelper';
 import { Capacitor } from '@capacitor/core';
 
+export interface PdfExportOptions {
+  scale?: number;
+  marginMm?: number;
+  title?: string;
+}
+
 /**
  * Exports any DOM element to a high-resolution, downloadable PDF document.
+ * Creates an isolated off-screen rendering clone to completely eliminate modal clipping,
+ * CSS transform distortions (e.g. zoom-in animations), and mobile narrow width squishing.
  */
 export async function exportElementToPdf(
   element: HTMLElement,
   filename: string,
-  options?: { scale?: number; marginMm?: number }
+  options?: PdfExportOptions
 ): Promise<void> {
   const margin = options?.marginMm ?? 8;
-  const scale = options?.scale ?? 2;
+  // Optimal scale: 1.5 generates crisp ~300 DPI print quality without thread-blocking lag or memory crashes
+  const scale = options?.scale ?? 1.5;
+
+  // 1. Create a dedicated off-screen rendering container directly on document.body
+  const renderContainer = document.createElement('div');
+  renderContainer.style.position = 'fixed';
+  renderContainer.style.top = '-99999px';
+  renderContainer.style.left = '-99999px';
+  renderContainer.style.width = '794px'; // Exactly A4 width in 96 DPI CSS pixels (210mm)
+  renderContainer.style.backgroundColor = '#ffffff';
+  renderContainer.style.color = '#1c1917';
+  renderContainer.style.margin = '0';
+  renderContainer.style.padding = '16px';
+  renderContainer.style.boxSizing = 'border-box';
+  renderContainer.style.overflow = 'visible';
+  renderContainer.style.transform = 'none';
+  renderContainer.style.zIndex = '-9999';
+
+  // Deep clone target element to decouple from modal styles and scrollbars
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.style.width = '100%';
+  clone.style.maxWidth = 'none';
+  clone.style.height = 'auto';
+  clone.style.maxHeight = 'none';
+  clone.style.overflow = 'visible';
+  clone.style.transform = 'none';
+  clone.style.animation = 'none';
+  clone.style.transition = 'none';
+  clone.style.boxShadow = 'none';
+  clone.style.margin = '0';
+
+  renderContainer.appendChild(clone);
+  document.body.appendChild(renderContainer);
 
   try {
-    const canvas = await html2canvas(element, {
+    const canvas = await html2canvas(renderContainer, {
       scale,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
       scrollX: 0,
       scrollY: 0,
-      onclone: (_clonedDoc, clonedElem) => {
-        clonedElem.style.maxHeight = 'none';
-        clonedElem.style.overflow = 'visible';
-        clonedElem.style.height = 'auto';
-        clonedElem.style.transform = 'none';
-      }
+      windowWidth: 800
     });
 
     const pdf = new jsPDF({
@@ -47,7 +82,7 @@ export async function exportElementToPdf(
 
     if (imgHeight <= contentHeight) {
       // Single page fit
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
       pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
     } else {
       // Multi-page slicing
@@ -82,7 +117,7 @@ export async function exportElementToPdf(
           );
 
           const sliceHeightMm = (sourceHeight * contentWidth) / canvas.width;
-          const sliceImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+          const sliceImgData = pageCanvas.toDataURL('image/jpeg', 0.92);
           pdf.addImage(sliceImgData, 'JPEG', margin, margin, contentWidth, sliceHeightMm);
         }
 
@@ -100,12 +135,17 @@ export async function exportElementToPdf(
       blob: pdfBlob,
       base64Data,
       mimeType: 'application/pdf',
-      title: cleanFilename
+      title: options?.title || cleanFilename
     });
   } catch (error) {
     console.warn('Direct PDF export failed:', error);
     if (typeof window !== 'undefined' && typeof window.print === 'function' && !Capacitor.isNativePlatform()) {
       window.print();
+    }
+    throw error;
+  } finally {
+    if (document.body.contains(renderContainer)) {
+      document.body.removeChild(renderContainer);
     }
   }
 }

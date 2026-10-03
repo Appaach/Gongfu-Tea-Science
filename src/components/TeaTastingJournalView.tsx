@@ -475,6 +475,8 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
     if (entries.length === 0 || isExportingAllPdf) return;
     setIsExportingAllPdf(true);
     showNotification('Формирование сводного PDF документа...', 'info');
+    // Yield to main thread for 60ms so browser paints the spinner
+    await new Promise((resolve) => setTimeout(resolve, 60));
     try {
       const listToExport = filteredEntries.length > 0 ? filteredEntries : entries;
       await exportJournalEntriesToPdf(listToExport);
@@ -491,9 +493,12 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
     if (!tastingSheetRef.current || !printingEntry || isExportingCardPdf) return;
     setIsExportingCardPdf(true);
     showNotification('Формирование PDF дегустационного листа...', 'info');
+    // Yield to main thread for 60ms so browser paints the spinner
+    await new Promise((resolve) => setTimeout(resolve, 60));
     try {
       const safeName = printingEntry.teaNameRu.replace(/[^\w\u0400-\u04FF]/gi, '_');
-      await exportElementToPdf(tastingSheetRef.current, `дегустационный_лист_${safeName}`);
+      const title = `Дегустационный лист: ${printingEntry.teaNameRu}`;
+      await exportElementToPdf(tastingSheetRef.current, `дегустационный_лист_${safeName}`, { title });
       showNotification('PDF дегустационного листа готов! Выберите, куда сохранить файл.', 'success');
     } catch (err: any) {
       console.warn('PDF card export failed, falling back to print', err);

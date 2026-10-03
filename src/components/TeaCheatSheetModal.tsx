@@ -73,9 +73,13 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
     if (!sheetRef.current || isExportingPdf) return;
     setIsExportingPdf(true);
     setExportNotice('Формирование PDF шпаргалки...');
+    // Give browser 60ms to paint the spinner and status banner before canvas rasterization
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
     try {
       const filename = `шпаргалка_${tea.nameRu.replace(/[^\w\u0400-\u04FF]/gi, '_')}`;
-      await exportElementToPdf(sheetRef.current, filename);
+      const title = `Шпаргалка для чабани: ${tea.nameRu}`;
+      await exportElementToPdf(sheetRef.current, filename, { title });
       setExportNotice('PDF сформирован! Выберите, куда сохранить файл.');
       setTimeout(() => setExportNotice(null), 4500);
     } catch (err) {

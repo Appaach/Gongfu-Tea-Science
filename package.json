@@ -14,8 +14,9 @@
     "build:android": "npm run build && capacitor-assets generate --android && cap sync android"
   },
   "dependencies": {
-    "@capacitor/filesystem": "^8.1.4",
-    "@capacitor/share": "^8.0.3",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/filesystem": "^7.0.0",
+    "@capacitor/share": "^7.0.0",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
@@ -33,7 +34,6 @@
     "@capacitor/android": "^7.0.0",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.0.0",
-    "@capacitor/core": "^7.0.0",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",

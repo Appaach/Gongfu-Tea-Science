@@ -820,19 +820,7 @@ export const ResearchArticlesView: React.FC = () => {
                     <div className="font-mono text-base sm:text-lg font-bold text-stone-900 tracking-wide break-words">
                       {item.canonicalFormRu || item.formulaLatex}
                     </div>
-                    {item.formulaLatex && item.canonicalFormRu && (
-                      <div className="font-mono text-xs text-stone-500 mt-1">
-                        LaTeX: <span className="text-stone-700">{item.formulaLatex}</span>
-                      </div>
-                    )}
                   </div>
-
-                  {item.textbookDerivationRu && (
-                    <div className="text-[11px] text-stone-600 pt-1">
-                      <span className="font-semibold text-stone-800">Математический вывод: </span>
-                      {item.textbookDerivationRu}
-                    </div>
-                  )}
                 </div>
 
                 {/* Physical Explanation */}

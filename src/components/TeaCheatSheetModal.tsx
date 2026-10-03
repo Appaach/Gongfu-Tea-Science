@@ -43,6 +43,7 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const ratio = Math.round((waterVolume / Math.max(0.1, teaMass)) * 10) / 10;
   const effect = getTeaEffect(tea);
@@ -71,12 +72,16 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
   const handleExportPdf = async () => {
     if (!sheetRef.current || isExportingPdf) return;
     setIsExportingPdf(true);
+    setExportNotice('Формирование PDF шпаргалки...');
     try {
       const filename = `шпаргалка_${tea.nameRu.replace(/[^\w\u0400-\u04FF]/gi, '_')}`;
       await exportElementToPdf(sheetRef.current, filename);
+      setExportNotice('PDF сформирован! Выберите, куда сохранить файл.');
+      setTimeout(() => setExportNotice(null), 4500);
     } catch (err) {
-      console.warn('PDF export failed, using window.print() fallback', err);
-      window.print();
+      console.warn('PDF export failed:', err);
+      setExportNotice('Не удалось сохранить PDF файл.');
+      setTimeout(() => setExportNotice(null), 4500);
     } finally {
       setIsExportingPdf(false);
     }
@@ -172,6 +177,19 @@ ${rinseLine}${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} 
             </button>
           </div>
         </div>
+
+        {exportNotice && (
+          <div className="bg-amber-100/90 text-amber-950 px-4 py-2 text-xs font-semibold flex items-center justify-between border-b border-amber-200">
+            <span>{exportNotice}</span>
+            <button
+              type="button"
+              onClick={() => setExportNotice(null)}
+              className="text-amber-800 hover:text-amber-950 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Printable Cheat-Sheet Card */}
         <div 

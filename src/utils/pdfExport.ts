@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { TastingJournalEntry } from '../types';
+import { saveOrShareFile } from './fileExportHelper';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * Exports any DOM element to a high-resolution, downloadable PDF document.
@@ -89,10 +91,22 @@ export async function exportElementToPdf(
       }
     }
 
-    pdf.save(`${filename.replace(/\.pdf$/i, '')}.pdf`);
+    const cleanFilename = `${filename.replace(/\.pdf$/i, '')}.pdf`;
+    const pdfBlob = pdf.output('blob');
+    const base64Data = pdf.output('datauristring').split(',')[1];
+
+    await saveOrShareFile({
+      filename: cleanFilename,
+      blob: pdfBlob,
+      base64Data,
+      mimeType: 'application/pdf',
+      title: cleanFilename
+    });
   } catch (error) {
-    console.warn('Direct PDF canvas export failed, triggering window.print() fallback:', error);
-    window.print();
+    console.warn('Direct PDF export failed:', error);
+    if (typeof window !== 'undefined' && typeof window.print === 'function' && !Capacitor.isNativePlatform()) {
+      window.print();
+    }
   }
 }
 

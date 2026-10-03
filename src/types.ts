@@ -199,6 +199,13 @@ export interface SteepKineticData {
   tdsPpm: number; // Total Dissolved Solids in mg/L (ppm)
   cumulativeExtractionYieldPercent: number; // % of total dry leaf mass extracted so far
   theanineToCatechinsRatio: number; // Umami-to-astringency balance index
+  egcConcentration?: number; // mg/100ml non-esterified sweet catechin (EGC)
+  egcgConcentration?: number; // mg/100ml gallated astringent catechin (EGCG/ECG)
+  tasteHarmonyIndex?: number; // Taste Harmony Index (THI)
+  mixedTemperatureC?: number; // Temperature after mixing fresh water into root liquor (Liu Gen Pao)
+  stratificationBottomTds?: number; // Dense bottom stratum TDS (Grandpa Cup)
+  stratificationTopTds?: number; // Top sipping stratum TDS (Grandpa Cup)
+  leafSwellingPercent?: number; // Physical leaf opening percentage (%)
   sensoryScores: {
     umami: number; // 0-10
     sweetness: number; // 0-10

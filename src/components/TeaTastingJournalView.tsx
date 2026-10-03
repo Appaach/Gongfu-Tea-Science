@@ -28,10 +28,16 @@ import {
   Printer, 
   FileText, 
   Upload,
-  Loader2
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Check,
+  Database
 } from 'lucide-react';
 import { matchTeaSearch } from '../utils/teaSearch';
 import { exportElementToPdf, exportJournalEntriesToPdf } from '../utils/pdfExport';
+import { saveOrShareFile } from '../utils/fileExportHelper';
 
 const JOURNAL_STORAGE_KEY = 'gongfu_tasting_journal_v1';
 
@@ -71,6 +77,20 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
   const [isExportingAllPdf, setIsExportingAllPdf] = useState(false);
   const [isExportingCardPdf, setIsExportingCardPdf] = useState(false);
   const tastingSheetRef = useRef<HTMLDivElement>(null);
+
+  // Data management modal & mobile toasts
+  const [isDataModalOpen, setIsDataModalOpen] = useState(false);
+  const [pasteJsonText, setPasteJsonText] = useState('');
+  const [isCopiedJson, setIsCopiedJson] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const showNotification = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToastMessage({ text, type });
+    setTimeout(() => {
+      setToastMessage((cur) => (cur?.text === text ? null : cur));
+    }, 4500);
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [ratingFilter, setRatingFilter] = useState<number>(0);
@@ -328,83 +348,140 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleExportJson = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `tea_tasting_journal_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+  const handleExportJson = async () => {
+    try {
+      const jsonText = JSON.stringify(entries, null, 2);
+      const filename = `tea_tasting_journal_${new Date().toISOString().split('T')[0]}.json`;
+      const blob = new Blob([jsonText], { type: 'application/json' });
+      await saveOrShareFile({
+        filename,
+        blob,
+        textContent: jsonText,
+        mimeType: 'application/json',
+        title: 'Экспорт журнала дегустаций Gongfu Cha'
+      });
+      showNotification('Файл JSON сформирован! Выберите, куда сохранить файл.', 'success');
+    } catch (err: any) {
+      showNotification('Ошибка экспорта JSON: ' + (err?.message || 'не удалось экспортировать'), 'error');
+    }
   };
 
-  const handleExportCsv = () => {
+  const handleExportCsv = async () => {
     if (entries.length === 0) return;
-    const headers = ["Дата", "Сорт", "Иероглифы", "Оценка", "Температура", "Масса_г", "Объем_мл", "Посуда", "Проливов", "Заметки"];
-    const rows = entries.map(e => [
-      `"${new Date(e.dateIso).toLocaleDateString('ru-RU')}"`,
-      `"${(e.teaNameRu || '').replace(/"/g, '""')}"`,
-      `"${(e.teaNameZh || '').replace(/"/g, '""')}"`,
-      e.rating,
-      e.waterTempC,
-      e.teaMassG,
-      e.waterVolumeMl,
-      `"${(e.vesselUsed || '').replace(/"/g, '""')}"`,
-      e.steepsCount,
-      `"${(e.userNotes || '').replace(/"/g, '""')}"`
-    ]);
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tea_journal_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const headers = ["Дата", "Сорт", "Иероглифы", "Оценка", "Температура", "Масса_г", "Объем_мл", "Посуда", "Проливов", "Заметки"];
+      const rows = entries.map(e => [
+        `"${new Date(e.dateIso).toLocaleDateString('ru-RU')}"`,
+        `"${(e.teaNameRu || '').replace(/"/g, '""')}"`,
+        `"${(e.teaNameZh || '').replace(/"/g, '""')}"`,
+        e.rating,
+        e.waterTempC,
+        e.teaMassG,
+        e.waterVolumeMl,
+        `"${(e.vesselUsed || '').replace(/"/g, '""')}"`,
+        e.steepsCount,
+        `"${(e.userNotes || '').replace(/"/g, '""')}"`
+      ]);
+      const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const filename = `tea_journal_${new Date().toISOString().split('T')[0]}.csv`;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      await saveOrShareFile({
+        filename,
+        blob,
+        textContent: csvContent,
+        mimeType: 'text/csv',
+        title: 'Экспорт таблицы дегустаций Gongfu Cha'
+      });
+      showNotification('Таблица CSV сформирована! Выберите, куда сохранить файл.', 'success');
+    } catch (err: any) {
+      showNotification('Ошибка экспорта CSV: ' + (err?.message || 'не удалось экспортировать'), 'error');
+    }
   };
 
-  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const importJsonString = (rawJson: string): boolean => {
+    try {
+      const parsed = JSON.parse(rawJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setEntries((prev) => {
+          const map = new Map(prev.map(item => [item.id, item]));
+          parsed.forEach(item => {
+            if (item && item.id) map.set(item.id, item);
+          });
+          const merged = Array.from(map.values());
+          try {
+            localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(merged));
+          } catch {
+            // ignore
+          }
+          return merged;
+        });
+        showNotification(`Успешно импортировано ${parsed.length} записей в журнал!`, 'success');
+        setIsDataModalOpen(false);
+        setPasteJsonText('');
+        return true;
+      } else {
+        showNotification('JSON пуст или имеет некорректный формат (ожидался список записей).', 'error');
+        return false;
+      }
+    } catch {
+      showNotification('Синтаксическая ошибка в JSON: проверьте корректность текста.', 'error');
+      return false;
+    }
+  };
+
+  const handleImportJsonFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setEntries((prev) => {
-            const map = new Map(prev.map(item => [item.id, item]));
-            parsed.forEach(item => {
-              if (item && item.id) map.set(item.id, item);
-            });
-            const merged = Array.from(map.values());
-            try {
-              localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(merged));
-            } catch {
-              // ignore
-            }
-            return merged;
-          });
-          alert(`Успешно импортировано ${parsed.length} записей!`);
-        } else {
-          alert('Файл JSON пуст или имеет некорректный формат.');
-        }
-      } catch (err) {
-        alert('Ошибка при чтении файла JSON.');
+        const text = event.target?.result as string;
+        importJsonString(text);
+      } catch {
+        showNotification('Ошибка при чтении выбранного файла.', 'error');
       }
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
+  const handleCopyJsonToClipboard = async () => {
+    try {
+      const jsonText = JSON.stringify(entries, null, 2);
+      await navigator.clipboard.writeText(jsonText);
+      setIsCopiedJson(true);
+      showNotification('Все записи журнала (JSON) скопированы в буфер обмена!', 'success');
+      setTimeout(() => setIsCopiedJson(false), 3000);
+    } catch {
+      showNotification('Не удалось скопировать текст в буфер.', 'error');
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setPasteJsonText(text);
+        importJsonString(text);
+      } else {
+        showNotification('Буфер обмена пуст.', 'error');
+      }
+    } catch {
+      showNotification('Нет доступа к чтению буфера. Вставьте текст вручную в поле ниже.', 'error');
+    }
+  };
+
   const handleExportPdfAll = async () => {
     if (entries.length === 0 || isExportingAllPdf) return;
     setIsExportingAllPdf(true);
+    showNotification('Формирование сводного PDF документа...', 'info');
     try {
       const listToExport = filteredEntries.length > 0 ? filteredEntries : entries;
       await exportJournalEntriesToPdf(listToExport);
-    } catch (err) {
+      showNotification('PDF всего журнала готов! Выберите, куда сохранить файл.', 'success');
+    } catch (err: any) {
       console.warn('PDF export failed, falling back to window.print()', err);
-      window.print();
+      showNotification('Не удалось сформировать PDF: ' + (err?.message || 'ошибка'), 'error');
     } finally {
       setIsExportingAllPdf(false);
     }
@@ -413,12 +490,14 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
   const handleExportCardPdf = async () => {
     if (!tastingSheetRef.current || !printingEntry || isExportingCardPdf) return;
     setIsExportingCardPdf(true);
+    showNotification('Формирование PDF дегустационного листа...', 'info');
     try {
       const safeName = printingEntry.teaNameRu.replace(/[^\w\u0400-\u04FF]/gi, '_');
       await exportElementToPdf(tastingSheetRef.current, `дегустационный_лист_${safeName}`);
-    } catch (err) {
+      showNotification('PDF дегустационного листа готов! Выберите, куда сохранить файл.', 'success');
+    } catch (err: any) {
       console.warn('PDF card export failed, falling back to print', err);
-      window.print();
+      showNotification('Не удалось сформировать PDF: ' + (err?.message || 'ошибка'), 'error');
     } finally {
       setIsExportingCardPdf(false);
     }
@@ -449,6 +528,45 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification for Mobile / Desktop actions */}
+      {toastMessage && (
+        <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs font-medium animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm ${
+          toastMessage.type === 'success'
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+            : toastMessage.type === 'error'
+            ? 'bg-rose-50 border-rose-300 text-rose-950'
+            : 'bg-amber-50 border-amber-300 text-amber-950'
+        }`}>
+          <div className="flex items-center gap-2">
+            {toastMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            ) : toastMessage.type === 'error' ? (
+              <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
+            ) : (
+              <Loader2 className="w-4 h-4 text-amber-800 animate-spin shrink-0" />
+            )}
+            <span>{toastMessage.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="p-1 hover:bg-black/5 rounded text-stone-500 hover:text-stone-800 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Hidden file input for universal Android / Desktop JSON import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json,text/plain,*/*"
+        onChange={handleImportJsonFile}
+        style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+        tabIndex={-1}
+      />
+
       {/* Top Header & Actions */}
       <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -459,68 +577,42 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
             Дневник дегустаций и купажей
           </h2>
           <p className="text-xs text-stone-500 mt-1 max-w-2xl">
-            Сохранение актуальных настроек, редактирование записей, печать дегустационных листов и экспортирование результатов.
+            Сохранение актуальных настроек, печать дегустационных листов, резервное копирование и экспорт в PDF/JSON/CSV.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Import JSON button */}
-          <label
+          {/* Data Management & Backup Modal Button */}
+          <button
+            type="button"
+            onClick={() => setIsDataModalOpen(true)}
             className="px-3 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Импортировать дневник из файла JSON"
+            title="Управление данными: импорт, экспорт, копирование JSON и резервная копия"
           >
-            <Upload className="w-3.5 h-3.5 text-stone-600" />
-            <span>Импорт</span>
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImportJson}
-              className="hidden"
-            />
-          </label>
+            <Database className="w-3.5 h-3.5 text-stone-600" />
+            <span>Данные (JSON/CSV)</span>
+          </button>
 
           {entries.length > 0 && (
-            <>
-              <button
-                type="button"
-                onClick={handleExportJson}
-                className="px-3 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Экспортировать дневник в файл JSON"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>JSON</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExportCsv}
-                className="px-3 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Экспортировать дневник в таблицу CSV (Excel)"
-              >
-                <FileText className="w-3.5 h-3.5 text-emerald-700" />
-                <span>CSV (Excel)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExportPdfAll}
-                disabled={isExportingAllPdf}
-                className="px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 disabled:bg-amber-100 text-amber-950 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:cursor-wait"
-                title="Экспортировать весь дневник в структурированный PDF файл"
-              >
-                {isExportingAllPdf ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 text-amber-800 animate-spin" />
-                    <span>PDF...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-3.5 h-3.5 text-amber-800" />
-                    <span>PDF</span>
-                  </>
-                )}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleExportPdfAll}
+              disabled={isExportingAllPdf}
+              className="px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 disabled:bg-amber-100 text-amber-950 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:cursor-wait"
+              title="Экспортировать весь дневник в структурированный PDF файл"
+            >
+              {isExportingAllPdf ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 text-amber-800 animate-spin" />
+                  <span>PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5 text-amber-800" />
+                  <span>PDF</span>
+                </>
+              )}
+            </button>
           )}
 
           <button
@@ -1533,6 +1625,186 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
                   </button>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Data Management & Backup Modal (JSON, CSV, PDF, Clipboard) */}
+      {isDataModalOpen && (
+        <div className="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full my-auto shadow-2xl border border-stone-200 p-5 sm:p-6 space-y-5 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <Database className="w-5 h-5 text-amber-800" />
+                <div>
+                  <h3 className="text-base font-bold text-stone-900 font-serif">
+                    Управление данными и резервные копии
+                  </h3>
+                  <div className="text-[11px] text-stone-500">
+                    Сохранение на устройстве, перенос и резервное копирование
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDataModalOpen(false)}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Android / Mobile Helper Callout */}
+            <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200 text-xs text-amber-950 space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                <span>Сохранение на Android и ПК:</span>
+              </div>
+              <p className="text-[11px] text-stone-700 leading-relaxed">
+                При экспорте файлов в приложении Android открывается системное меню: вы можете выбрать папку <strong>«Загрузки»</strong>, сохранить в <strong>Google Диск</strong> или отправить файл себе в <strong>Telegram / WhatsApp</strong>. Если доступ к файловой системе ограничен, вы можете просто скопировать или вставить текст JSON через буфер обмена.
+              </p>
+            </div>
+
+            {/* Export Section */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+                  1. Экспорт и сохранение
+                </span>
+                <span className="text-[11px] text-stone-500 font-mono">
+                  Записей: {entries.length}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportJson}
+                  disabled={entries.length === 0}
+                  className="p-2.5 rounded-xl border border-stone-300 hover:border-amber-400 bg-stone-50 hover:bg-amber-50/50 disabled:opacity-50 text-left transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-2.5"
+                >
+                  <Download className="w-4 h-4 text-amber-800 shrink-0" />
+                  <div>
+                    <div className="text-xs font-bold text-stone-900">Файл JSON</div>
+                    <div className="text-[10px] text-stone-500">Полный бэкап всех записей</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  disabled={entries.length === 0}
+                  className="p-2.5 rounded-xl border border-stone-300 hover:border-emerald-400 bg-stone-50 hover:bg-emerald-50/50 disabled:opacity-50 text-left transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-2.5"
+                >
+                  <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <div>
+                    <div className="text-xs font-bold text-stone-900">Таблица CSV</div>
+                    <div className="text-[10px] text-stone-500">Для Excel и Google Таблиц</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportPdfAll}
+                  disabled={entries.length === 0 || isExportingAllPdf}
+                  className="p-2.5 rounded-xl border border-stone-300 hover:border-rose-400 bg-stone-50 hover:bg-rose-50/50 disabled:opacity-50 text-left transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-2.5"
+                >
+                  <Download className="w-4 h-4 text-rose-700 shrink-0" />
+                  <div>
+                    <div className="text-xs font-bold text-stone-900">Сводный PDF</div>
+                    <div className="text-[10px] text-stone-500">Красивый журнал дегустаций</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyJsonToClipboard}
+                  disabled={entries.length === 0}
+                  className="p-2.5 rounded-xl border border-stone-300 hover:border-blue-400 bg-stone-50 hover:bg-blue-50/50 disabled:opacity-50 text-left transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-2.5"
+                >
+                  {isCopiedJson ? (
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-blue-700 shrink-0" />
+                  )}
+                  <div>
+                    <div className="text-xs font-bold text-stone-900">
+                      {isCopiedJson ? 'Скопировано!' : 'Копировать JSON'}
+                    </div>
+                    <div className="text-[10px] text-stone-500">В буфер обмена без файлов</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Import Section */}
+            <div className="space-y-2.5 pt-2 border-t border-stone-100">
+              <span className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
+                2. Импорт и восстановление
+              </span>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Выбрать .JSON файл на устройстве</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePasteFromClipboard}
+                  className="px-3 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  title="Вставить JSON напрямую из буфера обмена"
+                >
+                  <Copy className="w-3.5 h-3.5 text-stone-600" />
+                  <span>Вставить из буфера</span>
+                </button>
+              </div>
+
+              {/* Direct Paste JSON Textarea */}
+              <div className="space-y-1.5 pt-1">
+                <label className="text-[11px] font-medium text-stone-600 flex items-center justify-between">
+                  <span>Или вставьте текст JSON вручную:</span>
+                  {pasteJsonText && (
+                    <button
+                      type="button"
+                      onClick={() => setPasteJsonText('')}
+                      className="text-stone-400 hover:text-stone-600 text-[10px] cursor-pointer"
+                    >
+                      Очистить
+                    </button>
+                  )}
+                </label>
+                <textarea
+                  value={pasteJsonText}
+                  onChange={(e) => setPasteJsonText(e.target.value)}
+                  placeholder='Вставьте скопированный ранее массив JSON (например: [{"id":"...","teaNameRu":"..."}])'
+                  rows={3}
+                  className="w-full text-xs font-mono p-2.5 rounded-xl border border-stone-300 focus:outline-hidden focus:border-amber-800 focus:ring-1 focus:ring-amber-800 bg-stone-50/50 resize-y"
+                />
+                {pasteJsonText.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => importJsonString(pasteJsonText)}
+                    className="w-full py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
+                  >
+                    Загрузить записи из вставленного текста
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-stone-100 text-right">
+              <button
+                type="button"
+                onClick={() => setIsDataModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold cursor-pointer"
+              >
+                Закрыть
+              </button>
             </div>
           </div>
         </div>

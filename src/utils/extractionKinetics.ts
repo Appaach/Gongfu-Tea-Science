@@ -800,11 +800,11 @@ export const PEER_REVIEWED_FORMULAS: ScientificModelExplanation[] = [
     equationName: 'Многоступенчатое истощение пула листа (Gongfu Stage Depletion)',
     subTitleRu: 'Пошаговый расчет вкуса в каждом следующем проливе',
     academicDisciplineRu: 'Математическое моделирование каскадных экстракторов',
-    formulaLatex: 'M_ext^(n) = M_res^(n-1) · [1 - exp(-k_eff(n) · t_n)],   M_res^(n) = M_res^(n-1) - M_ext^(n)',
+    formulaLatex: 'M_ext[n] = M_res[n-1] · [1 - exp(-k_eff(n) · t_n)],   M_res[n] = M_res[n-1] - M_ext[n]',
     canonicalFormRu: 'M_пролив[n] = Остаток_в_листе[n-1] · (1 - e^(-k_n · t_n))',
     variables: [
-      { symbol: 'M_ext^(n)', nameRu: 'Экстракт текущего n-го пролива', unitRu: 'мг', descriptionRu: 'Количество вещества, перешедшее в чахай на текущем шаге заваривания.' },
-      { symbol: 'M_res^(n-1)', nameRu: 'Остаток в тканях листа', unitRu: 'мг', descriptionRu: 'Запас молекул данного типа, остающийся в листе к началу n-го пролива.' },
+      { symbol: 'M_ext[n]', nameRu: 'Экстракт текущего n-го пролива', unitRu: 'мг', descriptionRu: 'Количество вещества, перешедшее в чахай на текущем шаге заваривания.' },
+      { symbol: 'M_res[n-1]', nameRu: 'Остаток в тканях листа', unitRu: 'мг', descriptionRu: 'Запас молекул данного типа, остающийся в листе к началу n-го пролива.' },
       { symbol: 'k_eff(n)', nameRu: 'Константа с поправкой на лист', unitRu: 'с⁻¹', descriptionRu: 'Скорость с учетом гидратации и разворачивания структуры чайного листа.' },
       { symbol: 't_n', nameRu: 'Длительность n-го пролива', unitRu: 'с', descriptionRu: 'Время выдержки на текущем шаге.' }
     ],
@@ -834,7 +834,7 @@ export const PEER_REVIEWED_FORMULAS: ScientificModelExplanation[] = [
     equationName: 'Суммарный выход экстракта и плотность TDS (ISO 9768 / GB/T 23776)',
     subTitleRu: 'Стандартизированный расчет сухого остатка и плотности настоя',
     academicDisciplineRu: 'Пищевая стандартизация и аналитическая химия',
-    formulaLatex: 'Yield_(%) = [ (∑ M_ext) / M_dry_leaf ] · 100%,   TDS = [ (∑ M_solutes) / V_liquor ] · 10^3',
+    formulaLatex: 'Yield_% = [ (∑ M_ext) / M_dry_leaf ] · 100%,   TDS = [ (∑ M_solutes) / V_liquor ] · 1000',
     canonicalFormRu: 'Yield_% = (M_экстракта / M_сухого_листа) · 100%,   TDS = (M_веществ / V_воды) · 1000',
     variables: [
       { symbol: 'Yield_%', nameRu: 'Суммарный выход экстракта', unitRu: '% сухой массы', descriptionRu: 'Доля исходной навески чая, перешедшая в настой (канонический оптимум 38–44%).' },
@@ -868,13 +868,13 @@ export const PEER_REVIEWED_FORMULAS: ScientificModelExplanation[] = [
     equationName: 'Уравнение буферного массопереноса Лю Гэнь Пао (Retaining Root Model)',
     subTitleRu: 'Кинетика непрерывного заваривания с сохранением 1/3 маточного раствора',
     academicDisciplineRu: 'Массоперенос в проточных рециркуляционных системах',
-    formulaLatex: 'C_liquor^(n) = α · C_liquor^(n-1) + [ΔM_new^(n) / V_total],   V_root = α · V_total',
+    formulaLatex: 'C_liquor[n] = α · C_liquor[n-1] + [ΔM_new[n] / V_total],   V_root = α · V_total',
     canonicalFormRu: 'C_настоя[n] = α · C_корня[n-1] + (ΔM_листа / V_общий)',
     variables: [
-      { symbol: 'C_liquor^(n)', nameRu: 'Итоговая концентрация в чаше', unitRu: 'мг/100 мл', descriptionRu: 'Плотность вкусовых веществ в готовой чашке после долива воды.', colorClass: 'text-amber-800' },
+      { symbol: 'C_liquor[n]', nameRu: 'Итоговая концентрация в чаше', unitRu: 'мг/100 мл', descriptionRu: 'Плотность вкусовых веществ в готовой чашке после долива воды.', colorClass: 'text-amber-800' },
       { symbol: 'α (alpha)', nameRu: 'Доля сохраняемого корня', unitRu: 'безразм. (0.33)', descriptionRu: 'Доля объема настоя, оставляемая в сосуде перед доливом (обычно 1/3 или 33%).', colorClass: 'text-emerald-700' },
-      { symbol: 'C_liquor^(n-1)', nameRu: 'Концентрация предыдущего пролива', unitRu: 'мг/100 мл', descriptionRu: 'Плотность «чайного корня», выступающего термодинамическим буфером.', colorClass: 'text-purple-700' },
-      { symbol: 'ΔM_new^(n)', nameRu: 'Свежий экстракт из листа', unitRu: 'мг', descriptionRu: 'Количество веществ, диффундировавших из листа за время текущего долива.', colorClass: 'text-blue-700' },
+      { symbol: 'C_liquor[n-1]', nameRu: 'Концентрация предыдущего пролива', unitRu: 'мг/100 мл', descriptionRu: 'Плотность «чайного корня», выступающего термодинамическим буфером.', colorClass: 'text-purple-700' },
+      { symbol: 'ΔM_new[n]', nameRu: 'Свежий экстракт из листа', unitRu: 'мг', descriptionRu: 'Количество веществ, диффундировавших из листа за время текущего долива.', colorClass: 'text-blue-700' },
       { symbol: 'V_total', nameRu: 'Полный рабочий объем сосуда', unitRu: 'мл', descriptionRu: 'Общий объем жидкости после долива свежей воды.', colorClass: 'text-stone-700' }
     ],
     textbookDerivationRu: 'Материальный баланс замкнутого объема: M_total(n) = M_root(n-1) + ΔM_ext(n) = α · V · C(n-1) + M_res(n-1) · [1 - exp(-k_eff · t_n)]. Разделив обе части на V_total, получаем рекуррентное уравнение буферизации.',
@@ -898,8 +898,274 @@ export const PEER_REVIEWED_FORMULAS: ScientificModelExplanation[] = [
     textbookDerivationRu: 'Интегрируя температурный профиль T(t) по времени экспозиции, получаем среднюю температуру диффузии T_avg = T_env + (T_0 - T_env) * [1 - exp(-k_cool * t)] / (k_cool * t). При охлаждении стекла ниже 65°C диффузия катехинов падает в 4 раза быстрее, чем L-теанина.',
     descriptionRu: 'Научно доказывает уникальность заваривания в открытом стеклянном стакане (Ча Бэй / 玻璃杯泡法): быстрое естественное охлаждение воды предотвращает температурную денатурацию L-теанина и блокирует избыточную экстракцию горьких мономеров катехина EGCG, сохраняя настой мягким и сладким без слива.',
     sourcePaper: 'Food Research International (2024); Anhui Ag Univ & CAAS Key Lab; Journal of Thermal Analysis & Calorimetry'
+  },
+  {
+    id: 'two_stage_leaching',
+    equationName: 'Двухстадийная кинетика смыва и диффузии (Two-Stage Leaching)',
+    subTitleRu: 'Разделение быстрого смыва с поверхности и глубинной диффузии из мезофилла',
+    academicDisciplineRu: 'Химическая кинетика гетерогенных дисперсных сред',
+    formulaLatex: 'M_ext(t) = M_0 · [ φ_surf · (1 - e^(-k_wash · t)) + (1 - φ_surf) · (1 - e^(-k_diff · t)) ]',
+    canonicalFormRu: 'M(t) = M₀ · [ φ_поверхность · (1 - e^(-k₁·t)) + (1 - φ) · (1 - e^(-k₂·t)) ]',
+    variables: [
+      { symbol: 'M_ext(t)', nameRu: 'Суммарная масса экстракта к моменту t', unitRu: 'мг', descriptionRu: 'Общее количество веществ, перешедших в настой за t секунд.', colorClass: 'text-amber-800' },
+      { symbol: 'φ_surf', nameRu: 'Доля поверхностно-доступных веществ', unitRu: 'безразм. (0.15–0.65)', descriptionRu: 'Доля растворимых компонентов на разрушенных скруткой клетках и кутикуле листа.', colorClass: 'text-emerald-700' },
+      { symbol: 'k_wash', nameRu: 'Константа быстрого поверхностного смыва', unitRu: 'с⁻¹', descriptionRu: 'Высокая скорость десорбции с поверхности (низкая энергия активации 10–14 кДж/моль).', colorClass: 'text-blue-700' },
+      { symbol: 'k_diff', nameRu: 'Константа внутриклеточной диффузии Фика', unitRu: 'с⁻¹', descriptionRu: 'Медленное просачивание сквозь неповрежденные мембраны клеток (E_a = 30–45 кДж/моль).', colorClass: 'text-purple-700' }
+    ],
+    textbookDerivationRu: 'Модель выведена проф. Майклом Шпиро (Michael Spiro) и подтверждена хроматографическими исследованиями (HPLC): экстракция чая состоит из быстрой поверхностной стадии промывки (0–8 с) и медленной внутритканевой диффузии сквозь клеточные стенки.',
+    descriptionRu: 'Объясняет феномен «мгновенного пролива» в Гунфу Ча: за первые 3–5 секунд горячая вода снимает легкоподвижный L-теанин и летучие эфиры с поверхности листа, не успевая затронуть глубоко спрятанные горькие танины.',
+    sourcePaper: 'Spiro & Jago (1982), J. Sci. Food Agric.; Peleg (1988); Wang et al. (2022), Food Chemistry'
+  },
+  {
+    id: 'sigmoidal_hydration',
+    equationName: 'Сигмоидальная динамика гидратации и распускания листа (Leaf Swelling Kinetics)',
+    subTitleRu: 'Увеличение эффективной площади контакта листа по мере его насыщения влагой',
+    academicDisciplineRu: 'Физикохимия биополимеров и гидрогелей',
+    formulaLatex: 'A_eff(t) = A_0 + (A_max - A_0) / [ 1 + exp(-k_swell(T) · (t_cumul - t_half)) ]',
+    canonicalFormRu: 'A(t) = A₀ + ΔA / [ 1 + e^(-k · (t - t_half)) ]',
+    variables: [
+      { symbol: 'A_eff(t)', nameRu: 'Эффективная площадь контакта листа', unitRu: 'см²', descriptionRu: 'Реальная контактная поверхность мезофилла, омываемая водным потоком.', colorClass: 'text-emerald-700' },
+      { symbol: 'k_swell(T)', nameRu: 'Температурный фактор набухания пектинов', unitRu: 'с⁻¹', descriptionRu: 'Скорость размягчения клеточных стенок: при 95°C в 2.4 раза выше, чем при 80°C.', colorClass: 'text-amber-800' },
+      { symbol: 't_cumul', nameRu: 'Кумулятивное время нахождения во влажной среде', unitRu: 'с', descriptionRu: 'Суммарное время всех предыдущих проливов с учетом межпроливного пара.', colorClass: 'text-blue-700' },
+      { symbol: 't_half', nameRu: 'Время половинного распускания скрутки', unitRu: 'с', descriptionRu: 'Для сферических улунов ~35 с, для плотных блинов ~30 с, для тонких почек ~12 с.', colorClass: 'text-purple-700' }
+    ],
+    textbookDerivationRu: 'Основана на логистической кинетической кривой набухания пористых растительных матриц: гидролиз межклеточных протопектинов горячей водой переводит скрученный лист из сжатого состояния в полностью расправленное.',
+    descriptionRu: 'Математически моделирует знаменитое «раскрытие улунов»: объясняет, почему 1-й пролив Тегуаньинь или Дун Дина всегда кажется прозрачным и легким, а максимальная плотность вкуса наступает на 3–4 проливе, когда площадь контакта листа достигает 95–100%.',
+    sourcePaper: 'Zhejiang University Tea Science; Journal of Food Engineering 288: 110145; CAAS Leaf Morphometry (2023)'
+  },
+  {
+    id: 'taste_harmony_index',
+    equationName: 'Индекс баланса и сладости вкуса (Taste Harmony Index / THI)',
+    subTitleRu: 'Количественное соотношение умами/сладости к вяжущей горечи',
+    academicDisciplineRu: 'Сенсорная биохимия и психофизика восприятия',
+    formulaLatex: 'THI = [ C_Theanine + 1.2 · C_EGC ] / [ 0.2 · C_Caffeine + C_EGCG + 1.4 · C_ECG ]',
+    canonicalFormRu: 'THI = (Теанин + 1.2·EGC) / (0.2·Кофеин + EGCG + 1.4·ECG)',
+    variables: [
+      { symbol: 'THI', nameRu: 'Индекс вкусовой гармонии', unitRu: 'безразм.', descriptionRu: 'Показатель баланса: THI > 1.0 — сладкий объемный вкус; THI < 0.45 — острая горечь.', colorClass: 'text-emerald-700' },
+      { symbol: 'C_Theanine', nameRu: 'Концентрация L-теанина', unitRu: 'мг/100 мл', descriptionRu: 'Главный источник сладкого бульонного умами и расслабления.', colorClass: 'text-amber-800' },
+      { symbol: 'C_EGC', nameRu: 'Эпигаллокатехин (неэтерифицированный)', unitRu: 'мг/100 мл', descriptionRu: 'Мягкий сладковато-освежающий катехин с низкой энергией активации.', colorClass: 'text-teal-700' },
+      { symbol: 'C_EGCG', nameRu: 'Эпигаллокатехин галлат', unitRu: 'мг/100 мл', descriptionRu: 'Основной источник мощной вяжущей астрингентности и горечи (E_a = 39.2 кДж/моль).', colorClass: 'text-rose-700' }
+    ],
+    textbookDerivationRu: 'Выведено на основе корреляционного анализа между данными HPLC-хроматографии полифенолов и протоколами профессиональных дегустаций ISO 8586 / GB/T 23776.',
+    descriptionRu: 'Объективный биохимический компас идеального пролива: показывает, как правильный температурный режим селективно извлекает теанин и EGC, блокируя доминирование жесткого EGCG.',
+    sourcePaper: 'State Key Lab of Tea Quality & Sensory Analysis (2023); Food Chemistry 394: 133480'
   }
 ];
+
+/**
+ * Calculates extraction kinetics for Steep #0 (Rinse / «Вэнь Жун» / Пробуждение).
+ * Models solute dissolution, surface washing, leaf hydration, and sensory scores.
+ */
+export function calculateRinseKineticData(
+  tea: TeaVariety,
+  leafMassGrams: number,
+  waterVolumeMl: number,
+  waterTempC: number,
+  rinseSec: number,
+  waterHardnessLevel: WaterHardnessLevel = 'optimal',
+  vesselMaterial: VesselMaterialType = 'porcelain',
+  optimizationGoal: OptimizationGoal = 'balanced',
+  isCustomRinse: boolean = false,
+  vintageYear?: number | null
+): SteepKineticData {
+  const safeLeafMass = Math.max(0.1, leafMassGrams);
+  const safeWaterVolume = Math.max(10, waterVolumeMl);
+  const safeTemp = Math.max(40, Math.min(100, waterTempC));
+
+  let theaninePool: number;
+  let caffeinePool: number;
+  let catechinsPool: number;
+  let polysaccharidesPool: number;
+
+  switch (tea.type) {
+    case 'green':
+      theaninePool = 38 * safeLeafMass;
+      caffeinePool = 32 * safeLeafMass;
+      catechinsPool = 160 * safeLeafMass;
+      polysaccharidesPool = 25 * safeLeafMass;
+      break;
+    case 'white':
+      theaninePool = 32 * safeLeafMass;
+      caffeinePool = 36 * safeLeafMass;
+      catechinsPool = 130 * safeLeafMass;
+      polysaccharidesPool = 30 * safeLeafMass;
+      break;
+    case 'yellow':
+      theaninePool = 30 * safeLeafMass;
+      caffeinePool = 32 * safeLeafMass;
+      catechinsPool = 115 * safeLeafMass;
+      polysaccharidesPool = 32 * safeLeafMass;
+      break;
+    case 'oolong_ball':
+      theaninePool = 26 * safeLeafMass;
+      caffeinePool = 30 * safeLeafMass;
+      catechinsPool = 100 * safeLeafMass;
+      polysaccharidesPool = 38 * safeLeafMass;
+      break;
+    case 'oolong_strip':
+      theaninePool = 24 * safeLeafMass;
+      caffeinePool = 28 * safeLeafMass;
+      catechinsPool = 88 * safeLeafMass;
+      polysaccharidesPool = 40 * safeLeafMass;
+      break;
+    case 'red':
+      theaninePool = 18 * safeLeafMass;
+      caffeinePool = 34 * safeLeafMass;
+      catechinsPool = 60 * safeLeafMass;
+      polysaccharidesPool = 42 * safeLeafMass;
+      break;
+    case 'gaba_oolong':
+      theaninePool = 30 * safeLeafMass;
+      caffeinePool = 28 * safeLeafMass;
+      catechinsPool = 80 * safeLeafMass;
+      polysaccharidesPool = 40 * safeLeafMass;
+      break;
+    case 'gaba_red':
+      theaninePool = 24 * safeLeafMass;
+      caffeinePool = 32 * safeLeafMass;
+      catechinsPool = 55 * safeLeafMass;
+      polysaccharidesPool = 44 * safeLeafMass;
+      break;
+    case 'sheng_puerh':
+      theaninePool = 22 * safeLeafMass;
+      caffeinePool = 34 * safeLeafMass;
+      catechinsPool = 130 * safeLeafMass;
+      polysaccharidesPool = 35 * safeLeafMass;
+      break;
+    case 'shou_puerh':
+      theaninePool = 10 * safeLeafMass;
+      caffeinePool = 26 * safeLeafMass;
+      catechinsPool = 25 * safeLeafMass;
+      polysaccharidesPool = 60 * safeLeafMass;
+      break;
+    case 'heicha':
+      theaninePool = 12 * safeLeafMass;
+      caffeinePool = 28 * safeLeafMass;
+      catechinsPool = 30 * safeLeafMass;
+      polysaccharidesPool = 55 * safeLeafMass;
+      break;
+    default:
+      theaninePool = 24 * safeLeafMass;
+      caffeinePool = 30 * safeLeafMass;
+      catechinsPool = 80 * safeLeafMass;
+      polysaccharidesPool = 35 * safeLeafMass;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const activeYear = vintageYear || tea.vintageYear;
+  if (activeYear && activeYear <= currentYear) {
+    const ageYears = Math.max(0, currentYear - activeYear);
+    if (ageYears > 0) {
+      const catechinsAgingFactor = Math.max(0.18, 1 - ageYears * 0.038);
+      const tpsAgingFactor = 1 + Math.min(1.5, ageYears * 0.045);
+      const theanineAgingFactor = Math.max(0.4, 1 - ageYears * 0.012);
+      const caffeineAgingFactor = Math.max(0.75, 1 - ageYears * 0.004);
+
+      catechinsPool *= catechinsAgingFactor;
+      polysaccharidesPool *= tpsAgingFactor;
+      theaninePool *= theanineAgingFactor;
+      caffeinePool *= caffeineAgingFactor;
+    }
+  }
+
+  const rSec = Math.max(0, rinseSec);
+  if (rSec === 0) {
+    return {
+      steepNumber: 0,
+      timeSec: 0,
+      theanineConcentration: 0,
+      caffeineConcentration: 0,
+      catechinsConcentration: 0,
+      egcConcentration: 0,
+      egcgConcentration: 0,
+      polysaccharidesConcentration: 0,
+      volatilesIntensity: 0,
+      tdsPpm: 0,
+      cumulativeExtractionYieldPercent: 0,
+      theanineToCatechinsRatio: 1.0,
+      tasteHarmonyIndex: 1.0,
+      leafSwellingPercent: 0,
+      mixedTemperatureC: safeTemp,
+      stratificationBottomTds: 0,
+      stratificationTopTds: 0,
+      sensoryScores: { umami: 1, sweetness: 1, bitterness: 1, astringency: 1, body: 1, aroma: 1 },
+      keyNotes: 'Промыв листа пропущен',
+      scientificReferenceRu: 'Промыв пропущен (0с). Все растворимые вещества сохранены для Пролива #1; сухие поры требуют увеличенного времени смачивания.',
+      isCustomUserTime: isCustomRinse,
+      isAdaptedReference: false,
+      brewingMethod: 'gongfu'
+    };
+  }
+
+  const T = safeTemp + 273.15;
+  const T_ref = 358.15;
+  const R_const = 8.314;
+  const tempFactor = Math.exp((-24000 / R_const) * (1 / T - 1 / T_ref));
+
+  const theanineRinseLoss = Math.min(0.85, 1 - Math.exp(-0.038 * tempFactor * rSec));
+  const caffeineRinseLoss = Math.min(0.75, 1 - Math.exp(-0.024 * tempFactor * rSec));
+  const catechinsRinseLoss = Math.min(0.60, 1 - Math.exp(-0.015 * tempFactor * rSec));
+  const polysaccharidesRinseLoss = Math.min(0.30, 1 - Math.exp(-0.006 * tempFactor * rSec));
+
+  const lostTheanine = theaninePool * theanineRinseLoss;
+  const lostCaffeine = caffeinePool * caffeineRinseLoss;
+  const lostCatechins = catechinsPool * catechinsRinseLoss;
+  const lostPolysaccharides = polysaccharidesPool * polysaccharidesRinseLoss;
+
+  const cTheanine = (lostTheanine / safeWaterVolume) * 100;
+  const cCaffeine = (lostCaffeine / safeWaterVolume) * 100;
+  const cCatechins = (lostCatechins / safeWaterVolume) * 100;
+  const cPoly = (lostPolysaccharides / safeWaterVolume) * 100;
+
+  const cEgc = cCatechins * 0.40;
+  const cEgcg = cCatechins * 0.60;
+  const theanineToCatechinsRatio = cCatechins > 0 ? (cTheanine / cCatechins) : 1.0;
+  const tasteHarmonyIndex = Math.round(((cTheanine + 1.2 * cEgc) / Math.max(0.1, 0.2 * cCaffeine + cEgcg + 0.5)) * 100) / 100;
+
+  const tdsPpm = Math.round((cTheanine + cCaffeine + cCatechins + cPoly) * 10);
+  const cumulativeExtractionYieldPercent = Math.round((((lostTheanine + lostCaffeine + lostCatechins + lostPolysaccharides) * 1.25) / (safeLeafMass * 1000)) * 1000) / 10;
+
+  const umami = Math.max(1, Math.min(10, Math.round((cTheanine / 20) * 4.5 + 2.5)));
+  const sweetness = Math.max(1, Math.min(10, Math.round((cPoly / 10) * 3.0 + (cTheanine / 25) * 3.5)));
+  const bitterness = Math.max(1, Math.min(10, Math.round((cCaffeine / 20) * 3.5 + (cCatechins / 60) * 2.5)));
+  const astringency = Math.max(1, Math.min(10, Math.round((cEgcg / 35) * 4.5)));
+  const body = Math.max(1, Math.min(10, Math.round((cPoly / 8) * 3.0 + (cCatechins / 40) * 2.5)));
+  const aroma = Math.max(2, Math.min(10, Math.round(5.5 + Math.min(4.0, rSec * 0.12))));
+
+  const keyNotes = rSec > 30 
+    ? 'Плотный настой, смытые полифенолы, полностью раскрытый лист, термическое пробуждение'
+    : 'Аромат прогрева («Вэнь Жун»), легкий настой, пробуждение листа';
+
+  const scientificReferenceRu = rSec > 30
+    ? `Длительный промыв (${rSec}с): вымыто ${Math.round(cTheanine)} мг/100мл L-теанина и ${Math.round(cCatechins)} мг катехинов. Лист полностью гидратирован и переведён в стадию глубокой диффузии.`
+    : `Стандартный промыв (${rSec}с): поверхностная десорбция пыли и раскрытие пор. Потери свободных сахаров минимальны (${Math.round(cTheanine)} мг/100мл теанина).`;
+
+  return {
+    steepNumber: 0,
+    timeSec: rSec,
+    theanineConcentration: Math.round(cTheanine * 10) / 10,
+    caffeineConcentration: Math.round(cCaffeine * 10) / 10,
+    catechinsConcentration: Math.round(cCatechins * 10) / 10,
+    egcConcentration: Math.round(cEgc * 10) / 10,
+    egcgConcentration: Math.round(cEgcg * 10) / 10,
+    polysaccharidesConcentration: Math.round(cPoly * 10) / 10,
+    volatilesIntensity: Math.min(100, Math.round(45 + rSec * 0.9)),
+    tdsPpm,
+    cumulativeExtractionYieldPercent,
+    theanineToCatechinsRatio: Math.round(theanineToCatechinsRatio * 100) / 100,
+    tasteHarmonyIndex,
+    leafSwellingPercent: Math.min(95, Math.round(20 + rSec * 1.1)),
+    mixedTemperatureC: safeTemp,
+    stratificationBottomTds: Math.round(tdsPpm * 1.15),
+    stratificationTopTds: Math.round(tdsPpm * 0.85),
+    sensoryScores: { umami, sweetness, bitterness, astringency, body, aroma },
+    keyNotes,
+    scientificReferenceRu,
+    isCustomUserTime: isCustomRinse,
+    isAdaptedReference: false,
+    brewingMethod: 'gongfu'
+  };
+}
 
 export function simulateGongfuExtraction(
   tea: TeaVariety,
@@ -1064,22 +1330,40 @@ export function simulateGongfuExtraction(
   let cumulativeExtractedMassMg = 0;
 
   // Custom rinse (#0 Rinse) physical impact on initial solute pools & morphology:
+  const refRinse = getTeaRinseInfo(tea).seconds;
+  const isCustomRinse = customRinseSec !== null && customRinseSec !== undefined && customRinseSec !== refRinse;
+  const activeRinseSec = customRinseSec !== null && customRinseSec !== undefined ? customRinseSec : refRinse;
+
+  const rinseSteepData = calculateRinseKineticData(
+    tea,
+    safeLeafMass,
+    safeWaterVolume,
+    safeTemp,
+    activeRinseSec,
+    waterHardnessLevel,
+    vesselMaterial,
+    optimizationGoal,
+    isCustomRinse,
+    vintageYear
+  );
+
   let rinsePorosityBonus = 1.0;
-  if (customRinseSec !== null && customRinseSec !== undefined && customRinseSec > 0) {
-    const rSec = Math.max(1, customRinseSec);
-    // Solutes lost down the drain during prolonged/short pre-infusion rinse
-    const theanineRinseLoss = Math.min(0.35, 1 - Math.exp(-0.022 * rSec));
-    const caffeineRinseLoss = Math.min(0.28, 1 - Math.exp(-0.016 * rSec));
-    const catechinsRinseLoss = Math.min(0.12, 1 - Math.exp(-0.007 * rSec));
+  let initialHydrationSec = 0;
+  if (activeRinseSec > 0) {
+    const extractedTheanineMg = rinseSteepData.theanineConcentration * (safeWaterVolume / 100);
+    const extractedCaffeineMg = rinseSteepData.caffeineConcentration * (safeWaterVolume / 100);
+    const extractedCatechinsMg = rinseSteepData.catechinsConcentration * (safeWaterVolume / 100);
+    const extractedPolyMg = rinseSteepData.polysaccharidesConcentration * (safeWaterVolume / 100);
 
-    theaninePool *= (1 - theanineRinseLoss);
-    caffeinePool *= (1 - caffeineRinseLoss);
-    catechinsPool *= (1 - catechinsRinseLoss);
+    theaninePool = Math.max(0, theaninePool - extractedTheanineMg);
+    caffeinePool = Math.max(0, caffeinePool - extractedCaffeineMg);
+    catechinsPool = Math.max(0, catechinsPool - extractedCatechinsMg);
+    polysaccharidesPool = Math.max(0, polysaccharidesPool - extractedPolyMg);
 
-    // Pore dilation: longer rinse speeds up leaf hydration
-    rinsePorosityBonus = 1 + Math.min(0.4, (rSec - 4) * 0.03);
-  } else if (customRinseSec === 0 && (tea.leafMorphology === 'tight_ball' || tea.leafMorphology === 'compressed_cake')) {
-    // Skipped rinse on tightly compressed tea slows initial steep 1 diffusion
+    cumulativeExtractedMassMg += (extractedTheanineMg + extractedCaffeineMg + extractedCatechinsMg + extractedPolyMg) * 1.25;
+    rinsePorosityBonus = 1 + Math.min(0.85, (activeRinseSec - 3) * 0.035);
+    initialHydrationSec = Math.round(activeRinseSec * 0.85);
+  } else if (activeRinseSec === 0 && (tea.leafMorphology === 'tight_ball' || tea.leafMorphology === 'compressed_cake')) {
     rinsePorosityBonus = 0.65;
   }
 
@@ -1120,30 +1404,78 @@ export function simulateGongfuExtraction(
   else if (vesselMaterial === 'cast_iron' || vesselMaterial === 'thermos') kCool = 0.0004;
   const T_ambient = 22; // Ambient room temp °C
 
+  // Cumulative time and thermal swelling kinetics
+  let cumulativeTimeSec = initialHydrationSec;
+  const kHydrationTemp = Math.exp((-28000 / R_const) * (1 / T - 1 / T_ref));
+
+  // Partition catechins into sweet non-esterified EGC vs astringent gallated EGCG/ECG
+  let egcRatio = 0.35;
+  if (tea.type === 'green' || tea.type === 'white') egcRatio = 0.38;
+  else if (tea.type === 'yellow') egcRatio = 0.36;
+  else if (tea.type === 'oolong_ball' || tea.type === 'gaba_oolong') egcRatio = 0.42;
+  else if (tea.type === 'red' || tea.type === 'gaba_red') egcRatio = 0.48;
+  else if (tea.type === 'shou_puerh' || tea.type === 'heicha') egcRatio = 0.52;
+
+  let egcPool = catechinsPool * egcRatio;
+  let egcgPool = catechinsPool * (1 - egcRatio);
+
+  const Ea_egc = 22000;
+  const Ea_egcg = 39200;
+  const tempFactorEgc = Math.exp((-Ea_egc / R_const) * (1 / T - 1 / T_ref));
+  const tempFactorEgcg = Math.exp((-Ea_egcg / R_const) * (1 / T - 1 / T_ref));
+
+  // Root pools for carryover (Liu Gen & Grandpa Cup)
+  let rootEgcMg = 0;
+  let rootEgcgMg = 0;
+
   for (let steep = 1; steep <= steepsCount; steep++) {
     const time = durations[steep - 1] || (durations[durations.length - 1] + (steep - durations.length) * 15);
+    cumulativeTimeSec += time;
 
-    // Surface exposure factor depends on leaf morphology unrolling
-    let surfaceFactor = 1.0;
-    if (tea.leafMorphology === 'tight_ball') {
-      if (steep === 1) surfaceFactor = 0.35 * rinsePorosityBonus;
-      else if (steep === 2) surfaceFactor = 0.75;
-      else surfaceFactor = 1.0;
-    } else if (tea.leafMorphology === 'compressed_cake') {
-      if (steep === 1) surfaceFactor = 0.45 * rinsePorosityBonus;
-      else if (steep === 2) surfaceFactor = 0.85;
-      else surfaceFactor = 1.0;
-    } else if (tea.leafMorphology === 'needle') {
-      if (steep === 1) surfaceFactor = 0.65;
-      else surfaceFactor = 1.0;
-    } else if (steep === 1 && rinsePorosityBonus !== 1.0) {
-      surfaceFactor *= Math.min(1.2, rinsePorosityBonus);
+    // 1. Continuous sigmoidal leaf swelling & hydration model
+    let tHalfSwellingSec = 22;
+    if (tea.leafMorphology === 'tight_ball') tHalfSwellingSec = 36;
+    else if (tea.leafMorphology === 'compressed_cake') tHalfSwellingSec = 30;
+    else if (tea.leafMorphology === 'needle') tHalfSwellingSec = 26;
+    else if (tea.leafMorphology === 'twisted_strip') tHalfSwellingSec = 16;
+    else if (tea.leafMorphology === 'flat') tHalfSwellingSec = 12;
+    else tHalfSwellingSec = 14;
+
+    if (rinsePorosityBonus > 1.0) {
+      tHalfSwellingSec = Math.max(8, tHalfSwellingSec / rinsePorosityBonus);
     }
+
+    const effectiveCumulSec = cumulativeTimeSec * Math.max(0.65, kHydrationTemp);
+    const leafSwellingPercent = Math.min(100, Math.max(25, Math.round((1 / (1 + Math.exp(-(effectiveCumulSec - tHalfSwellingSec) / (tHalfSwellingSec * 0.45)))) * 100)));
+    const surfaceFactor = Math.max(0.35, Math.min(1.0, leafSwellingPercent / 100));
+
+    // 2. Two-Stage Leaching parameters (surface washing vs deep Fickian diffusion)
+    let basePhiSurf = 0.45;
+    if (tea.leafMorphology === 'tight_ball') basePhiSurf = 0.24;
+    else if (tea.leafMorphology === 'compressed_cake') basePhiSurf = 0.28;
+    else if (tea.leafMorphology === 'needle') basePhiSurf = 0.20; // lotus effect of trichomes
+    else if (tea.type === 'shou_puerh') basePhiSurf = 0.62;
+
+    const phiSurf = Math.min(0.85, Math.max(0.18, basePhiSurf * (surfaceFactor / 0.55)));
+    const phiDeep = 1 - phiSurf;
+
+    // Fast surface washing rate multiplier (kWash) and deep cellular diffusion multiplier (kDeep)
+    const kWashMult = 2.4;
+    const kDeepMult = 0.65;
+
+    // Two-stage extractor helper function
+    const extractTwoStage = (pool: number, kBase: number, expTimeSec: number): number => {
+      const extWash = pool * phiSurf * (1 - Math.exp(-kBase * kWashMult * expTimeSec));
+      const extDeep = pool * phiDeep * (1 - Math.exp(-kBase * kDeepMult * expTimeSec));
+      return Math.min(pool, extWash + extDeep);
+    };
 
     // Rate coefficients (s^-1) with non-isothermal correction for Grandpa Cup
     let k_theanine: number;
     let k_caffeine: number;
     let k_catechins: number;
+    let k_egc: number;
+    let k_egcg: number;
     let k_polysaccharides: number;
 
     if (brewingMethod === 'grandpa_cup') {
@@ -1153,38 +1485,51 @@ export function simulateGongfuExtraction(
       const cycleTempFactorTheanine = Math.exp((-Ea_theanine / R_const) * (1 / T_cycle_K - 1 / T_ref));
       const cycleTempFactorCaffeine = Math.exp((-Ea_caffeine / R_const) * (1 / T_cycle_K - 1 / T_ref));
       const cycleTempFactorCatechins = Math.exp((-Ea_catechins / R_const) * (1 / T_cycle_K - 1 / T_ref));
+      const cycleTempFactorEgc = Math.exp((-Ea_egc / R_const) * (1 / T_cycle_K - 1 / T_ref));
+      const cycleTempFactorEgcg = Math.exp((-Ea_egcg / R_const) * (1 / T_cycle_K - 1 / T_ref));
       const cycleTempFactorPolysaccharides = Math.exp((-Ea_polysaccharides / R_const) * (1 / T_cycle_K - 1 / T_ref));
 
       k_theanine = 0.085 * cycleTempFactorTheanine * surfaceFactor * mineralMultiplier;
       k_caffeine = 0.045 * cycleTempFactorCaffeine * surfaceFactor * mineralMultiplier;
       k_catechins = 0.022 * cycleTempFactorCatechins * surfaceFactor * mineralMultiplier;
+      k_egc = 0.032 * cycleTempFactorEgc * surfaceFactor * mineralMultiplier;
+      k_egcg = 0.018 * cycleTempFactorEgcg * surfaceFactor * mineralMultiplier;
       k_polysaccharides = 0.012 * cycleTempFactorPolysaccharides * surfaceFactor * mineralMultiplier;
     } else {
       k_theanine = 0.095 * tempFactorTheanine * surfaceFactor * mineralMultiplier;
       k_caffeine = 0.052 * tempFactorCaffeine * surfaceFactor * mineralMultiplier;
       k_catechins = 0.028 * tempFactorCatechins * surfaceFactor * mineralMultiplier;
+      k_egc = 0.038 * tempFactorEgc * surfaceFactor * mineralMultiplier;
+      k_egcg = 0.024 * tempFactorEgcg * surfaceFactor * mineralMultiplier;
       k_polysaccharides = 0.014 * tempFactorPolysaccharides * surfaceFactor * mineralMultiplier;
     }
 
-    // Mass freshly extracted from leaf in this steep (mg)
-    const freshlyExtractedTheanine = theaninePool * (1 - Math.exp(-k_theanine * time));
-    const freshlyExtractedCaffeine = caffeinePool * (1 - Math.exp(-k_caffeine * time));
-    const freshlyExtractedCatechins = catechinsPool * (1 - Math.exp(-k_catechins * time));
-    const freshlyExtractedPolysaccharides = polysaccharidesPool * (1 - Math.exp(-k_polysaccharides * time));
+    // Mass freshly extracted from leaf in this steep (mg) via Two-Stage model
+    const freshlyExtractedTheanine = extractTwoStage(theaninePool, k_theanine, time);
+    const freshlyExtractedCaffeine = extractTwoStage(caffeinePool, k_caffeine, time);
+    const freshlyExtractedCatechins = extractTwoStage(catechinsPool, k_catechins, time);
+    const freshlyExtractedEgc = extractTwoStage(egcPool, k_egc, time);
+    const freshlyExtractedEgcg = extractTwoStage(egcgPool, k_egcg, time);
+    const freshlyExtractedPolysaccharides = extractTwoStage(polysaccharidesPool, k_polysaccharides, time);
 
     // Deduct from remaining pools inside leaf
     theaninePool = Math.max(0, theaninePool - freshlyExtractedTheanine);
     caffeinePool = Math.max(0, caffeinePool - freshlyExtractedCaffeine);
     catechinsPool = Math.max(0, catechinsPool - freshlyExtractedCatechins);
+    egcPool = Math.max(0, egcPool - freshlyExtractedEgc);
+    egcgPool = Math.max(0, egcgPool - freshlyExtractedEgcg);
     polysaccharidesPool = Math.max(0, polysaccharidesPool - freshlyExtractedPolysaccharides);
 
     let totalLiquorTheanineMg: number;
     let totalLiquorCaffeineMg: number;
     let totalLiquorCatechinsMg: number;
+    let totalLiquorEgcMg: number;
+    let totalLiquorEgcgMg: number;
     let totalLiquorPolysaccharidesMg: number;
     let rootCarryoverSolutesMg = 0;
     let retainedRootVolumeMl = 0;
     let freshWaterAddedMl = safeWaterVolume;
+    let mixedTemperatureC: number | undefined;
 
     if (brewingMethod === 'liu_gen' || brewingMethod === 'grandpa_cup') {
       if (steep === 1) {
@@ -1192,6 +1537,8 @@ export function simulateGongfuExtraction(
         totalLiquorTheanineMg = freshlyExtractedTheanine;
         totalLiquorCaffeineMg = freshlyExtractedCaffeine;
         totalLiquorCatechinsMg = freshlyExtractedCatechins;
+        totalLiquorEgcMg = freshlyExtractedEgc;
+        totalLiquorEgcgMg = freshlyExtractedEgcg;
         totalLiquorPolysaccharidesMg = freshlyExtractedPolysaccharides;
         retainedRootVolumeMl = 0;
         freshWaterAddedMl = safeWaterVolume;
@@ -1200,22 +1547,32 @@ export function simulateGongfuExtraction(
         totalLiquorTheanineMg = rootTheanineMg + freshlyExtractedTheanine;
         totalLiquorCaffeineMg = rootCaffeineMg + freshlyExtractedCaffeine;
         totalLiquorCatechinsMg = rootCatechinsMg + freshlyExtractedCatechins;
+        totalLiquorEgcMg = rootEgcMg + freshlyExtractedEgc;
+        totalLiquorEgcgMg = rootEgcgMg + freshlyExtractedEgcg;
         totalLiquorPolysaccharidesMg = rootPolysaccharidesMg + freshlyExtractedPolysaccharides;
         retainedRootVolumeMl = Math.round(safeWaterVolume * safeRootFraction);
         freshWaterAddedMl = safeWaterVolume - retainedRootVolumeMl;
         rootCarryoverSolutesMg = Math.round((rootTheanineMg + rootCaffeineMg + rootCatechinsMg + rootPolysaccharidesMg) * 1.25 * 10) / 10;
+
+        // Effective mixture temperature for Liu Gen Pao
+        const T_root = 54;
+        mixedTemperatureC = Math.round(safeRootFraction * T_root + (1 - safeRootFraction) * safeTemp);
       }
 
       // Prepare root carryover for the NEXT steep
       rootTheanineMg = totalLiquorTheanineMg * safeRootFraction;
       rootCaffeineMg = totalLiquorCaffeineMg * safeRootFraction;
       rootCatechinsMg = totalLiquorCatechinsMg * safeRootFraction;
+      rootEgcMg = totalLiquorEgcMg * safeRootFraction;
+      rootEgcgMg = totalLiquorEgcgMg * safeRootFraction;
       rootPolysaccharidesMg = totalLiquorPolysaccharidesMg * safeRootFraction;
     } else {
       // Classical Gongfu Cha (100% drain)
       totalLiquorTheanineMg = freshlyExtractedTheanine;
       totalLiquorCaffeineMg = freshlyExtractedCaffeine;
       totalLiquorCatechinsMg = freshlyExtractedCatechins;
+      totalLiquorEgcMg = freshlyExtractedEgc;
+      totalLiquorEgcgMg = freshlyExtractedEgcg;
       totalLiquorPolysaccharidesMg = freshlyExtractedPolysaccharides;
       retainedRootVolumeMl = 0;
       freshWaterAddedMl = safeWaterVolume;
@@ -1231,13 +1588,28 @@ export function simulateGongfuExtraction(
     const cTheanine = totalLiquorTheanineMg * normFactor;
     const cCaffeine = totalLiquorCaffeineMg * normFactor;
     const cCatechins = totalLiquorCatechinsMg * normFactor * (1 - vesselInfo.tanninAdsorptionFactor);
+    const cEgc = totalLiquorEgcMg * normFactor;
+    const cEgcg = totalLiquorEgcgMg * normFactor * (1 - vesselInfo.tanninAdsorptionFactor);
     const cPolysaccharides = totalLiquorPolysaccharidesMg * normFactor;
 
     // Total Dissolved Solids in ppm (mg/L): (mg in steep / waterVolumeMl) * 1000 with baseline mineral floor
     const tdsPpm = Math.max(8, Math.round((steepTotalSolutesMg / safeWaterVolume) * 1000));
 
+    // Vertical stratification for Grandpa Cup in open vessel
+    let stratificationBottomTds: number | undefined;
+    let stratificationTopTds: number | undefined;
+    if (brewingMethod === 'grandpa_cup') {
+      stratificationBottomTds = Math.round(tdsPpm * 1.26);
+      stratificationTopTds = Math.round(tdsPpm * 0.78);
+    }
+
     // Theanine to Catechins ratio (Sweetness/Umami vs Harsh Astringency)
     const theanineToCatechinsRatio = Math.round((cTheanine / Math.max(0.1, cCatechins)) * 100) / 100;
+
+    // Taste Harmony Index (THI)
+    const tasteHarmonyIndex = Math.round(
+      ((cTheanine + 1.2 * cEgc) / Math.max(0.2, 0.2 * cCaffeine + cEgcg + 0.1)) * 100
+    ) / 100;
 
     // Volatiles curve
     let volatileBase = 100 * Math.exp(-(steep - 1.5) * (brewingMethod === 'liu_gen' || brewingMethod === 'grandpa_cup' ? 0.32 : 0.42));
@@ -1246,11 +1618,13 @@ export function simulateGongfuExtraction(
     }
     const volatilesIntensity = Math.max(5, Math.min(100, Math.round(volatileBase * volatilesTempMultiplier)));
 
-    // Sensory scores (0-10 scale)
-    const umami = Math.min(10, Math.round((cTheanine / 16) * 10 * 10) / 10);
-    const sweetness = Math.min(10, Math.round(((cTheanine * 0.45 + cPolysaccharides * 0.55) / 18) * 10 * 10) / 10);
-    const bitterness = Math.min(10, Math.round(((cCaffeine * 0.45 + cCatechins * 0.55) / 38) * 10 * 10) / 10);
-    const astringency = Math.min(10, Math.round((cCatechins / 34) * 10 * 10) / 10);
+    // Sensory scores (0-10 scale) enriched by THI and EGC
+    const umami = Math.min(10, Math.round(((cTheanine * 0.85 + cEgc * 0.15) / 16) * 10 * 10) / 10);
+    const sweetnessBonus = tasteHarmonyIndex > 0.8 ? 0.8 : (tasteHarmonyIndex < 0.35 ? -0.8 : 0);
+    const sweetness = Math.max(1, Math.min(10, Math.round((((cTheanine * 0.40 + cPolysaccharides * 0.45 + cEgc * 0.15) / 18) * 10 + sweetnessBonus) * 10) / 10));
+    const bitternessPenalty = cEgcg > 20 ? 0.6 : 0;
+    const bitterness = Math.max(1, Math.min(10, Math.round((((cCaffeine * 0.40 + cEgcg * 0.60) / 36) * 10 + bitternessPenalty) * 10) / 10));
+    const astringency = Math.min(10, Math.round((cEgcg / 28) * 10 * 10) / 10);
     const body = Math.min(10, Math.round(((cPolysaccharides * 0.65 + cCatechins * 0.35) / 22) * 10 * 10) / 10);
     const aroma = Math.min(10, Math.round((volatilesIntensity / 10) * 10) / 10);
 
@@ -1334,11 +1708,18 @@ export function simulateGongfuExtraction(
       theanineConcentration: Math.round(cTheanine * 10) / 10,
       caffeineConcentration: Math.round(cCaffeine * 10) / 10,
       catechinsConcentration: Math.round(cCatechins * 10) / 10,
+      egcConcentration: Math.round(cEgc * 10) / 10,
+      egcgConcentration: Math.round(cEgcg * 10) / 10,
       polysaccharidesConcentration: Math.round(cPolysaccharides * 10) / 10,
       volatilesIntensity,
       tdsPpm,
       cumulativeExtractionYieldPercent,
       theanineToCatechinsRatio,
+      tasteHarmonyIndex,
+      leafSwellingPercent,
+      mixedTemperatureC,
+      stratificationBottomTds,
+      stratificationTopTds,
       sensoryScores: {
         umami: Math.max(1, Math.min(10, finalUmami)),
         sweetness: Math.max(1, Math.min(10, finalSweetness)),
@@ -1358,6 +1739,7 @@ export function simulateGongfuExtraction(
     });
   }
 
+  (results as any).rinseData = rinseSteepData;
   return results;
 }
 
@@ -1476,22 +1858,26 @@ export function calculateAdaptiveCustomBrewing(
     baseCumulativeSec += baseDurations[idx];
   });
 
-  const cumulativeDeviationSec = userCumulativeSec - baseCumulativeSec;
-  const relativeDeviation = baseCumulativeSec > 0 ? (cumulativeDeviationSec / baseCumulativeSec) : 0;
+  // Effective deviation calculation:
+  // Weighted rinse impact: rinse happens with fresh boiling water against cold/dry leaf
+  const weightedRinseSec = rinseDeviation * 1.35;
+  const cumulativeDeviationSec = userCumulativeSec - baseCumulativeSec + weightedRinseSec;
+  const effectiveBaseSec = baseCumulativeSec + Math.max(refRinseSec, 5) * 1.5;
+  const relativeDeviation = effectiveBaseSec > 0 ? (cumulativeDeviationSec / effectiveBaseSec) : 0;
+
+  let chemicalCompensationType: AdaptiveCustomBrewingResult['chemicalCompensationType'] = 'balanced_tracking';
+  if (relativeDeviation > 0.12 || (userIndices.length === 0 && rinseDeviation > 5)) {
+    chemicalCompensationType = 'over_extraction_relief';
+  } else if (relativeDeviation < -0.12 || (userIndices.length === 0 && (rinseDeviation < -3 || customRinseSec === 0))) {
+    chemicalCompensationType = 'under_extraction_boost';
+  } else if (hasCustomRinse) {
+    chemicalCompensationType = 'rinse_compensation';
+  }
 
   // Build combined durations array
   const combinedDurations: number[] = [];
   const steepStatus: AdaptiveCustomBrewingResult['steepStatus'] = [];
   const customFlags: AdaptiveCustomBrewingResult['customFlags'] = [];
-
-  let chemicalCompensationType: AdaptiveCustomBrewingResult['chemicalCompensationType'] = 'balanced_tracking';
-  if (relativeDeviation > 0.15) {
-    chemicalCompensationType = 'over_extraction_relief';
-  } else if (relativeDeviation < -0.15) {
-    chemicalCompensationType = 'under_extraction_boost';
-  } else if (hasCustomRinse && userIndices.length === 0) {
-    chemicalCompensationType = 'rinse_compensation';
-  }
 
   for (let i = 0; i < totalSteeps; i++) {
     const baseT = baseDurations[i] || (baseDurations[baseDurations.length - 1] + (i - baseDurations.length + 1) * 15);
@@ -1514,36 +1900,73 @@ export function calculateAdaptiveCustomBrewing(
         isAdaptedReference: false
       });
     } else {
-      // Adapted steep
+      // Calculate adapted duration for unentered steep
       let adaptedSec = baseT;
 
-      // Check if steep 1 needs rinse-specific compensation
-      if (i === 0 && hasCustomRinse && !isUserTime) {
-        if (rinseDeviation > 4) {
-          // Shorten steep 1 because pores are already wide open and theanine was slightly washed
-          adaptedSec = Math.max(3, Math.round(baseT * Math.max(0.65, 1 - (rinseDeviation * 0.03))));
-        } else if (rinseDeviation < -3 || (customRinseSec === 0 && refRinseSec > 0)) {
-          // Lengthen steep 1 slightly to wake up tightly rolled or compressed leaves
-          adaptedSec = Math.max(3, Math.round(baseT * 1.25));
+      if (userIndices.length === 0 && hasCustomRinse) {
+        // Pure rinse adaptation across ALL steeps:
+        if (rinseDeviation > 0) {
+          if (i === 0) {
+            // Steep 1: leaf is already hydrated, open, with theanine washed; flash pour prevents tannin spike
+            const factor1 = Math.max(0.35, 1 - Math.min(0.65, (rinseDeviation / 40) * 0.6));
+            adaptedSec = Math.max(3, Math.round(baseT * factor1));
+          } else if (i === 1) {
+            // Steep 2: leaf is vulnerable to EGCG surge without theanine buffer; gentle pour
+            const factor2 = Math.max(0.55, 1 - Math.min(0.45, (rinseDeviation / 45) * 0.4));
+            adaptedSec = Math.max(4, Math.round(baseT * factor2));
+          } else {
+            // Steeps 3..N: as the early pool was washed during the long rinse (especially if 60s!),
+            // progressively extend times so deep polysaccharides (TPS) and sugars maintain body and TDS
+            const progress = (i - 1) / Math.max(1, totalSteeps - 2);
+            const dilation = 1 + Math.min(0.60, (rinseDeviation / 50) * (0.15 + 0.40 * progress));
+            adaptedSec = Math.max(4, Math.round(baseT * dilation));
+          }
+        } else if (rinseDeviation < 0 || customRinseSec === 0) {
+          // Skipped or shortened rinse: leaf pores closed, unawakened
+          if (i === 0) {
+            // Steep 1: extended wetting
+            const extension = 1 + Math.min(0.5, (Math.abs(rinseDeviation) / 8) * 0.4);
+            adaptedSec = Math.max(4, Math.round(baseT * extension));
+          } else if (i === 1) {
+            // Steep 2: partial awakening
+            const extension = 1 + Math.min(0.25, (Math.abs(rinseDeviation) / 8) * 0.2);
+            adaptedSec = Math.max(4, Math.round(baseT * extension));
+          } else if (i === 2) {
+            const extension = 1 + Math.min(0.12, (Math.abs(rinseDeviation) / 8) * 0.1);
+            adaptedSec = Math.max(4, Math.round(baseT * extension));
+          } else {
+            adaptedSec = baseT;
+          }
         }
-      } else if (chemicalCompensationType === 'over_extraction_relief') {
-        if (i === maxUserIndex + 1) {
-          // Immediate next steep: flash recovery steep to prevent bitter caffeine/tannin spike
-          const reductionFactor = Math.max(0.55, 1 - Math.min(0.45, relativeDeviation * 0.45));
-          adaptedSec = Math.max(3, Math.round(baseT * reductionFactor));
-        } else if (i > maxUserIndex + 1) {
-          // Late steeps: leaf easily soluble content is depleted, prolonged exposure extracts deep polysaccharides (TPS)
-          const tailPosition = (i - maxUserIndex) / Math.max(1, totalSteeps - maxUserIndex);
-          const dilationFactor = 1 + Math.min(0.5, relativeDeviation * 0.35 * tailPosition);
-          adaptedSec = Math.max(3, Math.round(baseT * dilationFactor));
-        }
-      } else if (chemicalCompensationType === 'under_extraction_boost') {
-        // Under-extracted: leaf holds rich reservoir of theanine; gently increase steeping times
-        const boostFactor = Math.min(1.45, 1 + Math.min(0.45, Math.abs(relativeDeviation) * 0.4));
-        adaptedSec = Math.max(3, Math.round(baseT * boostFactor));
       } else {
-        // Balanced: subtle compensation
-        adaptedSec = baseT;
+        // Combined mode: user has entered some steeps, and may also have a custom rinse
+        if (i === 0 && hasCustomRinse) {
+          if (rinseDeviation > 4) {
+            const factor1 = Math.max(0.35, 1 - Math.min(0.65, (rinseDeviation / 40) * 0.6));
+            adaptedSec = Math.max(3, Math.round(baseT * factor1));
+          } else if (rinseDeviation < -3 || (customRinseSec === 0 && refRinseSec > 0)) {
+            adaptedSec = Math.max(4, Math.round(baseT * 1.35));
+          }
+        } else if (i === maxUserIndex + 1) {
+          // Immediate next steep after user's last steep
+          if (chemicalCompensationType === 'over_extraction_relief') {
+            const reductionFactor = Math.max(0.50, 1 - Math.min(0.50, Math.max(0.15, relativeDeviation) * 0.45));
+            adaptedSec = Math.max(3, Math.round(baseT * reductionFactor));
+          } else if (chemicalCompensationType === 'under_extraction_boost') {
+            const boostFactor = Math.min(1.45, 1 + Math.min(0.45, Math.abs(relativeDeviation) * 0.4));
+            adaptedSec = Math.max(3, Math.round(baseT * boostFactor));
+          }
+        } else if (i > maxUserIndex + 1) {
+          // Later steeps
+          if (chemicalCompensationType === 'over_extraction_relief') {
+            const tailPosition = (i - maxUserIndex) / Math.max(1, totalSteeps - maxUserIndex);
+            const dilationFactor = 1 + Math.min(0.55, Math.max(0.15, relativeDeviation) * 0.40 * tailPosition);
+            adaptedSec = Math.max(3, Math.round(baseT * dilationFactor));
+          } else if (chemicalCompensationType === 'under_extraction_boost') {
+            const boostFactor = Math.min(1.35, 1 + Math.min(0.35, Math.abs(relativeDeviation) * 0.3));
+            adaptedSec = Math.max(3, Math.round(baseT * boostFactor));
+          }
+        }
       }
 
       combinedDurations.push(adaptedSec);
@@ -1570,7 +1993,15 @@ export function calculateAdaptiveCustomBrewing(
   let summaryMessageRu = '';
   let scientificDetailRu = '';
 
-  if (chemicalCompensationType === 'over_extraction_relief') {
+  if (userIndices.length === 0 && hasCustomRinse) {
+    if (rinseDeviation > 0) {
+      summaryMessageRu = `Промывочный пролив был удлинён (${customRinseSec}с вместо ${refRinseSec}с). Алгоритм оптимизировал все ${totalSteeps} проливов: начальные проливы сокращены для защиты от горечи открытого листа, а поздние продлены для извлечения глубоких сахаров.`;
+      scientificDetailRu = `Кинетическая модель 2-стадийного вымывания Шпиро–Пелега: за ${customRinseSec}с промывки вымылась часть свободного L-теанина, а поры листа полностью раскрылись. Тайминги всех чашек перестроены для сохранения баланса вкуса.`;
+    } else {
+      summaryMessageRu = `Промывочный пролив сокращён/пропущен (${customRinseSec}с). Алгоритм продлил начальные проливы для равномерного прогрева и гидратации сухого листа.`;
+      scientificDetailRu = `Гидродинамическое сопротивление сухого листа требует большей экспозиции на старте для перехода от поверхностного смачивания к Fickian диффузии.`;
+    }
+  } else if (chemicalCompensationType === 'over_extraction_relief') {
     const nextSteepNum = maxUserIndex + 2;
     const nextSteepTime = combinedDurations[maxUserIndex + 1];
     summaryMessageRu = `Лист отдал экстрактивные вещества быстрее расчётного графика (+${Math.round(relativeDeviation * 100)}% к времени). Пролив #${nextSteepNum} скорректирован до ${nextSteepTime}с (короткий слив), чтобы не допустить грубой горечи.`;

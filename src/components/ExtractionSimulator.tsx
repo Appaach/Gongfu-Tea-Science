@@ -14,7 +14,8 @@ import {
 import { 
   simulateGongfuExtraction, 
   optimizeBrewingParametersMulti,
-  calculateAdaptiveCustomBrewing
+  calculateAdaptiveCustomBrewing,
+  calculateRinseKineticData
 } from '../utils/extractionKinetics';
 import { 
   matchTeaSearch, 
@@ -952,9 +953,40 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   }, [baseTeaRinseInfo, customRinseTime]);
 
   const isRinseEnabled = teaRinseInfo.required;
+
+  const rinseSteepData = useMemo(() => {
+    if (!isRinseEnabled) return null;
+    return calculateRinseKineticData(
+      selectedTea,
+      leafMass,
+      waterVolume,
+      waterTemp,
+      teaRinseInfo.seconds,
+      waterHardness,
+      vesselMaterial,
+      optimizationGoal,
+      customRinseTime !== null,
+      selectedVintageYear
+    );
+  }, [
+    isRinseEnabled,
+    selectedTea,
+    leafMass,
+    waterVolume,
+    waterTemp,
+    teaRinseInfo.seconds,
+    waterHardness,
+    vesselMaterial,
+    optimizationGoal,
+    customRinseTime,
+    selectedVintageYear
+  ]);
+
   const isRinseSelected = selectedSteepIndex === -1 && isRinseEnabled;
-  const safeSteepIndex = isRinseSelected ? 0 : Math.min(selectedSteepIndex, Math.max(0, simulationResults.length - 1));
-  const currentSteepData = simulationResults[safeSteepIndex] || simulationResults[0];
+  const safeSteepIndex = Math.min(Math.max(0, selectedSteepIndex), Math.max(0, simulationResults.length - 1));
+  const currentSteepData = (isRinseSelected && rinseSteepData) 
+    ? rinseSteepData 
+    : (simulationResults[safeSteepIndex] || simulationResults[0]);
 
   // Auto reset steep index if current tea does not have a rinse
   useEffect(() => {
@@ -1088,8 +1120,16 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   const totalCaffeineExtracted = simulationResults.reduce((acc, curr) => acc + (curr.caffeineConcentration * (waterVolume / 100)), 0).toFixed(1);
   const totalTheanineExtracted = simulationResults.reduce((acc, curr) => acc + (curr.theanineConcentration * (waterVolume / 100)), 0).toFixed(1);
 
+  // Full sequence for chart visualization including Steep #0 (Rinse) when rinse is enabled
+  const chartSteepsData = useMemo(() => {
+    if (isRinseEnabled && rinseSteepData) {
+      return [rinseSteepData, ...simulationResults];
+    }
+    return simulationResults;
+  }, [isRinseEnabled, rinseSteepData, simulationResults]);
+
   // Responsive SVG Dimensions for Kinetics Multi-Curve
-  const svgWidth = Math.max(650, simulationResults.length * 60 + 80);
+  const svgWidth = Math.max(650, chartSteepsData.length * 60 + 80);
   const svgHeight = 230;
   const padding = { top: 25, right: 35, bottom: 46, left: 45 };
   const chartW = svgWidth - padding.left - padding.right;
@@ -1098,18 +1138,18 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   // Find max concentration across visible/enabled compounds to scale graph dynamically
   const maxConcentration = useMemo(() => {
     let max = 1;
-    simulationResults.forEach((d) => {
+    chartSteepsData.forEach((d) => {
       if (showChartTheanine) max = Math.max(max, d.theanineConcentration);
       if (showChartCaffeine) max = Math.max(max, d.caffeineConcentration);
       if (showChartCatechins) max = Math.max(max, d.catechinsConcentration);
       if (showChartPolysaccharides) max = Math.max(max, d.polysaccharidesConcentration);
     });
     return Math.max(1, Math.ceil(max * 1.15));
-  }, [simulationResults, showChartTheanine, showChartCaffeine, showChartCatechins, showChartPolysaccharides]);
+  }, [chartSteepsData, showChartTheanine, showChartCaffeine, showChartCatechins, showChartPolysaccharides]);
 
   const getX = (index: number) => {
-    if (simulationResults.length <= 1) return padding.left + chartW / 2;
-    return padding.left + (index / (simulationResults.length - 1)) * chartW;
+    if (chartSteepsData.length <= 1) return padding.left + chartW / 2;
+    return padding.left + (index / (chartSteepsData.length - 1)) * chartW;
   };
 
   const getY = (val: number) => {
@@ -1141,10 +1181,10 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   };
 
   const { theaninePath, caffeinePath, catechinsPath, polysaccharidesPath } = useMemo(() => {
-    const theanineCoords = simulationResults.map((d, i) => ({ x: getX(i), y: getY(d.theanineConcentration) }));
-    const caffeineCoords = simulationResults.map((d, i) => ({ x: getX(i), y: getY(d.caffeineConcentration) }));
-    const catechinsCoords = simulationResults.map((d, i) => ({ x: getX(i), y: getY(d.catechinsConcentration) }));
-    const polysaccharidesCoords = simulationResults.map((d, i) => ({ x: getX(i), y: getY(d.polysaccharidesConcentration) }));
+    const theanineCoords = chartSteepsData.map((d, i) => ({ x: getX(i), y: getY(d.theanineConcentration) }));
+    const caffeineCoords = chartSteepsData.map((d, i) => ({ x: getX(i), y: getY(d.caffeineConcentration) }));
+    const catechinsCoords = chartSteepsData.map((d, i) => ({ x: getX(i), y: getY(d.catechinsConcentration) }));
+    const polysaccharidesCoords = chartSteepsData.map((d, i) => ({ x: getX(i), y: getY(d.polysaccharidesConcentration) }));
 
     return {
       theaninePath: generateSmoothPath(theanineCoords),
@@ -1152,7 +1192,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
       catechinsPath: generateSmoothPath(catechinsCoords),
       polysaccharidesPath: generateSmoothPath(polysaccharidesCoords),
     };
-  }, [simulationResults, maxConcentration, chartW, chartH]);
+  }, [chartSteepsData, maxConcentration, chartW, chartH]);
 
   // Continuous minute-by-minute timeline data for «Ленивый» метод (Бэй Пао Фа)
   const lazyCupTimeline = useMemo(() => {
@@ -3503,7 +3543,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                               if (e.key === 'Enter') {
                                 const raw = (e.target as HTMLInputElement).value.trim();
                                 const parsed = parseInt(raw.replace(/\D/g, ''), 10);
-                                if (!isNaN(parsed) && parsed > 0) {
+                                if (!isNaN(parsed) && parsed >= 0) {
                                   setCustomRinseTime(Math.min(600, parsed));
                                 } else if (raw === '') {
                                   setCustomRinseTime(null);
@@ -3516,7 +3556,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                             onBlur={(e) => {
                               const raw = e.target.value.trim();
                               const parsed = parseInt(raw.replace(/\D/g, ''), 10);
-                              if (!isNaN(parsed) && parsed > 0) {
+                              if (!isNaN(parsed) && parsed >= 0) {
                                 setCustomRinseTime(Math.min(600, parsed));
                               } else if (raw === '') {
                                 setCustomRinseTime(null);
@@ -3541,11 +3581,9 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                         onClick={() => setSelectedSteepIndex(-1)}
                         onDoubleClick={(e) => {
                           e.preventDefault();
-                          if (isManualTimeEditMode) {
-                            setEditingSteepIndex(-1);
-                          }
+                          setEditingSteepIndex(-1);
                         }}
-                        title={isManualTimeEditMode ? "Двойной клик для ввода своего времени" : undefined}
+                        title="Кликните для выбора, двойной клик для ввода времени"
                         className={`group relative min-h-[92px] p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all select-none cursor-pointer shadow-2xs ${
                           selectedSteepIndex === -1
                             ? 'border-amber-800 bg-amber-50/90 text-stone-900 shadow-xs ring-2 ring-amber-800'
@@ -3643,10 +3681,10 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
             </div>
 
             {/* Active Selected Steep Deep-Dive Profile */}
-            {isRinseSelected ? (
-              /* Dedicated Clean Rinse #0 Window matching regular steep window without information */
-              <div className="space-y-6 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-6">
+              {isRinseSelected ? (
+                /* Dedicated Clean Rinse #0 Header */
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in duration-200">
                   <div className="flex items-center space-x-4">
                     <div 
                       className="w-14 h-14 rounded-full border-4 border-stone-100 shadow-inner flex items-center justify-center relative shrink-0"
@@ -3691,6 +3729,32 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                       <p className="text-xs text-stone-600 mt-1.5 max-w-lg">
                         {teaRinseInfo.actionRu}
                       </p>
+
+                      {/* Quick Rinse Time Presets & Inline Edit */}
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+                        <span className="text-stone-500 font-medium text-[11px]">Задать время промывки:</span>
+                        {[0, 3, 5, 10, 15, 30, 60].map((tSec) => (
+                          <button
+                            key={tSec}
+                            type="button"
+                            onClick={() => setCustomRinseTime(tSec === baseTeaRinseInfo.seconds ? null : tSec)}
+                            className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer border ${
+                              (customRinseTime === tSec || (customRinseTime === null && tSec === baseTeaRinseInfo.seconds))
+                                ? 'bg-amber-800 text-white border-amber-900 shadow-2xs'
+                                : 'bg-white hover:bg-stone-100 text-stone-700 border-stone-200'
+                            }`}
+                          >
+                            {tSec === 0 ? 'Без промыва (0с)' : `${tSec}с`}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setEditingSteepIndex(-1)}
+                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 transition-colors cursor-pointer"
+                        >
+                          Ввести число
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -3699,13 +3763,11 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                     onClick={() => setSelectedSteepIndex(0)}
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
                   >
-                    <span>Начать питьевой Пролив #1</span>
+                    <span>К питьевому Проливу #1</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </div>
-            ) : (
-            <div className="space-y-6">
+              ) : (
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-4">
                   {/* Visual Cup Color Rendering */}
@@ -3776,6 +3838,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                   </div>
                 </div>
               </div>
+            )}
 
               {/* Scientific Metrics Badge Row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-stone-50/80 p-3.5 rounded-xl border border-stone-200">
@@ -3830,33 +3893,53 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
 
               {/* Chemical Concentrations in this steep */}
               <div>
-                <div className="text-xs font-semibold text-stone-700 uppercase tracking-wider mb-2">
-                  Фракционированный химический состав пиалы (мг / 100 мл):
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <div className="text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                    Фракционированный химический состав пиалы (мг / 100 мл):
+                  </div>
+                  {currentSteepData.tasteHarmonyIndex !== undefined && (
+                    <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-stone-100 border border-stone-200">
+                      <span className="text-stone-500 font-medium">Индекс гармонии вкуса (THI):</span>
+                      <span className={`font-mono font-bold ${
+                        currentSteepData.tasteHarmonyIndex >= 0.8
+                          ? 'text-emerald-700'
+                          : currentSteepData.tasteHarmonyIndex >= 0.5
+                          ? 'text-amber-700'
+                          : 'text-rose-700'
+                      }`}>
+                        {currentSteepData.tasteHarmonyIndex}
+                      </span>
+                      <span className="text-[10px] text-stone-400">
+                        {currentSteepData.tasteHarmonyIndex >= 0.8 ? '(умами/сладость)' : currentSteepData.tasteHarmonyIndex >= 0.5 ? '(баланс)' : '(терпкость)'}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl">
-                    <div className="text-[11px] text-emerald-800 font-medium">L-Теанин (Умами)</div>
+                    <div className="text-[11px] text-emerald-800 font-medium">L-Теанин</div>
                     <div className="text-lg font-bold font-mono text-emerald-950 mt-0.5">
                       {currentSteepData.theanineConcentration} <span className="text-xs font-normal">мг</span>
                     </div>
                   </div>
 
                   <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl">
-                    <div className="text-[11px] text-blue-800 font-medium">Кофеин (Бодрость)</div>
+                    <div className="text-[11px] text-blue-800 font-medium">Кофеин</div>
                     <div className="text-lg font-bold font-mono text-blue-950 mt-0.5">
                       {currentSteepData.caffeineConcentration} <span className="text-xs font-normal">мг</span>
                     </div>
                   </div>
 
                   <div className="p-3 bg-rose-50/60 border border-rose-200 rounded-xl">
-                    <div className="text-[11px] text-rose-800 font-medium">Катехины (Танины)</div>
+                    <div className="text-[11px] text-rose-800 font-medium">Катехины</div>
                     <div className="text-lg font-bold font-mono text-rose-950 mt-0.5">
                       {currentSteepData.catechinsConcentration} <span className="text-xs font-normal">мг</span>
                     </div>
                   </div>
 
                   <div className="p-3 bg-purple-50/60 border border-purple-200 rounded-xl">
-                    <div className="text-[11px] text-purple-800 font-medium">Полисахариды (Тело)</div>
+                    <div className="text-[11px] text-purple-800 font-medium">Полисахариды</div>
                     <div className="text-lg font-bold font-mono text-purple-950 mt-0.5">
                       {currentSteepData.polysaccharidesConcentration} <span className="text-xs font-normal">мг</span>
                     </div>
@@ -3956,7 +4039,6 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                 </div>
               </div>
             </div>
-            )}
           </div>
 
           {/* 2. KINETIC CURVES VISUALIZATION & ACTION RECOMMENDATIONS */}
@@ -4207,12 +4289,17 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
             <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <h4 className="font-bold text-stone-900 text-base flex items-center space-x-2 font-serif">
-                    <TrendingUp className="w-4 h-4 text-amber-700" />
-                    <span>Кинетические кривые экстракции ({steepsCount} {steepsCount === 1 ? 'пролив' : (steepsCount < 5 ? 'пролива' : 'проливов')})</span>
+                  <h4 className="font-bold text-stone-900 text-base flex flex-wrap items-center gap-2 font-serif">
+                    <span className="flex items-center space-x-2">
+                      <TrendingUp className="w-4 h-4 text-amber-700" />
+                      <span>Кинетические кривые экстракции ({steepsCount} {steepsCount === 1 ? 'пролив' : (steepsCount < 5 ? 'пролива' : 'проливов')})</span>
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 bg-amber-100/80 text-amber-900 border border-amber-200/80 rounded-full font-semibold">
+                      2-стадийная модель Шпиро–Пелега
+                    </span>
                   </h4>
                   <p className="text-xs text-stone-500">
-                    Динамика концентрации соединений в каждом отдельном проливе (мг / 100 мл)
+                    Динамика концентрации соединений в каждом отдельном проливе (мг / 100 мл) с учетом непрерывной гидратации листа
                   </p>
                 </div>
 
@@ -4317,13 +4404,18 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                   })}
 
                   {/* X Axis Steeps & Vertical Grid Lines with Selected Steep Stripe */}
-                  {simulationResults.map((d, i) => {
+                  {chartSteepsData.map((d, i) => {
                     const x = getX(i);
-                    const isSelected = i === selectedSteepIndex;
-                    const stripeWidth = Math.min(9, Math.max(5, Math.round((chartW / Math.max(1, simulationResults.length - 1)) * 0.125)));
+                    const isRinsePoint = d.steepNumber === 0;
+                    const isSelected = isRinsePoint ? selectedSteepIndex === -1 : (d.steepNumber - 1) === selectedSteepIndex;
+                    const stripeWidth = Math.min(9, Math.max(5, Math.round((chartW / Math.max(1, chartSteepsData.length - 1)) * 0.125)));
                     return (
-                      <g key={i} className="cursor-pointer" onClick={() => setSelectedSteepIndex(i)}>
-                        {/* Vertical highlight stripe for the selected steep (slender 2x narrower gray column) */}
+                      <g 
+                        key={i} 
+                        className="cursor-pointer" 
+                        onClick={() => setSelectedSteepIndex(isRinsePoint ? -1 : d.steepNumber - 1)}
+                      >
+                        {/* Vertical highlight stripe for the selected steep */}
                         {isSelected && (
                           <rect
                             x={x - stripeWidth / 2}
@@ -4353,7 +4445,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                           fill={isSelected ? '#334155' : '#78716c'}
                           textAnchor="middle"
                         >
-                          #{d.steepNumber} ({d.timeSec}с)
+                          {isRinsePoint ? `#0 (${d.timeSec}с)` : `#${d.steepNumber} (${d.timeSec}с)`}
                         </text>
                         {d.isCustomUserTime && (
                           <text
@@ -4426,11 +4518,16 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                   )}
 
                   {/* Data points for current selected steep */}
-                  {simulationResults.map((d, i) => {
+                  {chartSteepsData.map((d, i) => {
                     const x = getX(i);
-                    const isSelected = i === selectedSteepIndex;
+                    const isRinsePoint = d.steepNumber === 0;
+                    const isSelected = isRinsePoint ? selectedSteepIndex === -1 : (d.steepNumber - 1) === selectedSteepIndex;
                     return (
-                      <g key={i} className="cursor-pointer" onClick={() => setSelectedSteepIndex(i)}>
+                      <g 
+                        key={i} 
+                        className="cursor-pointer" 
+                        onClick={() => setSelectedSteepIndex(isRinsePoint ? -1 : d.steepNumber - 1)}
+                      >
                         {/* Invisible wider target for clicking */}
                         <rect
                           x={x - 18}

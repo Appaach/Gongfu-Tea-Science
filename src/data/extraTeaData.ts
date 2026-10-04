@@ -8725,7 +8725,7 @@ export const EXTRA_TEAS: TeaVariety[] = [
   },
   {
     "id": "wu_yuan_ming_mei",
-    "nameRu": "Уюань Минмэй",
+    "nameRu": "Уюань Минмэй (Изящные Брови из Уюаня)",
     "transcriptionRu": "Уюань Минмэй / Wù Yuán Míng Méi / Изящные брови из Уюаня",
     "nameZh": "婺源茗眉",
     "namePinyin": "Wù Yuán Míng Méi",

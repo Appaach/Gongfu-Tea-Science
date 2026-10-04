@@ -86,15 +86,72 @@ export function damerauLevenshtein(a: string, b: string): number {
   return dp[la][lb];
 }
 
+export interface ParsedSearchQuery {
+  rawQ: string;
+  normQ: string;
+  compactQuery: string;
+  phonCompactQuery: string;
+  tokens: {
+    tok: string;
+    cleanTok: string;
+    phonTok: string;
+    isHanzi: boolean;
+    len: number;
+    maxDist: number;
+  }[];
+}
+
+const parsedQueryCache = new Map<string, ParsedSearchQuery | null>();
+
+export function parseSearchQuery(query: string): ParsedSearchQuery | null {
+  if (!query || !query.trim()) return null;
+  const cached = parsedQueryCache.get(query);
+  if (cached !== undefined) return cached;
+
+  const rawQ = query.trim();
+  const normQ = normalizeTeaText(rawQ);
+  if (!normQ) {
+    parsedQueryCache.set(query, null);
+    return null;
+  }
+
+  const qTokens = normQ.split(/[\s,./\\_\-+;:()«»"'\\[\]]+/).filter(t => t.length > 0);
+  if (qTokens.length === 0) {
+    parsedQueryCache.set(query, null);
+    return null;
+  }
+
+  const compactQuery = cleanTeaChars(rawQ);
+  const phonCompactQuery = phoneticVowelReduce(rawQ);
+
+  const tokens = qTokens.map(tok => {
+    const cleanTok = cleanTeaChars(tok);
+    const phonTok = phoneticVowelReduce(cleanTok);
+    const isHanzi = /[\u4e00-\u9fa5]/.test(tok);
+    const len = cleanTok.length;
+    const maxDist = len >= 8 ? 2 : 1;
+    return { tok, cleanTok, phonTok, isHanzi, len, maxDist };
+  }).filter(t => t.cleanTok.length > 0 || t.isHanzi);
+
+  if (tokens.length === 0) {
+    parsedQueryCache.set(query, null);
+    return null;
+  }
+
+  // Keep cache small
+  if (parsedQueryCache.size > 100) {
+    parsedQueryCache.clear();
+  }
+
+  const result: ParsedSearchQuery = { rawQ, normQ, compactQuery, phonCompactQuery, tokens };
+  parsedQueryCache.set(query, result);
+  return result;
+}
+
 /**
- * Checks whether a single search token matches a target word, taking into account:
- * 1. Exact match
- * 2. Prefix match
- * 3. Phonetic vowel-reduced match (wrong vowels, soft sign missing, etc.)
- * 4. Damerau-Levenshtein typo tolerance:
- *    - len <= 4: exact or phonetic match only (no destructive fuzzy matching for short words)
- *    - len 5..7: 1 typo / transposition / substitution
- *    - len >= 8: up to 2 typos / transpositions / substitutions
+ * Checks whether a single search token matches a target word.
+ * Typo tolerance is strictly limited to words of similar length to prevent
+ * accidental matching of unrelated long words.
  */
 export function matchTokenAgainstWord(token: string, word: string): boolean {
   if (!token || !word) return false;
@@ -126,24 +183,18 @@ export function matchTokenAgainstWord(token: string, word: string): boolean {
     return true;
   }
 
-  // 4. Damerau-Levenshtein typo tolerance (requires at least 4 chars on both sides to avoid short-word collisions)
-  if (cleanTok.length >= 4 && cleanWord.length >= 4) {
-    const maxAllowedDist = cleanTok.length >= 8 ? 2 : 1;
-
-    if (damerauLevenshtein(cleanTok, cleanWord) <= maxAllowedDist) return true;
-
-    if (cleanWord.length > cleanTok.length) {
-      const wordPrefix = cleanWord.slice(0, cleanTok.length);
-      if (damerauLevenshtein(cleanTok, wordPrefix) <= maxAllowedDist) {
-        return true;
-      }
-    }
+  // 4. Damerau-Levenshtein typo tolerance: strictly for full words of similar length
+  const lenDiff = Math.abs(cleanWord.length - cleanTok.length);
+  const maxDist = cleanTok.length >= 8 ? 2 : 1;
+  if (cleanTok.length >= 4 && lenDiff <= maxDist) {
+    if (damerauLevenshtein(cleanTok, cleanWord) <= maxDist) return true;
+    if (damerauLevenshtein(phonTok, phonWord) <= maxDist) return true;
   }
 
   return false;
 }
 
-interface PrecomputedSearchIndex {
+export interface PrecomputedSearchIndex {
   searchFieldsJoined: string;
   phoneticFieldsJoined: string;
   words: string[];
@@ -155,7 +206,7 @@ interface PrecomputedSearchIndex {
 
 const teaIndexCache = new WeakMap<TeaVariety, PrecomputedSearchIndex>();
 
-function getTeaSearchIndex(tea: TeaVariety): PrecomputedSearchIndex {
+export function getTeaSearchIndex(tea: TeaVariety): PrecomputedSearchIndex {
   let idx = teaIndexCache.get(tea);
   if (idx) return idx;
 
@@ -225,78 +276,96 @@ function getTeaSearchIndex(tea: TeaVariety): PrecomputedSearchIndex {
 export function matchTeaSearch(tea: TeaVariety, query: string): boolean {
   if (!query || !query.trim()) return true;
 
-  const rawQ = query.trim();
-  const normQ = normalizeTeaText(rawQ);
-  if (!normQ) return true;
-
-  const qTokens = normQ.split(/[\s,./\\_\-+;:()«»"'\\[\]]+/).filter(t => t.length > 0);
-  if (qTokens.length === 0) return true;
+  const parsed = parseSearchQuery(query);
+  if (!parsed) return true;
 
   const index = getTeaSearchIndex(tea);
 
-  // Fast direct substring search across joined fields
-  if (qTokens.length === 1 && index.searchFieldsJoined.includes(normQ)) {
+  // 1. Ultra-fast direct full-query match
+  if (index.searchFieldsJoined.includes(parsed.normQ)) {
     return true;
   }
 
-  const compactQuery = cleanTeaChars(rawQ);
-  const phonCompactQuery = phoneticVowelReduce(rawQ);
-
-  // 1. FAST-PATH: Joined query matching (for joined queries like "дахунпао", "шупуэр", "тегуаньинь", "байхаоиньчжэнь")
-  if (compactQuery.length >= 4) {
+  // 2. Fast joined alias match (e.g. "дахунпао", "тегуаньинь")
+  if (parsed.compactQuery.length >= 4) {
+    const cLen = parsed.compactQuery.length;
+    const maxDist = cLen >= 8 ? 2 : 1;
     for (let i = 0; i < index.joinedAliases.length; i++) {
       const alias = index.joinedAliases[i];
-      if (alias.includes(compactQuery)) return true;
+      if (alias.includes(parsed.compactQuery)) return true;
 
       const phonAlias = index.phoneticAliases[i];
-      if (phonAlias.includes(phonCompactQuery)) return true;
+      if (phonAlias.includes(parsed.phonCompactQuery)) return true;
 
-      const maxDist = compactQuery.length >= 8 ? 2 : 1;
-      if (Math.abs(alias.length - compactQuery.length) <= 2) {
-        if (damerauLevenshtein(compactQuery, alias) <= maxDist) return true;
-        if (damerauLevenshtein(phonCompactQuery, phonAlias) <= maxDist) return true;
+      if (Math.abs(alias.length - cLen) <= maxDist) {
+        if (damerauLevenshtein(parsed.compactQuery, alias) <= maxDist) return true;
+        if (damerauLevenshtein(parsed.phonCompactQuery, phonAlias) <= maxDist) return true;
       }
     }
   }
 
-  // 2. TOKEN-BY-TOKEN MATCHING: Every token in the user's query must match at least one element of the tea
-  return qTokens.every(tok => {
-    const cleanTok = cleanTeaChars(tok);
-    if (!cleanTok) return true;
+  // 3. Token-by-token matching: Every token in the user's query must match at least one element of the tea
+  for (let t = 0; t < parsed.tokens.length; t++) {
+    const { tok, cleanTok, phonTok, isHanzi, len, maxDist } = parsed.tokens[t];
 
-    // Fast check: token contained directly in joined fields
-    if (cleanTok.length >= 3 && index.searchFieldsJoined.includes(cleanTok)) {
-      return true;
+    // Fast check: direct substring in normalized fields
+    if (len >= 3 && index.searchFieldsJoined.includes(cleanTok)) {
+      continue;
     }
 
-    // A. Chinese Hanzi characters match
-    if (/[\u4e00-\u9fa5]/.test(tok)) {
-      if (index.nameZh.includes(tok)) return true;
+    // Chinese Hanzi character match
+    if (isHanzi && index.nameZh.includes(tok)) {
+      continue;
     }
 
-    // B. Word-level fuzzy match (handles typos, wrong vowels, transpositions, prefixes)
+    // Fast check: phonetic substring in phonetic fields
+    if (phonTok.length >= 3 && index.phoneticFieldsJoined.includes(phonTok)) {
+      continue;
+    }
+
+    // Word-level prefix & fuzzy match
+    let tokenMatched = false;
     for (let i = 0; i < index.words.length; i++) {
-      if (matchTokenAgainstWord(cleanTok, index.words[i])) return true;
-    }
+      const w = index.words[i];
+      if (w === cleanTok) { tokenMatched = true; break; }
+      if (len >= 3 && w.startsWith(cleanTok)) { tokenMatched = true; break; }
 
-    // C. Compacted alias match for Chinese compound transliterations
+      const pw = index.phoneticWords[i];
+      if (pw === phonTok) { tokenMatched = true; break; }
+      if (phonTok.length >= 3 && pw.startsWith(phonTok)) { tokenMatched = true; break; }
+
+      // Typo tolerance: strictly for full words of similar length
+      const lenDiff = Math.abs(w.length - len);
+      if (len >= 4 && lenDiff <= maxDist) {
+        if (damerauLevenshtein(cleanTok, w) <= maxDist || damerauLevenshtein(phonTok, pw) <= maxDist) {
+          tokenMatched = true;
+          break;
+        }
+      }
+    }
+    if (tokenMatched) continue;
+
+    // Compacted alias match
     for (let i = 0; i < index.joinedAliases.length; i++) {
       const alias = index.joinedAliases[i];
-      if (alias === cleanTok || alias.startsWith(cleanTok)) return true;
-      if (cleanTok.length >= 4 && alias.includes(cleanTok)) return true;
+      if (alias === cleanTok || alias.startsWith(cleanTok)) { tokenMatched = true; break; }
+      if (len >= 4 && alias.includes(cleanTok)) { tokenMatched = true; break; }
 
       const phonAlias = index.phoneticAliases[i];
-      const phonTok = phoneticVowelReduce(cleanTok);
-      if (phonAlias.includes(phonTok)) return true;
+      if (phonAlias.includes(phonTok)) { tokenMatched = true; break; }
 
-      const maxDist = cleanTok.length >= 8 ? 2 : 1;
-      if (cleanTok.length >= 5 && damerauLevenshtein(cleanTok, alias.slice(0, cleanTok.length)) <= maxDist) {
-        return true;
+      if (Math.abs(alias.length - len) <= maxDist && damerauLevenshtein(cleanTok, alias) <= maxDist) {
+        tokenMatched = true;
+        break;
       }
     }
 
-    return false;
-  });
+    if (!tokenMatched) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export interface SensoryCategoryGroup {

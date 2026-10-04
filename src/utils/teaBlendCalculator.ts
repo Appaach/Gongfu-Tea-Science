@@ -267,7 +267,7 @@ export function calculateTeaBlend(
 
   // 7. SUMMARY AND ADVICE STRINGS
   const massBreakdownText = itemsWithFractions
-    .map((i) => `${i.weightG}г (${Math.round(i.fraction * 100)}%) ${i.tea.nameRu.split('(')[0].trim()}`)
+    .map((i) => `${i.weightG}г (${Math.round(i.fraction * 100)}%) ${cleanTeaTitleForDisplay(i.tea.nameRu, canTeaAge(i.tea))}`)
     .join(' + ');
 
   let synergySummaryRu = `Разделение массы: ${massBreakdownText}. `;
@@ -283,7 +283,7 @@ export function calculateTeaBlend(
   const compositeName = `Купаж: ${itemsWithFractions.map((i) => {
     const activeYear = i.vintageYear || i.tea.vintageYear;
     const yearStr = (activeYear && canTeaAge(i.tea)) ? ` ${activeYear}г.` : '';
-    const cleanName = cleanTeaTitleForDisplay(i.tea.nameRu.split('(')[0].trim(), canTeaAge(i.tea));
+    const cleanName = cleanTeaTitleForDisplay(i.tea.nameRu, canTeaAge(i.tea));
     return `${cleanName}${yearStr} (${Math.round(i.fraction * 100)}%)`;
   }).join(' + ')}`;
   const compositeNameZh = itemsWithFractions.map((i) => i.tea.nameZh).filter(Boolean).join(' · ');
@@ -306,12 +306,12 @@ export function calculateTeaBlend(
     oxidationLevel: `${Math.round(compPolysaccharides)}% эквивалент`,
     leafMorphology: compSwelling > 4.0 ? 'tight_ball' : 'twisted_strip',
     scientificDescription: `Индивидуальный купаж с полисахаридной буферизацией (${tanninBufferingScorePercent}%). L-Теанин: ${Math.round(compTheanine)} мг/г, Кофеин: ${Math.round(compCaffeine)} мг/г, Катехины: ${Math.round(compCatechins)} мг/г. Рекомендуемый гидромодуль 1:${recommendedRatio} (${recommendedWaterVolumeMl} мл воды).`,
-    generalExamplesRu: itemsWithFractions.map((i) => `${i.tea.nameRu.split('(')[0].trim()} (${i.weightG}г)`),
+    generalExamplesRu: itemsWithFractions.map((i) => `${cleanTeaTitleForDisplay(i.tea.nameRu, canTeaAge(i.tea))} (${i.weightG}г)`),
     keySensoryNotes: [...dominantFlavorNotes, ...secondaryFlavorNotes, ...finishNotes].slice(0, 7),
     recommendedVesselRu,
     blendComponents: itemsWithFractions.map((i) => ({
       teaId: i.tea.id,
-      teaNameRu: i.tea.nameRu.split('(')[0].trim(),
+      teaNameRu: cleanTeaTitleForDisplay(i.tea.nameRu, canTeaAge(i.tea)),
       baseWeightG: i.weightG,
       ratioFraction: i.fraction,
       vintageYear: i.vintageYear || i.tea.vintageYear

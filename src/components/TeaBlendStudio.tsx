@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useDeferredValue } from 'react';
-import { TeaVariety, BlendComponentItem, InitialTastingSessionData, canTeaAge } from '../types';
+import { TeaVariety, BlendComponentItem, InitialTastingSessionData, canTeaAge, cleanTeaTitleForDisplay } from '../types';
 import { calculateTeaBlend, BLEND_PRESET_RECIPES } from '../utils/teaBlendCalculator';
 import { isTeaArchetype } from '../data/teaData';
 import { 
@@ -504,7 +504,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
                           <span className="text-stone-400 font-serif italic text-[10px]">{tea.nameZh}</span>
                         </div>
                         <div className="text-xs sm:text-[13px] font-bold text-stone-900 truncate mt-0.5" title={tea.nameRu}>
-                          {tea.nameRu.split('(')[0].trim()}
+                          {cleanTeaTitleForDisplay(tea.nameRu, canTeaAge(tea))}
                         </div>
                         <div className="text-[10px] text-stone-500 truncate mt-0.5">
                           {tea.origin.split(',')[0]} • Оптимум: {tea.optimalTemp}°C

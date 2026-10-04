@@ -350,10 +350,10 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
                 <tr className="border-b border-stone-200 text-stone-500 font-medium">
                   <th className="py-2 pr-2">Параметр</th>
                   <th className="py-2 px-2 text-amber-900 font-bold bg-amber-50/50 rounded-t-lg">
-                    {teaA.nameRu.split('(')[0].trim()}
+                    {cleanTeaTitleForDisplay(teaA.nameRu, canTeaAge(teaA))}
                   </th>
                   <th className="py-2 pl-2 text-sky-900 font-bold bg-sky-50/50 rounded-t-lg">
-                    {teaB.nameRu.split('(')[0].trim()}
+                    {cleanTeaTitleForDisplay(teaB.nameRu, canTeaAge(teaB))}
                   </th>
                 </tr>
               </thead>

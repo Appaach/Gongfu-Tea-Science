@@ -1850,7 +1850,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                         </div>
 
                         <div className={`text-xs sm:text-[13px] font-bold truncate ${isSelected ? 'text-white' : 'text-stone-900'}`} title={tea.nameRu}>
-                          {cleanTeaTitleForDisplay(tea.nameRu.split('(')[0].trim(), canTeaAge(tea))}
+                          {cleanTeaTitleForDisplay(tea.nameRu, canTeaAge(tea))}
                         </div>
 
                         {/* Sensory Notes Badges */}
@@ -2026,7 +2026,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                       </div>
 
                       <div className={`text-xs sm:text-[13px] font-bold truncate ${isSelected ? 'text-white' : 'text-stone-900'}`} title={tea.nameRu}>
-                        {cleanTeaTitleForDisplay(tea.nameRu.split('(')[0].trim(), canTeaAge(tea))}
+                        {cleanTeaTitleForDisplay(tea.nameRu, canTeaAge(tea))}
                       </div>
 
                       <div className="flex flex-wrap gap-1 pt-0.5">

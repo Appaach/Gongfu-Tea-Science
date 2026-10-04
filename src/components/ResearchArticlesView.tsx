@@ -334,7 +334,7 @@ export const ResearchArticlesView: React.FC = () => {
           <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 space-y-2.5 shadow-xs min-w-0">
             <h4 className="text-base font-bold text-stone-900 font-serif flex items-center space-x-2 min-w-0">
               <HeartHandshake className="w-5 h-5 text-amber-700 shrink-0" />
-              <span className="break-words">Синергия L-теанина и кофеина: Нейрохимия «Чайного состояния» (Cha Qi)</span>
+              <span className="break-words">Синергия L-теанина и кофеина: Нейрохимия «Чайного состояния» (Tea Qi)</span>
             </h4>
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed break-words">
               В отличие от кофе, где кофеин действует скачкообразно и может вызывать тремор, в чае кофеин образует устойчивые водородные комплексы с молекулами L-теанина и катехинов. L-теанин проникает через гематоэнцефалический барьер и активирует рецепторы GABA (ГАМК), повышая выработку дофамина и генерируя альфа-ритмы головного мозга (8–12 Гц). Это дает состояние спокойной фокусировки, чистоты восприятия и ясности без сосудистого спазма.

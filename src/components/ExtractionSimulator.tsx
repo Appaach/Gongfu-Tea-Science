@@ -299,7 +299,7 @@ import {
   ArrowDown,
   Star,
   FlaskConical,
-  Printer,
+  FileText,
   Bookmark,
   Calendar,
   Scale as ScaleIcon
@@ -2046,11 +2046,26 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                       isSelected ? 'border-amber-700/50 text-amber-200' : 'border-stone-100 text-stone-500'
                     }`}>
                       <span className="truncate">{tea.origin.split(',')[0]}</span>
-                      <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded font-medium ${
-                        isSelected ? 'bg-amber-900/60 text-amber-100' : 'bg-stone-100 text-stone-600'
-                      }`}>
-                        {teaEff.nameRu}
-                      </span>
+                      <div className="flex items-center space-x-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTeaChange(tea);
+                            const el = document.getElementById('brewing-parameters-section');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                            isSelected
+                              ? 'bg-amber-100 text-amber-950 hover:bg-white border border-amber-300'
+                              : 'bg-amber-800 text-white hover:bg-amber-900'
+                          }`}
+                          title="Перейти к настройке параметров заваривания"
+                        >
+                          <span>Перейти к чаю</span>
+                          <ArrowDown className="w-3.5 h-3.5 shrink-0" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -2224,10 +2239,10 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
               type="button"
               onClick={() => setIsCheatSheetOpen(true)}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 font-semibold text-xs transition-all shadow-2xs cursor-pointer"
-              title="Открыть готовую шпаргалку проливов для печати или копирования"
+              title="Открыть готовую шпаргалку проливов для сохранения в PDF или копирования"
             >
-              <Printer className="w-3.5 h-3.5 text-amber-800" />
-              <span>Скачать шпаргалку</span>
+              <FileText className="w-3.5 h-3.5 text-amber-800" />
+              <span>Шпаргалка заваривания</span>
             </button>
 
             {onOpenJournal && (
@@ -4546,8 +4561,13 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
           waterVolume={waterVolume}
           steepsCount={steepsCount}
           steepSchedule={effectiveDurations}
-          rinseSeconds={teaRinseInfo.seconds}
+          rinseSeconds={customRinseTime !== null ? customRinseTime : teaRinseInfo.seconds}
           isRinseEnabled={teaRinseInfo.required}
+          brewingMethod={brewingMethod}
+          vesselMaterial={vesselMaterial}
+          vesselUsed={selectedTea.recommendedVesselRu}
+          waterHardness={waterHardness}
+          vintageYear={selectedVintageYear}
           onClose={() => setIsCheatSheetOpen(false)}
         />
       )}

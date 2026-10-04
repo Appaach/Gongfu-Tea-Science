@@ -25,7 +25,6 @@ import {
   ChevronRight, 
   Sliders, 
   Edit3, 
-  Printer, 
   FileText, 
   Upload,
   Loader2,
@@ -721,7 +720,17 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
             return (
               <div
                 key={entry.id}
-                className="bg-white border border-stone-200 rounded-2xl p-5 shadow-xs space-y-3 hover:border-amber-300 transition-all flex flex-col justify-between"
+                role="button"
+                tabIndex={0}
+                onClick={() => setPrintingEntry(entry)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setPrintingEntry(entry);
+                  }
+                }}
+                className="bg-white border border-stone-200 hover:border-amber-400 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative select-none"
+                title="Нажмите на запись, чтобы открыть карточку дегустации и сохранить в PDF"
               >
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
@@ -736,8 +745,8 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
                           </span>
                         )}
                       </div>
-                      <h4 className="text-sm sm:text-base font-bold text-stone-900 font-serif">
-                        {entry.teaNameRu}
+                      <h4 className="text-sm sm:text-base font-bold text-stone-900 font-serif group-hover:text-amber-950 transition-colors">
+                        {cleanTeaTitleForDisplay(entry.teaNameRu, teaObj ? canTeaAge(teaObj) : false)}
                       </h4>
                       <div className="text-[10px] text-stone-400 font-mono">
                         {new Date(entry.dateIso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -757,8 +766,11 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
                       {/* Action buttons: Edit, Print, Delete */}
                       <button
                         type="button"
-                        onClick={() => handleEditEntry(entry)}
-                        className="p-1 text-stone-400 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditEntry(entry);
+                        }}
+                        className="p-1.5 text-stone-400 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
                         title="Редактировать запись"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -766,17 +778,11 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
 
                       <button
                         type="button"
-                        onClick={() => setPrintingEntry(entry)}
-                        className="p-1 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
-                        title="Печать карточки"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteEntry(entry.id)}
-                        className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteEntry(entry.id);
+                        }}
+                        className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                         title="Удалить запись"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -873,11 +879,17 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
                   )}
                 </div>
 
-                {onSelectTeaToBrew && (
-                  <div className="pt-2 border-t border-stone-100 flex justify-end">
+                <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-stone-400 group-hover:text-amber-800 transition-colors font-medium text-[11px]">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Открыть карточку (PDF)</span>
+                  </div>
+
+                  {onSelectTeaToBrew && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         const targetTea: TeaVariety = teaObj || {
                           id: entry.teaId,
                           nameRu: entry.teaNameRu,
@@ -920,13 +932,13 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
 
                         onSelectTeaToBrew(targetTea, brewParams);
                       }}
-                      className="text-xs font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1 cursor-pointer bg-stone-50 hover:bg-amber-50 px-2.5 py-1 rounded-lg border border-stone-200 hover:border-amber-300 transition-colors"
                     >
                       <span>Заварить в симуляторе</span>
                       <Sparkles className="w-3 h-3 text-amber-600" />
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}

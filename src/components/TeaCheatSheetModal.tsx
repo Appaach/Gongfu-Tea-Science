@@ -123,7 +123,7 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
 
     try {
       const filename = `шпаргалка_${tea.nameRu.replace(/[^\w\u0400-\u04FF]/gi, '_')}`;
-      const title = `Шпаргалка заваривания: ${tea.nameRu}`;
+      const title = `Шпаргалка: ${tea.nameRu}`;
       await exportElementToPdf(sheetRef.current, filename, { title });
       setExportNotice('PDF сформирован! Выберите, куда сохранить файл.');
       setTimeout(() => setExportNotice(null), 4500);
@@ -149,21 +149,19 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
       ? `\n🧪 СОСТАВ КУПАЖА:\n` + tea.blendComponents.map(c => `• ${c.teaNameRu}: ${Math.round(c.ratioFraction * 100)}% (${c.baseWeightG}г)${c.vintageYear ? ` [${c.vintageYear}г.]` : ''}`).join('\n') + '\n'
       : '';
 
-    const text = `🍵 ШПАРГАЛКА ЗАВАРИВАНИЯ: ${tea.nameRu} ${tea.nameZh ? `(${tea.nameZh})` : ''}
-${transcriptionLine}📍 Регион: ${tea.origin}
-• Категория: ${tea.typeNameRu}
-• Степень ферментации: ${tea.oxidationLevel}
-${shapeLine}${vintageLine}${blendSection}
-📊 АКТУАЛЬНЫЕ ПАРАМЕТРЫ ЗАВАРИВАНИЯ:
+    const text = `🍵 ШПАРГАЛКА: ${tea.nameRu} ${tea.nameZh ? `(${tea.nameZh})` : ''}
+${transcriptionLine}• Категория: ${tea.typeNameRu} • ${tea.origin}
+• Ферментация: ${tea.oxidationLevel}${shapeLine ? ` • ${shapeLine.replace('• ', '')}` : ''}${vintageLine ? ` • ${vintageLine.replace('• ', '')}` : ''}${blendSection}
+ПАРАМЕТРЫ ЗАВАРИВАНИЯ:
 • Метод: ${activeMethodName}
-• Температура воды: ${waterTemp}°C
-• Пропорция: ${teaMass}г на ${waterVolume}мл (гидромодуль 1:${ratio})
-• Посуда: ${activeVesselName} (${activeVesselMatName})
+• Температура: ${waterTemp}°C
+• Навеска / Объём: ${teaMass}г на ${waterVolume}мл (1:${ratio})
+• Посуда: ${activeVesselName}
 • Вода: ${activeWaterName}
-${rinseLine}${rinseNoteLine}• Количество проливов: ${steepsCount}
+${rinseLine}${rinseNoteLine}• Проливов: ${steepsCount}
 
-⏱️ ПОШАГОВЫЙ ТАЙМИНГ ПРОЛИВОВ:
-${steepSchedule.map((sec, idx) => `Чашка #${idx + 1}: ${sec} сек`).join('\n')}
+⏱️ ВРЕМЯ ПРОЛИВОВ:
+${steepSchedule.map((sec, idx) => `#${idx + 1}: ${sec}с`).join(', ')}
 
 ✨ Вкусы: ${(tea.keySensoryNotes || []).join(', ')}`;
 
@@ -202,7 +200,7 @@ ${steepSchedule.map((sec, idx) => `Чашка #${idx + 1}: ${sec} сек`).join(
           <div className="flex items-center space-x-2">
             <Layers className="w-4 h-4 text-amber-800" />
             <h3 className="text-xs sm:text-sm font-bold text-stone-900">
-              Шпаргалка заваривания для чабани
+              Шпаргалка
             </h3>
           </div>
 
@@ -387,26 +385,20 @@ ${steepSchedule.map((sec, idx) => `Чашка #${idx + 1}: ${sec} сек`).join(
             <div className="space-y-1">
               <div className="font-bold text-stone-900 flex items-center gap-1.5">
                 <Coffee className="w-3.5 h-3.5 text-amber-800 shrink-0" />
-                <span>Посуда и материал:</span>
+                <span>Посуда:</span>
               </div>
               <p className="text-stone-800 font-medium leading-snug text-[11px]">
                 {activeVesselName}
-              </p>
-              <p className="text-stone-500 text-[10px]">
-                {activeVesselMatName}
               </p>
             </div>
 
             <div className="space-y-1">
               <div className="font-bold text-stone-900 flex items-center gap-1.5">
                 <Droplet className="w-3.5 h-3.5 text-sky-700 shrink-0" />
-                <span>Вода для заваривания:</span>
+                <span>Вода (минерализация):</span>
               </div>
               <p className="text-stone-800 font-medium leading-snug text-[11px]">
                 {activeWaterName}
-              </p>
-              <p className="text-stone-500 text-[10px]">
-                Оптимальный pH 6.2–6.8
               </p>
             </div>
 
@@ -418,7 +410,7 @@ ${steepSchedule.map((sec, idx) => `Чашка #${idx + 1}: ${sec} сек`).join(
               <p className="text-stone-800 font-medium leading-snug text-[11px]">
                 {isRinseEnabled 
                   ? `Промыв ${rinseSeconds} сек (слить)` 
-                  : 'Без промывки листа (прямой первый пролив)'}
+                  : 'Без промывки листа'}
               </p>
               {tea.rinseNoteRu && (
                 <p className="text-[10px] text-amber-900 italic">
@@ -491,7 +483,7 @@ ${steepSchedule.map((sec, idx) => `Чашка #${idx + 1}: ${sec} сек`).join(
           {/* Footer Note */}
           <div className="pt-2 border-t border-stone-200 flex items-center justify-between text-[10px] text-stone-400">
             <span>Параметры рассчитаны в Gongfu Cha Lab</span>
-            <span>Шпаргалка для чабани</span>
+            <span>Шпаргалка</span>
           </div>
         </div>
       </div>

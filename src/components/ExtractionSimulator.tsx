@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, memo, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, memo, useRef, useDeferredValue } from 'react';
 import { 
   TEA_VARIETIES, 
   GENERIC_TEA_ARCHETYPES, 
@@ -426,16 +426,19 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
   };
 
   const [favoritesSearchQuery, setFavoritesSearchQuery] = useState<string>('');
+  const deferredFavoritesSearchQuery = useDeferredValue(favoritesSearchQuery);
   const [favoritesTypeFilter, setFavoritesTypeFilter] = useState<string>('all');
 
   // Search and Filter State: strictly isolated by tab
   // 1. Popular Teas search & category filter + integrated sensory flavor search
   const [popularSearchQuery, setPopularSearchQuery] = useState<string>('');
+  const deferredPopularSearchQuery = useDeferredValue(popularSearchQuery);
   const [popularTypeFilter, setPopularTypeFilter] = useState<string>('all');
   const [showFlavorInPopular, setShowFlavorInPopular] = useState<boolean>(false);
 
   // Flavor Search within Popular Teas (Sensory notes & bouquet)
   const [flavorSearchQuery, setFlavorSearchQuery] = useState<string>('');
+  const deferredFlavorSearchQuery = useDeferredValue(flavorSearchQuery);
   const [selectedFlavorGroupId, setSelectedFlavorGroupId] = useState<string | null>(null);
   const [selectedFlavorTag, setSelectedFlavorTag] = useState<string | null>(null);
 
@@ -513,7 +516,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
 
   // Filtered popular teas: seamlessly combines name search, type filter, effect filter AND flavor bouquet notes!
   const filteredPopularTeas = useMemo(() => {
-    const activeSensoryQuery = (selectedFlavorTag || flavorSearchQuery || '').trim();
+    const activeSensoryQuery = (selectedFlavorTag || deferredFlavorSearchQuery || '').trim();
 
     return TEA_VARIETIES.map((tea) => {
       if (popularTypeFilter !== 'all') {
@@ -545,12 +548,12 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
         if (!matches) return null;
         matchedNotes = sensoryMatches;
       }
-      if (popularSearchQuery.trim()) {
-        if (!matchTeaSearch(tea, popularSearchQuery)) return null;
+      if (deferredPopularSearchQuery.trim()) {
+        if (!matchTeaSearch(tea, deferredPopularSearchQuery)) return null;
       }
       return { tea, matchedNotes };
     }).filter((item): item is { tea: TeaVariety; matchedNotes: string[] } => item !== null);
-  }, [popularSearchQuery, popularTypeFilter, selectedEffectFilter, selectedFlavorGroupId, selectedFlavorTag, flavorSearchQuery]);
+  }, [deferredPopularSearchQuery, popularTypeFilter, selectedEffectFilter, selectedFlavorGroupId, selectedFlavorTag, deferredFlavorSearchQuery]);
 
   // Filtered favorites
   const filteredFavoriteTeas = useMemo(() => {
@@ -573,19 +576,19 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
           const eff = getTeaEffect(tea);
           if (eff.id !== selectedEffectFilter) return false;
         }
-        return matchTeaSearch(tea, favoritesSearchQuery);
+        return matchTeaSearch(tea, deferredFavoritesSearchQuery);
       });
-  }, [favoriteIds, customBlendTea, favoritesSearchQuery, favoritesTypeFilter, selectedEffectFilter]);
+  }, [favoriteIds, customBlendTea, deferredFavoritesSearchQuery, favoritesTypeFilter, selectedEffectFilter]);
 
   // Progressive rendering slices:
   // When active text search or flavor query is typed, show all matching results immediately.
   // When browsing all 483+ teas, show smooth chunked rendering to prevent DOM bloat.
   const visiblePopularTeas = useMemo(() => {
-    if (popularSearchQuery.trim() || flavorSearchQuery.trim() || selectedFlavorTag) {
+    if (deferredPopularSearchQuery.trim() || deferredFlavorSearchQuery.trim() || selectedFlavorTag) {
       return filteredPopularTeas;
     }
     return filteredPopularTeas.slice(0, popularDisplayLimit);
-  }, [filteredPopularTeas, popularSearchQuery, flavorSearchQuery, selectedFlavorTag, popularDisplayLimit]);
+  }, [filteredPopularTeas, deferredPopularSearchQuery, deferredFlavorSearchQuery, selectedFlavorTag, popularDisplayLimit]);
 
   // If a tea is selected that is beyond the current limit, automatically expand to ensure visibility
   useEffect(() => {
@@ -2242,7 +2245,7 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
               title="Открыть готовую шпаргалку проливов для сохранения в PDF или копирования"
             >
               <FileText className="w-3.5 h-3.5 text-amber-800" />
-              <span>Шпаргалка заваривания</span>
+              <span>Шпаргалка</span>
             </button>
 
             {onOpenJournal && (

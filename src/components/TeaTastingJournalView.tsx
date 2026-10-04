@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useDeferredValue } from 'react';
 import { 
   TastingJournalEntry, 
   TeaVariety, 
@@ -92,11 +92,13 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [ratingFilter, setRatingFilter] = useState<number>(0);
 
   // Tea Picker Sub-Modal State
   const [isTeaPickerOpen, setIsTeaPickerOpen] = useState<boolean>(false);
   const [pickerSearchQuery, setPickerSearchQuery] = useState<string>('');
+  const deferredPickerSearchQuery = useDeferredValue(pickerSearchQuery);
   const [pickerTypeFilter, setPickerTypeFilter] = useState<string>('all');
 
   // Form State
@@ -192,9 +194,9 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
           return false;
         }
       }
-      return matchTeaSearch(tea, pickerSearchQuery);
+      return matchTeaSearch(tea, deferredPickerSearchQuery);
     });
-  }, [combinedTeaList, pickerSearchQuery, pickerTypeFilter]);
+  }, [combinedTeaList, deferredPickerSearchQuery, pickerTypeFilter]);
 
   const handlePickTea = (tea: TeaVariety) => {
     setSelectedTea(tea);
@@ -521,8 +523,8 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
       if (ratingFilter > 0 && entry.rating < ratingFilter) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (deferredSearchQuery.trim()) {
+        const q = deferredSearchQuery.toLowerCase();
         const matchName = entry.teaNameRu.toLowerCase().includes(q);
         const matchNotes = (entry.userNotes || '').toLowerCase().includes(q);
         const matchTags = (entry.tags || []).some((t) => t.toLowerCase().includes(q));
@@ -530,7 +532,7 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
       }
       return true;
     });
-  }, [entries, ratingFilter, searchQuery]);
+  }, [entries, ratingFilter, deferredSearchQuery]);
 
   const stats = useMemo(() => {
     if (entries.length === 0) return null;

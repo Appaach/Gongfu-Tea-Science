@@ -143,6 +143,72 @@ export function matchTokenAgainstWord(token: string, word: string): boolean {
   return false;
 }
 
+interface PrecomputedSearchIndex {
+  searchFieldsJoined: string;
+  phoneticFieldsJoined: string;
+  words: string[];
+  phoneticWords: string[];
+  joinedAliases: string[];
+  phoneticAliases: string[];
+  nameZh: string;
+}
+
+const teaIndexCache = new WeakMap<TeaVariety, PrecomputedSearchIndex>();
+
+function getTeaSearchIndex(tea: TeaVariety): PrecomputedSearchIndex {
+  let idx = teaIndexCache.get(tea);
+  if (idx) return idx;
+
+  const searchFields: string[] = [
+    tea.nameRu,
+    tea.transcriptionRu || '',
+    tea.nameZh || '',
+    tea.namePinyin || '',
+    tea.typeNameRu,
+    tea.origin,
+    tea.cultivar,
+    ...(tea.generalExamplesRu || []),
+    tea.id
+  ];
+
+  const rawJoined = searchFields.join(' ');
+  const normJoined = normalizeTeaText(rawJoined);
+  const phonJoined = phoneticVowelReduce(rawJoined);
+
+  const rawWords = normJoined
+    .split(/[\s,./\\_\-+;:()«»"'\\[\]]+/)
+    .map(w => cleanTeaChars(w))
+    .filter(w => w.length > 0);
+  const words = Array.from(new Set(rawWords));
+  const phoneticWords = words.map(w => phoneticVowelReduce(w));
+
+  const rawAliases = [
+    ...((tea.transcriptionRu || '').split('/')),
+    tea.nameRu,
+    tea.nameZh || '',
+    tea.namePinyin || '',
+    tea.id,
+    ...(tea.generalExamplesRu || [])
+  ]
+    .map(a => cleanTeaChars(a))
+    .filter(Boolean);
+  const joinedAliases = Array.from(new Set(rawAliases));
+  const phoneticAliases = joinedAliases.map(a => phoneticVowelReduce(a));
+
+  idx = {
+    searchFieldsJoined: normJoined,
+    phoneticFieldsJoined: phonJoined,
+    words,
+    phoneticWords,
+    joinedAliases,
+    phoneticAliases,
+    nameZh: tea.nameZh || ''
+  };
+
+  teaIndexCache.set(tea, idx);
+  return idx;
+}
+
 /**
  * Checks whether a given tea matches the search query.
  *
@@ -163,65 +229,34 @@ export function matchTeaSearch(tea: TeaVariety, query: string): boolean {
   const normQ = normalizeTeaText(rawQ);
   if (!normQ) return true;
 
-  // Split query into individual search tokens
   const qTokens = normQ.split(/[\s,./\\_\-+;:()«»"'\\[\]]+/).filter(t => t.length > 0);
   if (qTokens.length === 0) return true;
 
-  // Entire query collapsed with spaces and non-alphanumerics removed
+  const index = getTeaSearchIndex(tea);
+
+  // Fast direct substring search across joined fields
+  if (qTokens.length === 1 && index.searchFieldsJoined.includes(normQ)) {
+    return true;
+  }
+
   const compactQuery = cleanTeaChars(rawQ);
   const phonCompactQuery = phoneticVowelReduce(rawQ);
 
-  // Searchable text sources
-  const searchFields: string[] = [
-    tea.nameRu,
-    tea.transcriptionRu || '',
-    tea.nameZh || '',
-    tea.namePinyin || '',
-    tea.typeNameRu,
-    tea.origin,
-    tea.cultivar,
-    ...(tea.generalExamplesRu || []),
-    tea.id
-  ];
-
-  // Tokenize tea text into word list for word-prefix and exact-word matching
-  const words: string[] = normalizeTeaText(searchFields.join(' '))
-    .split(/[\s,./\\_\-+;:()«»"'\\[\]]+/)
-    .filter(Boolean);
-
-  // Extract distinct joined aliases for Chinese compound names
-  const joinedAliases: string[] = [
-    ...((tea.transcriptionRu || '').split('/')),
-    tea.nameRu,
-    tea.nameZh || '',
-    tea.namePinyin || '',
-    tea.id,
-    ...(tea.generalExamplesRu || [])
-  ]
-    .map(a => cleanTeaChars(a))
-    .filter(Boolean);
-
   // 1. FAST-PATH: Joined query matching (for joined queries like "дахунпао", "шупуэр", "тегуаньинь", "байхаоиньчжэнь")
   if (compactQuery.length >= 4) {
-    const matchesJoined = joinedAliases.some(alias => {
-      // Substring match
+    for (let i = 0; i < index.joinedAliases.length; i++) {
+      const alias = index.joinedAliases[i];
       if (alias.includes(compactQuery)) return true;
 
-      // Phonetic reduced match
-      const phonAlias = phoneticVowelReduce(alias);
+      const phonAlias = index.phoneticAliases[i];
       if (phonAlias.includes(phonCompactQuery)) return true;
 
-      // Damerau-Levenshtein against joined alias
       const maxDist = compactQuery.length >= 8 ? 2 : 1;
       if (Math.abs(alias.length - compactQuery.length) <= 2) {
         if (damerauLevenshtein(compactQuery, alias) <= maxDist) return true;
         if (damerauLevenshtein(phonCompactQuery, phonAlias) <= maxDist) return true;
       }
-
-      return false;
-    });
-
-    if (matchesJoined) return true;
+    }
   }
 
   // 2. TOKEN-BY-TOKEN MATCHING: Every token in the user's query must match at least one element of the tea
@@ -229,21 +264,28 @@ export function matchTeaSearch(tea: TeaVariety, query: string): boolean {
     const cleanTok = cleanTeaChars(tok);
     if (!cleanTok) return true;
 
+    // Fast check: token contained directly in joined fields
+    if (cleanTok.length >= 3 && index.searchFieldsJoined.includes(cleanTok)) {
+      return true;
+    }
+
     // A. Chinese Hanzi characters match
     if (/[\u4e00-\u9fa5]/.test(tok)) {
-      if ((tea.nameZh || '').includes(tok)) return true;
+      if (index.nameZh.includes(tok)) return true;
     }
 
     // B. Word-level fuzzy match (handles typos, wrong vowels, transpositions, prefixes)
-    const matchesWord = words.some(w => matchTokenAgainstWord(cleanTok, w));
-    if (matchesWord) return true;
+    for (let i = 0; i < index.words.length; i++) {
+      if (matchTokenAgainstWord(cleanTok, index.words[i])) return true;
+    }
 
     // C. Compacted alias match for Chinese compound transliterations
-    const matchesAlias = joinedAliases.some(alias => {
+    for (let i = 0; i < index.joinedAliases.length; i++) {
+      const alias = index.joinedAliases[i];
       if (alias === cleanTok || alias.startsWith(cleanTok)) return true;
       if (cleanTok.length >= 4 && alias.includes(cleanTok)) return true;
 
-      const phonAlias = phoneticVowelReduce(alias);
+      const phonAlias = index.phoneticAliases[i];
       const phonTok = phoneticVowelReduce(cleanTok);
       if (phonAlias.includes(phonTok)) return true;
 
@@ -251,10 +293,7 @@ export function matchTeaSearch(tea: TeaVariety, query: string): boolean {
       if (cleanTok.length >= 5 && damerauLevenshtein(cleanTok, alias.slice(0, cleanTok.length)) <= maxDist) {
         return true;
       }
-
-      return false;
-    });
-    if (matchesAlias) return true;
+    }
 
     return false;
   });

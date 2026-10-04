@@ -12096,4 +12096,1521 @@ export const EXTRA_TEAS: TeaVariety[] = [
   "rinseSeconds": 4,
   "rinseNoteRu": "Короткий промыв 4с немедленно пробуждает яркие эвкалиптовые ноты Хун Юй."
 }
+,
+{
+  "id": "tianzun-gongya",
+  "nameRu": "Тяньцзунь Гунъя (Подносимые почки с пика Тяньцзунь)",
+  "transcriptionRu": "Тяньцзунь Гунъя / Тянь Цзунь Гун Я",
+  "nameZh": "天尊贡芽",
+  "namePinyin": "Tiān Zūn Gòng Yá",
+  "type": "green",
+  "typeNameRu": "Зелёный чай",
+  "origin": "Тунлу, Ханчжоу, Чжэцзян",
+  "cultivar": "Тунлу Сяоечжун",
+  "oxidationLevel": "0% (неферментированный)",
+  "leafMorphology": "needle",
+  "optimalTemp": 82,
+  "tempRange": [
+    78,
+    85
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Стеклянный стакан или тонкостенная фарфоровая гайвань",
+  "keySensoryNotes": [
+    "Свежий бамбук",
+    "Молодой горошек",
+    "Белые цветы",
+    "Умами"
+  ],
+  "scientificDescription": "Ранневесенние нежные почки с высоким содержанием свободного L-теанина (до 4.8%). Требует мягкого температурного профиля во избежание термической денатурации белков.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "lanxi-maofeng",
+  "nameRu": "Ланьси Маофэн (Ворсистые пики из Ланьси)",
+  "transcriptionRu": "Ланьси Маофэн / Лань Си Мао Фэн",
+  "nameZh": "兰溪毛峰",
+  "namePinyin": "Lán Xī Máo Fēng",
+  "type": "green",
+  "typeNameRu": "Зелёный чай (ворсистый пик)",
+  "origin": "Ланьси, Цзиньхуа, Чжэцзян",
+  "cultivar": "Ланьси Цзюлун Сяое",
+  "oxidationLevel": "0% (прожарка в воке)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 82,
+  "tempRange": [
+    78,
+    85
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 100–120 мл",
+  "keySensoryNotes": [
+    "Каштан",
+    "Орхидея",
+    "Свежая трава",
+    "Сладкое послевкусие"
+  ],
+  "scientificDescription": "Богат трихомами (ворсинками) и летучими терпеновыми спиртами. Отличается быстрым высвобождением ароматических веществ на 1–2 проливах.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "panan-yunfeng",
+  "nameRu": "Паньань Юньфэн (Облачный пик из Паньаня)",
+  "transcriptionRu": "Паньань Юньфэн / Пань Ань Юнь Фэн",
+  "nameZh": "磐安云峰",
+  "namePinyin": "Pán Ān Yún Fēng",
+  "type": "green",
+  "typeNameRu": "Зелёный чай",
+  "origin": "Паньань, Цзиньхуа, Чжэцзян",
+  "cultivar": "Паньань Цюньтичжун",
+  "oxidationLevel": "0% (фиксация паром и воком)",
+  "leafMorphology": "flat",
+  "optimalTemp": 83,
+  "tempRange": [
+    80,
+    86
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань из белого фарфора",
+  "keySensoryNotes": [
+    "Жареный орех",
+    "Полевые травы",
+    "Зелёное яблоко",
+    "Минеральность"
+  ],
+  "scientificDescription": "Высокогорное сырьё (свыше 800 м) накапливает повышенную концентрацию полисахаридов и катехинов. Чистый настой с выраженным «Хуэй Гань».",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "wuzhou-juyan",
+  "nameRu": "Учжоу Цзюйянь (Чай с утёса Цзюйянь)",
+  "transcriptionRu": "Учжоу Цзюйянь / У Чжоу Цзюй Янь",
+  "nameZh": "婺州举岩",
+  "namePinyin": "Wù Zhōu Jǔ Yán",
+  "type": "green",
+  "typeNameRu": "Зелёный чай (утёсный)",
+  "origin": "Горы Цзиньхуашань, Чжэцзян",
+  "cultivar": "Цзюйянь Сяоечжун",
+  "oxidationLevel": "0% (исторический чай)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 83,
+  "tempRange": [
+    78,
+    86
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 110 мл",
+  "keySensoryNotes": [
+    "Утёсная минеральность",
+    "Орхидея",
+    "Свежая хвоя",
+    "Жареные семечки"
+  ],
+  "scientificDescription": "Исторический сорт со времён династии Тан. Произрастает на каменистых почвах, что формирует уникальный минерально-аминокислотный профиль.",
+  "recommendedSteeps": 7,
+  "categoryGroup": "specific"
+},
+{
+  "id": "wangfu-yinhao",
+  "nameRu": "Ванфу Иньхао (Серебряные ворсинки из Ванфу)",
+  "transcriptionRu": "Ванфу Иньхао / Ван Фу Инь Хао",
+  "nameZh": "望府银毫",
+  "namePinyin": "Wàng Fǔ Yín Háo",
+  "type": "green",
+  "typeNameRu": "Зелёный чай (почечный)",
+  "origin": "Нинхай, Нинбо, Чжэцзян",
+  "cultivar": "Ванфу Иньхао Хаочжун",
+  "oxidationLevel": "0% (ранневесенний сбор)",
+  "leafMorphology": "needle",
+  "optimalTemp": 80,
+  "tempRange": [
+    75,
+    84
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Стеклянная колба или тонкий фарфор",
+  "keySensoryNotes": [
+    "Цветочный нектар",
+    "Сладкий горошек",
+    "Белый клевер",
+    "Нежное умами"
+  ],
+  "scientificDescription": "Высокая плотность трихом создаёт гидрофобную пленку при заваривании; требует мягкой воды для полноценного раскрытия почки.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "wuliqing",
+  "nameRu": "Улицин (Зелень в тумане)",
+  "transcriptionRu": "Улицин / У Ли Цин",
+  "nameZh": "雾里青",
+  "namePinyin": "Wù Lǐ Qīng",
+  "type": "green",
+  "typeNameRu": "Зелёный чай",
+  "origin": "Шитаи, Чичжоу, Аньхой",
+  "cultivar": "Шитаи Сяоечжун",
+  "oxidationLevel": "0% (туманные горы)",
+  "leafMorphology": "needle",
+  "optimalTemp": 82,
+  "tempRange": [
+    78,
+    85
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Высокий стеклянный стакан или гайвань",
+  "keySensoryNotes": [
+    "Туманная свежесть",
+    "Ландыш",
+    "Зеленый бамбук",
+    "Родниковая сладость"
+  ],
+  "scientificDescription": "Исторический императорский сорт из экологически чистого селеноносного региона. Высокий баланс калий/магний стимулирует свежесть вкуса.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "dafang-cha",
+  "nameRu": "Дафан Ча (Большой Квадрат)",
+  "transcriptionRu": "Дафан Ча / Да Фан Ча (Дингу Дафан)",
+  "nameZh": "大方茶",
+  "namePinyin": "Dà Fāng Chá",
+  "type": "green",
+  "typeNameRu": "Зелёный чай (плоский лист)",
+  "origin": "Шэсянь, Хуаншань, Аньхой",
+  "cultivar": "Хуаншань Дае",
+  "oxidationLevel": "0% (прожарка с маслом чайной семечки)",
+  "leafMorphology": "flat",
+  "optimalTemp": 85,
+  "tempRange": [
+    80,
+    88
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 120 мл",
+  "keySensoryNotes": [
+    "Жареный каштан",
+    "Кунжут",
+    "Душистый перец",
+    "Густое умами"
+  ],
+  "scientificDescription": "Основа для знаменитого Дингу Дафан. Лист прессуется на сковороде, образуя плоскую форму и высокую концентрацию пиразинов.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "tunlu",
+  "nameRu": "Тунь Люй (Туньсийский зелёный чай)",
+  "transcriptionRu": "Тунь Люй / Туньси Люй Ча",
+  "nameZh": "屯绿",
+  "namePinyin": "Tún Lǜ",
+  "type": "green",
+  "typeNameRu": "Зелёный чай (жареный)",
+  "origin": "Хуаншань / Туньси, Аньхой",
+  "cultivar": "Туньси Цюньтичжун",
+  "oxidationLevel": "0% (традиционная жарка Чаоцин)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 84,
+  "tempRange": [
+    80,
+    88
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань или фарфоровый чайник",
+  "keySensoryNotes": [
+    "Жареная зелень",
+    "Миндаль",
+    "Свежий шпинат",
+    "Плотное тело"
+  ],
+  "scientificDescription": "Классический представитель жареных зелёных чаёв Китая (Чаоцин). Имеет высокую стойкость к экстракции и ярко выраженный аромат прожарки.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "zhenmei",
+  "nameRu": "Чжэньмэй (Драгоценные Брови / Chunmee)",
+  "transcriptionRu": "Чжэньмэй / Чжэнь Мэй (Чун Ми)",
+  "nameZh": "珍眉",
+  "namePinyin": "Zhēn Méi",
+  "type": "green",
+  "typeNameRu": "Зелёный чай (изогнутый)",
+  "origin": "Аньхой / Чжэцзян",
+  "cultivar": "Чжэцзян Сяое",
+  "oxidationLevel": "0% (дугообразная скрутка)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 82,
+  "tempRange": [
+    78,
+    86
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань или глиняный чайник для зелёного чая",
+  "keySensoryNotes": [
+    "Слива",
+    "Дымная нота",
+    "Терпкая свежесть",
+    "Лимонная цедра"
+  ],
+  "scientificDescription": "Форма тонких бровей достигается особой техникой прокатки. Быстрая диффузия танинов требует коротких экспозиций пролива (5–10 сек).",
+  "recommendedSteeps": 5,
+  "categoryGroup": "specific"
+},
+{
+  "id": "gongxi",
+  "nameRu": "Гунси (Подносимый блеск / Gunpowder)",
+  "transcriptionRu": "Гунси / Гун Си",
+  "nameZh": "贡熙",
+  "namePinyin": "Gòng Xī",
+  "type": "green",
+  "typeNameRu": "Зелёный чай (сферический)",
+  "origin": "Аньхой / Чжэцзян",
+  "cultivar": "Аньхой Цюньтичжун",
+  "oxidationLevel": "0% (шарообразная скрутка)",
+  "leafMorphology": "tight_ball",
+  "optimalTemp": 85,
+  "tempRange": [
+    80,
+    88
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 120 мл",
+  "keySensoryNotes": [
+    "Жареный лист",
+    "Сухое сено",
+    "Цитрусовая свежесть",
+    "Терпкость"
+  ],
+  "scientificDescription": "Плотные шарики медленнее отдают экстракт в 1-м проливе, раскрывая максимум фенольных соединений к 3–4 проливам.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "fengmei",
+  "nameRu": "Фэнмэй (Брови Феникса)",
+  "transcriptionRu": "Фэнмэй / Фэн Мэй",
+  "nameZh": "凤眉",
+  "namePinyin": "Fèng Méi",
+  "type": "green",
+  "typeNameRu": "Зелёный чай",
+  "origin": "Аньхой / Чжэцзян",
+  "cultivar": "Хуаншань Сяое",
+  "oxidationLevel": "0%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 82,
+  "tempRange": [
+    78,
+    85
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань из тонкого фарфора",
+  "keySensoryNotes": [
+    "Полевые цветы",
+    "Свежая трава",
+    "Сладкий нектар",
+    "Орех"
+  ],
+  "scientificDescription": "Отборный сорт категории бровей (Мэйча), содержащий повышенное количество верхушечных почек и флавоноидов.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "xiumei-green",
+  "nameRu": "Сюмэй (Изящные Брови)",
+  "transcriptionRu": "Сюмэй / Сю Мэй (Зелёный)",
+  "nameZh": "秀眉",
+  "namePinyin": "Xiù Méi",
+  "type": "green",
+  "typeNameRu": "Зелёный чай",
+  "origin": "Аньхой",
+  "cultivar": "Аньхой Сяое",
+  "oxidationLevel": "0%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 82,
+  "tempRange": [
+    78,
+    85
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань 110 мл",
+  "keySensoryNotes": [
+    "Зеленое яблоко",
+    "Цветочный мед",
+    "Свежий лист",
+    "Легкая терпкость"
+  ],
+  "scientificDescription": "Тонкий лист со сбалансированным содержанием теанина и полифенолов, дающий прозрачный нефритовый настой.",
+  "recommendedSteeps": 5,
+  "categoryGroup": "specific"
+},
+{
+  "id": "bai-yuxiang",
+  "nameRu": "Бай Юйсян (Нефритовый аромат)",
+  "transcriptionRu": "Бай Юйсян / Бай Юй Сян",
+  "nameZh": "白御香",
+  "namePinyin": "Bái Yù Xiāng",
+  "type": "white",
+  "typeNameRu": "Белый чай (селекционный)",
+  "origin": "Гуандун",
+  "cultivar": "Гуандун Байча #1 (2025)",
+  "oxidationLevel": "5-10% (естественное завяливание)",
+  "leafMorphology": "needle",
+  "optimalTemp": 88,
+  "tempRange": [
+    82,
+    92
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 120 мл",
+  "keySensoryNotes": [
+    "Нефритовая орхидея",
+    "Белый персик",
+    "Медовая роса",
+    "Свежий миндаль"
+  ],
+  "scientificDescription": "Инновационный сорт белого чая селекции 2025 года. Сочетает густой цветочный аромат даньцунов с высоким пулом свободных аминокислот белого чая.",
+  "recommendedSteeps": 8,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "bai-yuexiang",
+  "nameRu": "Бай Юэсян (Лунный аромат)",
+  "transcriptionRu": "Бай Юэсян / Бай Юэ Сян",
+  "nameZh": "白月香",
+  "namePinyin": "Bái Yuè Xiāng",
+  "type": "white",
+  "typeNameRu": "Белый чай",
+  "origin": "Гуандун",
+  "cultivar": "Бай Юэ Сян Селекция (2023)",
+  "oxidationLevel": "8-12%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 88,
+  "tempRange": [
+    82,
+    93
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань",
+  "keySensoryNotes": [
+    "Жасмин",
+    "Мускат",
+    "Сладкий улуновый оттенок",
+    "Луговой мед"
+  ],
+  "scientificDescription": "Современный культивар белого чая с выраженным терпеновым профилем (линалоол, гераниол), полученный методом медленного теневого завяливания.",
+  "recommendedSteeps": 8,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "baiyun-0492",
+  "nameRu": "Байюнь 0492 (Байюнь Тэцзао)",
+  "transcriptionRu": "Байюнь 0492 / Бай Юнь Тэ Цзао",
+  "nameZh": "白云0492",
+  "namePinyin": "Bái Yún 0492",
+  "type": "white",
+  "typeNameRu": "Белый чай (раннеспелый культивар)",
+  "origin": "Фудин, Фуцзянь",
+  "cultivar": "Байюнь 0492",
+  "oxidationLevel": "5-10%",
+  "leafMorphology": "needle",
+  "optimalTemp": 86,
+  "tempRange": [
+    80,
+    92
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань 120 мл из тонкого фарфора",
+  "keySensoryNotes": [
+    "Березовый сок",
+    "Сладкий клевер",
+    "Белый пион",
+    "Ваниль"
+  ],
+  "scientificDescription": "Новый сверхранний культивар из Фудина. Содержит рекордно высокую долю L-теанина (до 5.5%), обеспечивая мягкую сладость без вяжущих тонов.",
+  "recommendedSteeps": 8,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "jinzhai-baiye",
+  "nameRu": "Цзиньчжай Байе (Белый лист из Цзиньчжая)",
+  "transcriptionRu": "Цзиньчжай Байе / Цзинь Чжай Бай Е",
+  "nameZh": "金寨白叶",
+  "namePinyin": "Jīn Zhài Bái Yè",
+  "type": "white",
+  "typeNameRu": "Белый чай (высокогорный)",
+  "origin": "Цзиньчжай, Луань, Аньхой",
+  "cultivar": "Цзиньчжай Байечжун",
+  "oxidationLevel": "10-15%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 90,
+  "tempRange": [
+    85,
+    95
+  ],
+  "defaultMass": 5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань или чайник из исинской глины",
+  "keySensoryNotes": [
+    "Сушеные яблоки",
+    "Медовые соты",
+    "Осенняя листва",
+    "Финик унаби"
+  ],
+  "scientificDescription": "Аньхойский высокогорный белый чай из гор Дабешань. По содержанию растворимых полисахаридов близок к выдержанному фудинскому Шоу Мэй.",
+  "recommendedSteeps": 8,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "yuanan-huangcha",
+  "nameRu": "Юаньань Хуанча (Юаньаньский жёлтый чай)",
+  "transcriptionRu": "Юаньань Хуанча / Юаньань Луюань",
+  "nameZh": "远安黄茶",
+  "namePinyin": "Yuǎn Ān Huáng Chá",
+  "type": "yellow",
+  "typeNameRu": "Жёлтый чай (Луюань)",
+  "origin": "Юаньань, Ичан, Хубэй",
+  "cultivar": "Луюань Сяоечжун",
+  "oxidationLevel": "10-15% (томление Мэньхуан)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 85,
+  "tempRange": [
+    80,
+    88
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 110 мл",
+  "keySensoryNotes": [
+    "Кукурузные рыльца",
+    "Печеный каштан",
+    "Золотистый мед",
+    "Бархатистость"
+  ],
+  "scientificDescription": "Знаменитый исторический сорт с процедурой влажного томления Мэньхуан. Хлорофилл трансформируется в желтые пигменты, создавая обволакивающее тело.",
+  "recommendedSteeps": 7,
+  "categoryGroup": "specific"
+},
+{
+  "id": "fangxian-huangcha",
+  "nameRu": "Фансянь Хуанча (Жёлтый чай из Фансяня)",
+  "transcriptionRu": "Фансянь Хуанча / Фансянь Хуан Ча",
+  "nameZh": "房县黄茶",
+  "namePinyin": "Fáng Xiàn Huáng Chá",
+  "type": "yellow",
+  "typeNameRu": "Жёлтый чай",
+  "origin": "Фансянь, Шиянь, Хубэй",
+  "cultivar": "Удан Сяое",
+  "oxidationLevel": "12-18% (томление в ткани)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 85,
+  "tempRange": [
+    80,
+    90
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань из белого фарфора",
+  "keySensoryNotes": [
+    "Печеная тыква",
+    "Сливочный рис",
+    "Карамель",
+    "Луговые цветы"
+  ],
+  "scientificDescription": "Традиционная технология медленного томления снижает уровень EGCG, раскрывая нежные растворимые сахара и мягкие пиразины.",
+  "recommendedSteeps": 7,
+  "categoryGroup": "specific"
+},
+{
+  "id": "mi-huangcha",
+  "nameRu": "Ми Хуан Ча (Рисовый Жёлтый Чай)",
+  "transcriptionRu": "Ми Хуан Ча / Мицзин Хуан Ча",
+  "nameZh": "米黄茶",
+  "namePinyin": "Mǐ Huáng Chá",
+  "type": "yellow",
+  "typeNameRu": "Жёлтый чай",
+  "origin": "Аньхой",
+  "cultivar": "Аньхой Хуанчачжун",
+  "oxidationLevel": "15%",
+  "leafMorphology": "needle",
+  "optimalTemp": 84,
+  "tempRange": [
+    80,
+    88
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 100 мл",
+  "keySensoryNotes": [
+    "Воздушный рис",
+    "Сладкая выпечка",
+    "Липовый мед",
+    "Сливочное умами"
+  ],
+  "scientificDescription": "Характерный рисово-хлебный букет формируется в результате гидротермической карамелизации свободных моносахаридов в процессе Мэньхуан.",
+  "recommendedSteeps": 6,
+  "categoryGroup": "specific"
+},
+{
+  "id": "fangzhi-huangcha",
+  "nameRu": "Фанчжи Хуан Ча (Жёлтый чай по методу Дафан)",
+  "transcriptionRu": "Фанчжи Хуан Ча",
+  "nameZh": "方志黄茶",
+  "namePinyin": "Fāng Zhì Huáng Chá",
+  "type": "yellow",
+  "typeNameRu": "Жёлтый чай (прессованный плоский)",
+  "origin": "Хуаншань, Аньхой",
+  "cultivar": "Хуаншань Дае",
+  "oxidationLevel": "15-20%",
+  "leafMorphology": "flat",
+  "optimalTemp": 86,
+  "tempRange": [
+    82,
+    90
+  ],
+  "defaultMass": 4.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 120 мл",
+  "keySensoryNotes": [
+    "Жареный фундук",
+    "Печеная груша",
+    "Топленые сливки",
+    "Древесный мед"
+  ],
+  "scientificDescription": "Синтез технологии плоской прожарки Дингу Дафан и томления жёлтого чая. Обеспечивает плотную текстуру настоя и устойчивость к 8 проливам.",
+  "recommendedSteeps": 8,
+  "categoryGroup": "specific"
+},
+{
+  "id": "baiya-qilan",
+  "nameRu": "Бай Я Цилань (Белоснежная Орхидея)",
+  "transcriptionRu": "Бай Я Цилань / Бай Я Ци Лань",
+  "nameZh": "白芽奇兰",
+  "namePinyin": "Bái Yá Qí Lán",
+  "type": "oolong_ball",
+  "typeNameRu": "Светлый улун (сферический)",
+  "origin": "Пинхэ, Чжанчжоу, Фуцзянь",
+  "cultivar": "Байя Циланьчжун",
+  "oxidationLevel": "20-30% (свежий улун)",
+  "leafMorphology": "tight_ball",
+  "optimalTemp": 94,
+  "tempRange": [
+    90,
+    98
+  ],
+  "defaultMass": 7,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Фарфоровая гайвань 110–120 мл",
+  "keySensoryNotes": [
+    "Белая орхидея",
+    "Сирень",
+    "Сладкая дыня",
+    "Сливочный крем"
+  ],
+  "scientificDescription": "Уникальный культивар с мутацией светлой почки. Содержит высокую долю неролидола и бензилового спирта, давая взрывной орхидеевый аромат.",
+  "recommendedSteeps": 9,
+  "categoryGroup": "specific"
+},
+{
+  "id": "maoxie",
+  "nameRu": "Мао Се (Мохнатый Краб)",
+  "transcriptionRu": "Мао Се / Мао Сэ",
+  "nameZh": "毛蟹",
+  "namePinyin": "Máo Xiè",
+  "type": "oolong_ball",
+  "typeNameRu": "Южнофуцзяньский улун",
+  "origin": "Аньси, Цюаньчжоу, Фуцзянь",
+  "cultivar": "Аньси Маосе",
+  "oxidationLevel": "25-35%",
+  "leafMorphology": "tight_ball",
+  "optimalTemp": 95,
+  "tempRange": [
+    90,
+    98
+  ],
+  "defaultMass": 7,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Гайвань или чайник из цзиньшуйской керамики",
+  "keySensoryNotes": [
+    "Хризантема",
+    "Жасминовый рис",
+    "Сладкое масло",
+    "Освежающий холодок"
+  ],
+  "scientificDescription": "Один из четырех знаменитых улунов Аньси. Листья покрыты мелкими зазубринами и ворсом, что обеспечивает раннее раскрытие аромата на 1-м проливе.",
+  "recommendedSteeps": 8,
+  "categoryGroup": "specific"
+},
+{
+  "id": "meizhan-oolong",
+  "nameRu": "Мэйчжань (Цветок Сливы Мэй)",
+  "transcriptionRu": "Мэйчжань / Мэй Чжань (Улун)",
+  "nameZh": "梅占",
+  "namePinyin": "Méi Zhàn",
+  "type": "oolong_strip",
+  "typeNameRu": "Утёсный улун / Даньцун",
+  "origin": "Аньси / Уишань, Фуцзянь",
+  "cultivar": "Мэйчжань Дае",
+  "oxidationLevel": "50-60% (средний прогрев)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 96,
+  "tempRange": [
+    92,
+    100
+  ],
+  "defaultMass": 7.5,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Исинский чайник (фиолетовая глина Цзыша)",
+  "keySensoryNotes": [
+    "Цветущая слива",
+    "Пряная корица",
+    "Косточковые фрукты",
+    "Медовый шлейф"
+  ],
+  "scientificDescription": "Универсальный сорт-чемпион с высоким адаптивным потенциалом. Высокая концентрация оксидов линалоола дарит стойкий шлейфовый аромат «Мэйхуа».",
+  "recommendedSteeps": 9,
+  "categoryGroup": "specific"
+},
+{
+  "id": "foshou-oolong",
+  "nameRu": "Фошоу (Рука Будды / Цитрус Фошоу)",
+  "transcriptionRu": "Фошоу / Фо Шоу (Юнчунь / Уи)",
+  "nameZh": "佛手",
+  "namePinyin": "Fó Shǒu",
+  "type": "oolong_strip",
+  "typeNameRu": "Крупнолистовой улун",
+  "origin": "Юнчунь / Уишань, Фуцзянь",
+  "cultivar": "Юнчунь Фошоу Дае",
+  "oxidationLevel": "40-55%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 95,
+  "tempRange": [
+    92,
+    98
+  ],
+  "defaultMass": 7.5,
+  "defaultVolume": 120,
+  "recommendedVesselRu": "Гайвань 120–130 мл с широким горлом",
+  "keySensoryNotes": [
+    "Цедра бергамота",
+    "Грейпфрут",
+    "Древесная смола",
+    "Мята"
+  ],
+  "scientificDescription": "Гигантский лист овальной формы, напоминающий плод цитрона 'Рука Будды'. Обогащен лимоненом и терпеновыми эфирами, создавая цитрусовое послевкусие.",
+  "recommendedSteeps": 9,
+  "categoryGroup": "specific"
+},
+{
+  "id": "wudong-dancong",
+  "nameRu": "Удун Даньцун (Одинокие кусты с пика Удун)",
+  "transcriptionRu": "Удун Даньцун / У Дун Дань Цун",
+  "nameZh": "乌岽单丛",
+  "namePinyin": "Wū Dōng Dān Cóng",
+  "type": "oolong_strip",
+  "typeNameRu": "Гуандунский улун (высокогорный)",
+  "origin": "Пик Удун (1392м), Чаочжоу, Гуандун",
+  "cultivar": "Удун Лаоцун",
+  "oxidationLevel": "40-50%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 98,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 6.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Чаочжоуский тонкостенный глиняный чайник или гайвань",
+  "keySensoryNotes": [
+    "Горная орхидея",
+    "Минеральный гранит",
+    "Цитрусовый цвет",
+    "Глубокий Хуэйгань"
+  ],
+  "scientificDescription": "Сырьё со старых деревьев пика Удун на вулканических почвах. Требует стремительного слива (3–5 сек) крутым кипятком для раскрытия благородного «Шань Юнь».",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific"
+},
+{
+  "id": "da-wuye",
+  "nameRu": "Да У Е (Большой Тёмный Лист)",
+  "transcriptionRu": "Да У Е / Да У Е Даньцун",
+  "nameZh": "大乌叶",
+  "namePinyin": "Dà Wū Yè",
+  "type": "oolong_strip",
+  "typeNameRu": "Гуандунский даньцун",
+  "origin": "Фэнхуан, Чаочжоу, Гуандун",
+  "cultivar": "Дауе Даньцунчжун",
+  "oxidationLevel": "35-45%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 96,
+  "tempRange": [
+    92,
+    99
+  ],
+  "defaultMass": 6.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 110 мл",
+  "keySensoryNotes": [
+    "Тропические фрукты",
+    "Гардения",
+    "Свежая орхидея",
+    "Сладкий имбирь"
+  ],
+  "scientificDescription": "Темно-зеленый плотный лист с высоким содержанием полифенолов. Дает прозрачный настой золотисто-оранжевого тона со сладким фруктовым ароматом.",
+  "recommendedSteeps": 9,
+  "categoryGroup": "specific"
+},
+{
+  "id": "milanxiang",
+  "nameRu": "Миланьсян (Медово-Орхидеевый Аромат)",
+  "transcriptionRu": "Миланьсян / Ми Лань Сян Даньцун",
+  "nameZh": "蜜兰香",
+  "namePinyin": "Mì Lán Xiāng",
+  "type": "oolong_strip",
+  "typeNameRu": "Гуандунский даньцун",
+  "origin": "Фэнхуан, Гуандун",
+  "cultivar": "Миланьсян Даньцунчжун",
+  "oxidationLevel": "45-55% (средне-сильный прогрев)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 98,
+  "tempRange": [
+    94,
+    100
+  ],
+  "defaultMass": 7,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань или чаочжоуский чайник",
+  "keySensoryNotes": [
+    "Липовый мед",
+    "Спелое манго",
+    "Орхидея",
+    "Мускатный виноград"
+  ],
+  "scientificDescription": "Классический флагманский аромат Фэнхуана. Медовый оттенок обусловлен высокой концентрацией бета-дамасценона и фенилэтилового спирта.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific"
+},
+{
+  "id": "jianghuaxiang",
+  "nameRu": "Цзянхуасян (Аромат Имбирного Цвета)",
+  "transcriptionRu": "Цзянхуасян / Цзян Хуа Сян",
+  "nameZh": "姜花香",
+  "namePinyin": "Jiāng Huā Xiāng",
+  "type": "oolong_strip",
+  "typeNameRu": "Гуандунский даньцун",
+  "origin": "Фэнхуан, Гуандун",
+  "cultivar": "Цзянхуасян Даньцун",
+  "oxidationLevel": "40-50%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 97,
+  "tempRange": [
+    93,
+    100
+  ],
+  "defaultMass": 6.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Тонкостенная фарфоровая гайвань",
+  "keySensoryNotes": [
+    "Имбирная лилия",
+    "Пряный перец",
+    "Цветочный мед",
+    "Освежающий тонус"
+  ],
+  "scientificDescription": "Пряный и острый цветочный аромат имбирного цветка гедихиума. Быстро насыщает настой эфирными маслами.",
+  "recommendedSteeps": 9,
+  "categoryGroup": "specific"
+},
+{
+  "id": "yelaixiang",
+  "nameRu": "Елайсян (Ночной Аромат / Тубероза)",
+  "transcriptionRu": "Елайсян / Е Лай Сян Даньцун",
+  "nameZh": "夜来香",
+  "namePinyin": "Yè Lái Xiāng",
+  "type": "oolong_strip",
+  "typeNameRu": "Гуандунский даньцун",
+  "origin": "Фэнхуан, Гуандун",
+  "cultivar": "Елайсян Даньцунчжун",
+  "oxidationLevel": "40-48%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 96,
+  "tempRange": [
+    92,
+    99
+  ],
+  "defaultMass": 6.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань",
+  "keySensoryNotes": [
+    "Тубероза",
+    "Ночной жасмин",
+    "Спелая слива",
+    "Цветочный нектар"
+  ],
+  "scientificDescription": "Один из самых душистых ароматических типов даньцунов. Характеризуется глубоким и стойким шлейфом аромата на крышечке гайвани.",
+  "recommendedSteeps": 9,
+  "categoryGroup": "specific"
+},
+{
+  "id": "yulanxiang",
+  "nameRu": "Юйланьсян (Аромат Магнолии)",
+  "transcriptionRu": "Юйланьсян / Юй Лань Сян Даньцун",
+  "nameZh": "玉兰香",
+  "namePinyin": "Yù Lán Xiāng",
+  "type": "oolong_strip",
+  "typeNameRu": "Гуандунский даньцун",
+  "origin": "Фэнхуан, Гуандун",
+  "cultivar": "Юйланьсян Даньцунчжун",
+  "oxidationLevel": "38-46%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 96,
+  "tempRange": [
+    92,
+    99
+  ],
+  "defaultMass": 6.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 110 мл",
+  "keySensoryNotes": [
+    "Цветущая магнолия",
+    "Цитрусовый цвет",
+    "Медовая груша",
+    "Свежесть"
+  ],
+  "scientificDescription": "Изысканный тонкий аромат белой магнолии Юйлань. Настой прозрачный, золотисто-янтарный, с чистым сладким вкусом.",
+  "recommendedSteeps": 9,
+  "categoryGroup": "specific"
+},
+{
+  "id": "songzhong",
+  "nameRu": "Сунчжун (Сорт эпохи Сун / Древний Даньцун)",
+  "transcriptionRu": "Сунчжун / Сун Чжун Лаоцун",
+  "nameZh": "宋种",
+  "namePinyin": "Sòng Zhǒng",
+  "type": "oolong_strip",
+  "typeNameRu": "Коллекционный гуандунский улун",
+  "origin": "Деревня Удун, Фэнхуан, Гуандун",
+  "cultivar": "Сунчжун Гушу (деревья 600+ лет)",
+  "oxidationLevel": "50-60% (традиционный древесный уголь)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 99,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 7,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Глиняный чайник Чжуни или фарфоровая гайвань",
+  "keySensoryNotes": [
+    "Древесная смола",
+    "Дикая слива",
+    "Лекарственные травы",
+    "Мощный Шань Юнь"
+  ],
+  "scientificDescription": "Легендарный сорт, ведущий родословную от материнских деревьев династии Южная Сун. Невероятная плотность настоя, выдерживает до 15 проливов.",
+  "recommendedSteeps": 12,
+  "categoryGroup": "specific"
+},
+{
+  "id": "minhong-gongfu",
+  "nameRu": "Миньхун Гунфу (Фуцзяньский красный гунфу)",
+  "transcriptionRu": "Миньхун Гунфу / Минь Хун Гун Фу",
+  "nameZh": "闽红工夫",
+  "namePinyin": "Mǐn Hóng Gōng Fū",
+  "type": "red",
+  "typeNameRu": "Красный чай (гунфу)",
+  "origin": "Фуцзянь (Таньян, Байлинь, Чжэнхэ)",
+  "cultivar": "Фуцзянь Дабай / Сяое",
+  "oxidationLevel": "100% (полная ферментация)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 92,
+  "tempRange": [
+    88,
+    96
+  ],
+  "defaultMass": 5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 120 мл или глиняный чайник",
+  "keySensoryNotes": [
+    "Чернослив",
+    "Шоколад",
+    "Карамель",
+    "Сушеные ягоды"
+  ],
+  "scientificDescription": "Собирательное наименование классической тройки фуцзяньских красных чаев («Таньян», «Байлинь», «Чжэнхэ»). Высокий титр теарубигинов и теафлавинов.",
+  "recommendedSteeps": 7,
+  "categoryGroup": "specific"
+},
+{
+  "id": "xianghong",
+  "nameRu": "Сянхун (Хунаньский красный чай)",
+  "transcriptionRu": "Сянхун / Сян Хун Гунфу",
+  "nameZh": "湘红",
+  "namePinyin": "Xiāng Hóng",
+  "type": "red",
+  "typeNameRu": "Красный чай",
+  "origin": "Хунань",
+  "cultivar": "Хунань Дае",
+  "oxidationLevel": "100%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 92,
+  "tempRange": [
+    88,
+    96
+  ],
+  "defaultMass": 5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань",
+  "keySensoryNotes": [
+    "Ржаная корочка",
+    "Темный мед",
+    "Сушеная вишня",
+    "Орех"
+  ],
+  "scientificDescription": "Хунаньский красный чай традиционной скрутки. Отличается глубоким рубиновым настоем, теплым хлебно-медовым ароматом и мягкостью.",
+  "recommendedSteeps": 7,
+  "categoryGroup": "specific"
+},
+{
+  "id": "qianhong",
+  "nameRu": "Цяньхун (Гуйчжоуский красный чай)",
+  "transcriptionRu": "Цяньхун / Цянь Хун",
+  "nameZh": "黔红",
+  "namePinyin": "Qián Hóng",
+  "type": "red",
+  "typeNameRu": "Красный чай (высокогорный)",
+  "origin": "Гуйчжоу",
+  "cultivar": "Гуйчжоу Тайо Сяое",
+  "oxidationLevel": "100%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 90,
+  "tempRange": [
+    86,
+    95
+  ],
+  "defaultMass": 5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 110 мл",
+  "keySensoryNotes": [
+    "Цветочный нектар",
+    "Абрикосовый джем",
+    "Какао",
+    "Сладкая малина"
+  ],
+  "scientificDescription": "Высокогорный экологичный красный чай плато Гуйчжоу. Богат аминокислотами, что делает его настой бархатистым и сладким без терпкости.",
+  "recommendedSteeps": 7,
+  "categoryGroup": "specific"
+},
+{
+  "id": "guihong",
+  "nameRu": "Гуйхун (Гуансийский красный чай)",
+  "transcriptionRu": "Гуйхун / Гуй Хун",
+  "nameZh": "桂红",
+  "namePinyin": "Guì Hóng",
+  "type": "red",
+  "typeNameRu": "Красный чай",
+  "origin": "Гуанси",
+  "cultivar": "Гуанси Даечжун",
+  "oxidationLevel": "100%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 92,
+  "tempRange": [
+    88,
+    96
+  ],
+  "defaultMass": 5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань или керамический чайник",
+  "keySensoryNotes": [
+    "Лунган",
+    "Тростниковый сахар",
+    "Пряности",
+    "Шоколад"
+  ],
+  "scientificDescription": "Южный юньнаньско-гуансийский тип крупного листа. Быстро отдает экстрактивные вещества и плотное густое тело.",
+  "recommendedSteeps": 7,
+  "categoryGroup": "specific"
+},
+{
+  "id": "dayezhong-hongcha",
+  "nameRu": "Даечжун Хунча (Крупнолистовой красный чай из Юньнани)",
+  "transcriptionRu": "Даечжун Хунча / Дяньхун Да Е",
+  "nameZh": "大叶种红茶",
+  "namePinyin": "Dà Yè Zhǒng Hóng Chá",
+  "type": "red",
+  "typeNameRu": "Юньнаньский красный чай",
+  "origin": "Фэнцин / Линьцан, Юньнань",
+  "cultivar": "Юньнань Даечжун (Крупнолистовой)",
+  "oxidationLevel": "100%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 94,
+  "tempRange": [
+    90,
+    98
+  ],
+  "defaultMass": 5.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Гайвань или исинский чайник 120 мл",
+  "keySensoryNotes": [
+    "Сушеный манго",
+    "Дикий мед",
+    "Какао-бобы",
+    "Хлебная корка"
+  ],
+  "scientificDescription": "Классический представитель юньнаньского крупнолистного сырья. Отличается мощным тонизирующим эффектом и высоким содержанием полифенолов.",
+  "recommendedSteeps": 8,
+  "categoryGroup": "specific"
+},
+{
+  "id": "hunan-heicha",
+  "nameRu": "Хунань Хэйча (Хунаньский чёрный чай)",
+  "transcriptionRu": "Хунань Хэйча / Ху Нань Хэй Ча",
+  "nameZh": "湖南黑茶",
+  "namePinyin": "Hú Nán Hēi Chá",
+  "type": "heicha",
+  "typeNameRu": "Постферментированный чай (Хэйча)",
+  "origin": "Аньхуа / Иян, Хунань",
+  "cultivar": "Аньхуа Дае",
+  "oxidationLevel": "Постферментация (Водуй + Золотые цветы)",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 98,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 7.5,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Исинский чайник из толстой глины или варка на огне",
+  "keySensoryNotes": [
+    "Древесная кора",
+    "Грибы Цзиньхуа",
+    "Осенний лес",
+    "Сухофрукты"
+  ],
+  "scientificDescription": "Продукт глубокой микробной ферментации с участием благородного гриба Eurotium cristatum. Чайные полисахариды расщеплены до легкоусвояемых олигосахаридов.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "hubei-heicha",
+  "nameRu": "Хубэй Хэйча (Хубэйский чёрный кирпичный чай)",
+  "transcriptionRu": "Хубэй Хэйча / Цинчжуань Ча",
+  "nameZh": "湖北黑茶",
+  "namePinyin": "Hú Běi Hēi Chá",
+  "type": "heicha",
+  "typeNameRu": "Постферментированный кирпичный чай",
+  "origin": "Чиби / Сяньнин, Хубэй",
+  "cultivar": "Хубэй Цюньтичжун",
+  "oxidationLevel": "Постферментация",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 100,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 8,
+  "defaultVolume": 120,
+  "recommendedVesselRu": "Глиняный чайник, термос или варка в сифоне",
+  "keySensoryNotes": [
+    "Лесной мох",
+    "Древесина дуба",
+    "Чернослив",
+    "Ореховая скорлупа"
+  ],
+  "scientificDescription": "Знаменитый кирпичный чай Великого чайного пути (Цинчжуань). Высокая степень прессовки требует крутого кипятка 100°C и предварительного прогрева.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "sichuan-biancha",
+  "nameRu": "Сычуань Бянь Ча (Сычуаньский приграничный чай)",
+  "transcriptionRu": "Сычуань Бянь Ча / Канчжуань",
+  "nameZh": "四川边茶",
+  "namePinyin": "Sì Chuān Biān Chá",
+  "type": "heicha",
+  "typeNameRu": "Приграничный постферментированный чай",
+  "origin": "Яань, Сычуань",
+  "cultivar": "Сычуань Сяое/Дае",
+  "oxidationLevel": "Постферментация",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 100,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 8,
+  "defaultVolume": 120,
+  "recommendedVesselRu": "Толстостенная керамика или варка в чайнике",
+  "keySensoryNotes": [
+    "Древесный дым",
+    "Карамелизованный сахар",
+    "Сухие травы",
+    "Плотное тело"
+  ],
+  "scientificDescription": "Исторический чай Древнего чайно-конного пути (Чамагудао). Насыщен минералами и полисахаридами, превосходно подходит для варки с молоком или в чистом виде.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "xilu-biancha",
+  "nameRu": "Силу Бянь Ча (Чай западного приграничного пути)",
+  "transcriptionRu": "Силу Бянь Ча / Си Лу Бянь Ча",
+  "nameZh": "西路边茶",
+  "namePinyin": "Xī Lù Biān Chá",
+  "type": "heicha",
+  "typeNameRu": "Постферментированный чай",
+  "origin": "Гуаньсянь / Даи, Сычуань",
+  "cultivar": "Сычуань Цюньтичжун",
+  "oxidationLevel": "Постферментация",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 100,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 8,
+  "defaultVolume": 120,
+  "recommendedVesselRu": "Чайник из глины или термос",
+  "keySensoryNotes": [
+    "Ореховое дерево",
+    "Сухие ягоды",
+    "Лесной сбор",
+    "Мягкая сладость"
+  ],
+  "scientificDescription": "Разновидность сычуаньского приграничного чая, поставлявшаяся в Тибет и северные регионы. Дает густой коньячный настой с мягким вкусом.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "liubao-sancha",
+  "nameRu": "Любао Сань Ча (Рассыпной Любао)",
+  "transcriptionRu": "Любао Сань Ча / Лю Бао Сань Ча",
+  "nameZh": "六堡散茶",
+  "namePinyin": "Liù Bǎo Sàn Chá",
+  "type": "heicha",
+  "typeNameRu": "Рассыпной гуансийский хэйча",
+  "origin": "Учжоу, Гуанси",
+  "cultivar": "Гуанси Любаочжун",
+  "oxidationLevel": "Постферментация (корзины Водуй)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 98,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 7.5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Исинский чайник (Цзыша или Дуани) или гайвань",
+  "keySensoryNotes": [
+    "Орех бетель",
+    "Древесный аромат",
+    "Влажный погреб",
+    "Сладкое послевкусие"
+  ],
+  "scientificDescription": "Рассыпная форма знаменитого выдержанного чая Любао. Отличается красным цветом настоя, густотой («Нун»), чистотой («Чунь») и сладостью («Чэнь»).",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "liubao-zhuancha",
+  "nameRu": "Любао Чжуань Ча (Кирпичный Любао)",
+  "transcriptionRu": "Любао Чжуань Ча / Лю Бао Чжуань",
+  "nameZh": "六堡砖茶",
+  "namePinyin": "Liù Bǎo Zhuān Chá",
+  "type": "heicha",
+  "typeNameRu": "Кирпичный гуансийский хэйча",
+  "origin": "Учжоу, Гуанси",
+  "cultivar": "Любао Дае",
+  "oxidationLevel": "Постферментация",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 100,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 8,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Глиняный чайник из Нисинской керамики",
+  "keySensoryNotes": [
+    "Орех бетель",
+    "Старое дерево",
+    "Финики",
+    "Камфора"
+  ],
+  "scientificDescription": "Прессованный кирпич Любао длительного созревания. Медленная микробиологическая трансформация формирует фирменный «Бинлан Сян» (аромат бетеля).",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "puerh-fangcha",
+  "nameRu": "Пуэр Фан Ча (Квадратный Пуэр)",
+  "transcriptionRu": "Пуэр Фан Ча / Пу Эр Фан Ча",
+  "nameZh": "普洱方茶",
+  "namePinyin": "Pǔ Ěr Fāng Chá",
+  "type": "sheng_puerh",
+  "typeNameRu": "Прессованный квадратный шэн пуэр",
+  "origin": "Сишуанбаньна / Мэнхай, Юньнань",
+  "cultivar": "Юньнань Даечжун",
+  "oxidationLevel": "Постферментация (естественное старение)",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 96,
+  "tempRange": [
+    92,
+    100
+  ],
+  "defaultMass": 7.5,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Исинский чайник или фарфоровая гайвань",
+  "keySensoryNotes": [
+    "Камфора",
+    "Сухофрукты",
+    "Медовый шлейф",
+    "Мощная энергия Ча Ци"
+  ],
+  "scientificDescription": "Историческая форма квадратного кирпича 100г/250г с рельефными иероглифами. Высокая плотность прессовки обеспечивает равномерное медленное созревание.",
+  "recommendedSteeps": 11,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "puerh-jinhua",
+  "nameRu": "Пуэр Цзиньгуа (Золотая Тыква / Цзинь Гуа Гунча)",
+  "transcriptionRu": "Пуэр Цзиньгуа / Цзинь Гуа Ча",
+  "nameZh": "普洱金瓜",
+  "namePinyin": "Pǔ Ěr Jīn Guā",
+  "type": "shou_puerh",
+  "typeNameRu": "Императорский прессованный пуэр",
+  "origin": "Сишуанбаньна, Юньнань",
+  "cultivar": "Юньнань Дае Цзинья",
+  "oxidationLevel": "Постферментация (Водуй)",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 98,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 8,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Чайник из исинской глины",
+  "keySensoryNotes": [
+    "Шоколадный трюфель",
+    "Древесная смола",
+    "Чернослив",
+    "Бархатное тело"
+  ],
+  "scientificDescription": "Форма тыквы-горлянки восходит к дани императорскому двору Цин. Отборное сырье с золотыми почками дает плотный нефтяной настой с кремовой текстурой.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "puerh-rentou",
+  "nameRu": "Пуэр Жэньтоу (Голова Человека / Жэнь Тоу Гунча)",
+  "transcriptionRu": "Пуэр Жэньтоу / Жэнь Тоу Ча",
+  "nameZh": "普洱人头",
+  "namePinyin": "Pǔ Ěr Rén Tóu",
+  "type": "shou_puerh",
+  "typeNameRu": "Исторический прессованный пуэр",
+  "origin": "Пуэр / Сишуанбаньна, Юньнань",
+  "cultivar": "Мэнхай Даечжун",
+  "oxidationLevel": "Постферментация",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 99,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 8,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Толстостенный глиняный чайник",
+  "keySensoryNotes": [
+    "Старое дерево",
+    "Какао",
+    "Финики",
+    "Обволакивающая плотность"
+  ],
+  "scientificDescription": "Крупная форма прессовки в виде полусферы (весом до нескольких килограммов), исторически изготавливавшаяся для дворцовых хранилищ.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+},
+{
+  "id": "puerh-tuancha",
+  "nameRu": "Пуэр Туань Ча (Круглый прессованный комковой пуэр)",
+  "transcriptionRu": "Пуэр Туань Ча / Туань Ча",
+  "nameZh": "普洱团茶",
+  "namePinyin": "Pǔ Ěr Tuán Chá",
+  "type": "shou_puerh",
+  "typeNameRu": "Прессованный шарообразный пуэр",
+  "origin": "Линьцан / Мэнхай, Юньнань",
+  "cultivar": "Юньнань Дае",
+  "oxidationLevel": "Постферментация",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 98,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 8,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Исинский чайник или гайвань",
+  "keySensoryNotes": [
+    "Ореховая паста",
+    "Древесная кора",
+    "Сушеный инжир",
+    "Сладкий финиш"
+  ],
+  "scientificDescription": "Плотные круглые шары или комки пуэра. Обеспечивают долгое раскрытие чайного листа и плавное нарастание плотности настоя от пролива к проливу.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+}
+,
+{
+  "id": "huangdacha-classic",
+  "nameRu": "Хуан Да Ча (Большой жёлтый чай)",
+  "transcriptionRu": "Хуан Да Ча / Хошань Хуан Да Ча",
+  "nameZh": "黄大茶",
+  "namePinyin": "Huáng Dà Chá",
+  "type": "yellow",
+  "typeNameRu": "Жёлтый крупнолистовой чай",
+  "origin": "Хошань / Цзиньчжай, Аньхой",
+  "cultivar": "Хошань Даечжун",
+  "oxidationLevel": "15-20% (длительное томление Мэньхуан)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 90,
+  "tempRange": [
+    85,
+    95
+  ],
+  "defaultMass": 5,
+  "defaultVolume": 100,
+  "recommendedVesselRu": "Фарфоровая гайвань 120 мл или чайник из цзяньшуйской керамики",
+  "keySensoryNotes": [
+    "Жареный кофе",
+    "Шоколадная корочка",
+    "Печеный ячмень",
+    "Карамельное послевкусие"
+  ],
+  "scientificDescription": "Крупный зрелый лист с длинными черенками, богатыми полисахаридами и лигнином. Процесс длительной высокотемпературной сушки стимулирует реакцию Майяра, формируя неповторимый кофейно-гречишный аромат.",
+  "recommendedSteeps": 8,
+  "categoryGroup": "specific"
+},
+{
+  "id": "wuyi-qilan-classic",
+  "nameRu": "Цилань (Чудесная Орхидея)",
+  "transcriptionRu": "Цилань / Ци Лань (Уишань)",
+  "nameZh": "奇兰",
+  "namePinyin": "Qí Lán",
+  "type": "oolong_strip",
+  "typeNameRu": "Утёсный улун (Уишань)",
+  "origin": "Уишань, Фуцзянь",
+  "cultivar": "Циланьчжун",
+  "oxidationLevel": "50-60% (средний огонь)",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 96,
+  "tempRange": [
+    92,
+    100
+  ],
+  "defaultMass": 7.5,
+  "defaultVolume": 110,
+  "recommendedVesselRu": "Исинский чайник из глины Цзыша или фарфоровая гайвань",
+  "keySensoryNotes": [
+    "Дикая орхидея",
+    "Печеный персик",
+    "Утёсный дымок",
+    "Карамель"
+  ],
+  "scientificDescription": "Знаменитый сорт уишаньских утесных улунов. Обладает пронзительным цветочным букетом и минеральной плотностью («Янь Юнь»).",
+  "recommendedSteeps": 9,
+  "categoryGroup": "specific"
+},
+{
+  "id": "hongsuicha-classic",
+  "nameRu": "Хун Суй Ча (Красный измельчённый чай)",
+  "transcriptionRu": "Хун Суй Ча / CTC Black Tea",
+  "nameZh": "红碎茶",
+  "namePinyin": "Hóng Suì Chá",
+  "type": "red",
+  "typeNameRu": "Красный чай (мелкая фракция)",
+  "origin": "Юньнань / Гуандун / Чунцин",
+  "cultivar": "Даечжун Мелкая фракция",
+  "oxidationLevel": "100%",
+  "leafMorphology": "twisted_strip",
+  "optimalTemp": 95,
+  "tempRange": [
+    90,
+    100
+  ],
+  "defaultMass": 4,
+  "defaultVolume": 120,
+  "recommendedVesselRu": "Фарфоровый чайник или гайвань",
+  "keySensoryNotes": [
+    "Густой солод",
+    "Чернослив",
+    "Крепкий настой",
+    "Ягодная кислинка"
+  ],
+  "scientificDescription": "Мелкая фракция обладает колоссальной площадью соприкосновения с водой, обеспечивая мгновенную экстракцию теарубигинов за первые 3–5 секунд.",
+  "recommendedSteeps": 5,
+  "categoryGroup": "specific"
+},
+{
+  "id": "nanlu-biancha-classic",
+  "nameRu": "Наньлу Бянь Ча (Чай южного приграничного пути)",
+  "transcriptionRu": "Наньлу Бянь Ча / Нань Лу Бянь Ча (Яань)",
+  "nameZh": "南路边茶",
+  "namePinyin": "Nán Lù Biān Chá",
+  "type": "heicha",
+  "typeNameRu": "Постферментированный приграничный кирпич",
+  "origin": "Яань, Сычуань",
+  "cultivar": "Сычуань Сяое/Дае",
+  "oxidationLevel": "Постферментация",
+  "leafMorphology": "compressed_cake",
+  "optimalTemp": 100,
+  "tempRange": [
+    95,
+    100
+  ],
+  "defaultMass": 8,
+  "defaultVolume": 120,
+  "recommendedVesselRu": "Керамический чайник или варка в котелке",
+  "keySensoryNotes": [
+    "Древесная смола",
+    "Сухофрукты",
+    "Орехи",
+    "Теплый дым"
+  ],
+  "scientificDescription": "Традиционный чай караванного пути в Тибет из уезда Яань. Богат калием, полисахаридами и теабровининами; идеален для долгой варки.",
+  "recommendedSteeps": 10,
+  "categoryGroup": "specific",
+  "canAge": true
+}
 ];

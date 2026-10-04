@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { TeaVariety, BlendComponentItem, InitialTastingSessionData, canTeaAge } from '../types';
 import { calculateTeaBlend, BLEND_PRESET_RECIPES } from '../utils/teaBlendCalculator';
 import { isTeaArchetype } from '../data/teaData';
@@ -56,6 +56,7 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
   // Tea selector modal / picker state
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
   const [pickerSearchQuery, setPickerSearchQuery] = useState<string>('');
+  const deferredPickerSearchQuery = useDeferredValue(pickerSearchQuery);
   const [pickerTypeFilter, setPickerTypeFilter] = useState<string>('all');
 
   // Saved blends in localStorage
@@ -242,9 +243,9 @@ export const TeaBlendStudio: React.FC<TeaBlendStudioProps> = ({
           return false;
         }
       }
-      return matchTeaSearch(tea, pickerSearchQuery);
+      return matchTeaSearch(tea, deferredPickerSearchQuery);
     });
-  }, [allTeasArray, pickerSearchQuery, pickerTypeFilter, favoriteIds]);
+  }, [allTeasArray, deferredPickerSearchQuery, pickerTypeFilter, favoriteIds]);
 
   // Color mapping by tea type for the visual composition bar
   const getTeaTypeColor = (type: string) => {

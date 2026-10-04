@@ -526,11 +526,7 @@ export function diagnoseBrewQuality(
     summaryRu = 'Параметры близки к оптимальным, но небольшая корректировка позволит раскрыть вкус ещё ярче и гармоничнее.';
   }
 
-  if (flavorTips.length === 0) {
-    flavorTips.push('Настройки безупречны! Делайте первый пролив точным по секундомеру, чтобы зафиксировать пик L-теанина.');
-    flavorTips.push('Прогрейте посуду горячей водой перед засыпкой сухого листа для стабилизации термодинамики.');
-  }
-
+  // Return calculated diagnostics with factual recommendations only
   return {
     overallScorePercent,
     overallStatusRu,

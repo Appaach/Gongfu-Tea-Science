@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { TeaVariety, canTeaAge, cleanTeaTitleForDisplay } from '../types';
 import { TEA_VARIETIES, GENERIC_TEA_ARCHETYPES, ALL_TEA_MAP, getTeaEffect, isTeaArchetype } from '../data/teaData';
 import { 
@@ -32,6 +32,7 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
   // Sub-modal state for selecting tea slot
   const [pickerSlot, setPickerSlot] = useState<'A' | 'B' | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
   const teaA = teaMap.get(teaAId) || allTeas[0];
@@ -88,9 +89,9 @@ export const TeaComparisonView: React.FC<TeaComparisonViewProps> = ({
           return false;
         }
       }
-      return matchTeaSearch(tea, searchQuery);
+      return matchTeaSearch(tea, deferredSearchQuery);
     });
-  }, [allTeas, searchQuery, typeFilter, favoriteIds]);
+  }, [allTeas, deferredSearchQuery, typeFilter, favoriteIds]);
 
   const handleSelectPickerTea = (tea: TeaVariety) => {
     if (pickerSlot === 'A') setTeaAId(tea.id);

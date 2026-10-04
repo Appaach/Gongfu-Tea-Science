@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { TastingJournalEntry } from '../types';
 import { saveOrShareFile } from './fileExportHelper';
 import { Capacitor } from '@capacitor/core';
@@ -63,7 +63,31 @@ export async function exportElementToPdf(
       backgroundColor: '#ffffff',
       scrollX: 0,
       scrollY: 0,
-      windowWidth: 800
+      windowWidth: 800,
+      onclone: (clonedDoc) => {
+        // Double-guard: automatically convert any lingering oklab / oklch color values to standard rgb/hex
+        try {
+          const testCanvas = clonedDoc.createElement('canvas');
+          const ctx = testCanvas.getContext('2d');
+          if (ctx) {
+            const allNodes = clonedDoc.querySelectorAll<HTMLElement>('*');
+            const colorProps = ['color', 'backgroundColor', 'borderColor', 'outlineColor', 'fill', 'stroke'] as const;
+            for (let i = 0; i < allNodes.length; i++) {
+              const node = allNodes[i];
+              for (const prop of colorProps) {
+                const val = node.style[prop];
+                if (val && (val.includes('oklab') || val.includes('oklch'))) {
+                  ctx.fillStyle = '#000000';
+                  ctx.fillStyle = val;
+                  node.style[prop] = ctx.fillStyle;
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
     });
 
     const pdf = new jsPDF({
@@ -284,7 +308,7 @@ export async function exportJournalEntriesToPdf(entries: TastingJournalEntry[]):
 
   try {
     const filename = `gongfu_tea_journal_${new Date().toISOString().split('T')[0]}`;
-    await exportElementToPdf(container, filename);
+    await exportElementToPdf(container, filename, { title: 'Журнал дегустаций Gongfu Cha' });
   } finally {
     document.body.removeChild(container);
   }

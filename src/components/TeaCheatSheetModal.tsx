@@ -91,7 +91,7 @@ export const TeaCheatSheetModal: React.FC<TeaCheatSheetModalProps> = ({
     }
   };
 
-  const handleCopyText = () => {
+  const handleCopyText = async () => {
     const rinseLine = isRinseEnabled ? `• Пролив #0 (Промывка/Прогрев): ${rinseSeconds} сек (Слить не пробуя!)\n` : '';
     const text = `🍵 ШПАРГАЛКА ДЛЯ ЧАБАНИ: ${tea.nameRu} ${tea.nameZh ? `(${tea.nameZh})` : ''}
 📍 Регион: ${tea.origin}
@@ -108,9 +108,25 @@ ${rinseLine}${steepSchedule.map((sec, idx) => `Пролив #${idx + 1}: ${sec} 
 🌿 Эффект: ${effect.nameRu} (${effect.badgeRu})
 Рассчитано по биохимической модели экстракции чая`;
 
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   };
 
   return (

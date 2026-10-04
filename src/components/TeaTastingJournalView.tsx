@@ -448,7 +448,18 @@ export const TeaTastingJournalView: React.FC<TeaTastingJournalViewProps> = ({
   const handleCopyJsonToClipboard = async () => {
     try {
       const jsonText = JSON.stringify(entries, null, 2);
-      await navigator.clipboard.writeText(jsonText);
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(jsonText);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = jsonText;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
       setIsCopiedJson(true);
       showNotification('Все записи журнала (JSON) скопированы в буфер обмена!', 'success');
       setTimeout(() => setIsCopiedJson(false), 3000);

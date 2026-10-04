@@ -4230,60 +4230,6 @@ export const ExtractionSimulator: React.FC<ExtractionSimulatorProps> = ({
                   )}
                 </svg>
               </div>
-
-              {/* ACTIONABLE TIMELINE RECOMMENDATION GUIDE FOR LAZY METHOD */}
-              <div className="pt-2 border-t border-stone-100 space-y-3">
-                <div className="flex items-center space-x-2 text-xs font-bold text-stone-900">
-                  <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>Рекомендации к какому времени допить и добавить воды (Бэй Пао Фа):</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                  {/* Step 1 */}
-                  <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1">
-                    <div className="font-bold text-emerald-950 flex justify-between items-center">
-                      <span>✨ 01:30 – 03:00 мин: Золотое окно первого глотка</span>
-                      <span className="text-[10px] bg-emerald-200/80 px-1.5 py-0.5 rounded font-mono">~58–62°C</span>
-                    </div>
-                    <p className="text-[11px] text-stone-700 leading-relaxed">
-                      Чашка остыла до идеальной температуры. L-теанин достиг максимума ({simulationResults[0]?.theanineConcentration || 12} мг/100мл). <strong>Сделайте первый глоток прямо сейчас!</strong> Настой сочный, сладковатый и без терпкости.
-                    </p>
-                  </div>
-
-                  {/* Step 2 */}
-                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
-                    <div className="font-bold text-amber-950 flex justify-between items-center">
-                      <span>🍵 03:00 – 04:30 мин: Оставить корень (留根, Лю Гэнь)</span>
-                      <span className="text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded font-mono">Остаток 1/3 ({Math.round(waterVolume * 0.33)} мл)</span>
-                    </div>
-                    <p className="text-[11px] text-stone-700 leading-relaxed">
-                      Выпейте ~2/3 объёма чашки ({Math.round(waterVolume * 0.67)} мл). <strong>Не выпивайте до самого дна!</strong> Оставьте около 1/3 настоя на дне — это «корень», который сохранится как вкусовой буфер.
-                    </p>
-                  </div>
-
-                  {/* Step 3 */}
-                  <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1">
-                    <div className="font-bold text-blue-950 flex justify-between items-center">
-                      <span>🫖 04:30 – 05:00 мин: Долив #1 — Добавить горячую воду!</span>
-                      <span className="text-[10px] bg-blue-200/80 px-1.5 py-0.5 rounded font-mono">+{Math.round(waterVolume * 0.67)} мл ({waterTemp}°C)</span>
-                    </div>
-                    <p className="text-[11px] text-stone-700 leading-relaxed">
-                      Залейте свежую горячую воду поверх оставшейся 1/3 «корня». Остаток маточного раствора мгновенно сбалансирует настой без перепада вкуса.
-                    </p>
-                  </div>
-
-                  {/* Step 4 */}
-                  <div className="p-3 bg-purple-50/80 border border-purple-200 rounded-xl space-y-1">
-                    <div className="font-bold text-purple-950 flex justify-between items-center">
-                      <span>🍯 08:00 – 09:00 мин: Долив #2 — Раскрытие сахаров (TPS)</span>
-                      <span className="text-[10px] bg-purple-200/80 px-1.5 py-0.5 rounded font-mono">+{Math.round(waterVolume * 0.67)} мл</span>
-                    </div>
-                    <p className="text-[11px] text-stone-700 leading-relaxed">
-                      Чай отдает чайные полисахариды ({simulationResults[1]?.polysaccharidesConcentration || 15} мг/100мл), создавая мягкое обволакивающее послевкусие. При остатке 1/3 долейте воду снова.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-xs space-y-4">

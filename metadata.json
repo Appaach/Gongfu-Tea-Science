@@ -1,8 +1,0 @@
-{
-  "name": "Remix Remix Remix Gongfu Tea Science",
-  "description": "Научные исследования и интерактивный симулятор экстракции вкусоароматических веществ китайского чая методом проливов.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}
